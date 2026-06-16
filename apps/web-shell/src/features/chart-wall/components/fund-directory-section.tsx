@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, ExternalLink, Plus, RefreshCcw, Search } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, RefreshCcw, Search } from "lucide-react";
 import { Button, EmptyState, ErrorState, LoadingState, Select, useTableScrollShadows } from "@gold-insights/ui";
 import type { ControlOption } from "@gold-insights/ui";
-import type { FundCatalogImportStatus, FundCatalogPageItem, FundCatalogPageResponse, FundCatalogSortKey, SortOrder } from "@gold-insights/market-domain";
+import type { FundCatalogImportStatus, FundCatalogPageResponse, FundCatalogSortKey, SortOrder } from "@gold-insights/market-domain";
 import { formatDateTime } from "@/shared/utils/format-number.utils";
+import { FundDirectoryRow } from "./fund-directory-row";
 import "./fund-directory-section.css";
 
 type FundDirectorySectionProps = {
@@ -150,7 +151,7 @@ export function FundDirectorySection({
                 </thead>
                 <tbody>
                   {data.items.map((item) => (
-                    <FundDirectoryRow key={item.code} item={item} importingCode={importingCode} onImport={onImport} onSelectAsset={onSelectAsset} />
+                    <FundDirectoryRow key={item.code} item={item} importingCode={importingCode} sort={sort} onImport={onImport} onSelectAsset={onSelectAsset} />
                   ))}
                 </tbody>
               </table>
@@ -171,73 +172,6 @@ export function FundDirectorySection({
         </>
       )}
     </section>
-  );
-}
-
-function FundDirectoryRow({ item, importingCode, onImport, onSelectAsset }: { item: FundCatalogPageItem; importingCode: string | null; onImport(code: string): void; onSelectAsset(assetId: string): void }): JSX.Element {
-  const isImporting = importingCode === item.code;
-
-  return (
-    <tr>
-      <td>
-        <strong>{item.name}</strong>
-        <small>{item.code}{item.pinyin ? ` / ${item.pinyin}` : ""}</small>
-      </td>
-      <td>{item.fundType ?? "未分类"}</td>
-      <td>
-        <span className={item.isImported ? "fund-directory-status fund-directory-status--imported" : "fund-directory-status"}>
-          {item.isImported ? "已加入走势池" : "待加入走势池"}
-        </span>
-      </td>
-      <td>
-        {item.latestNav === null ? (
-          <span className="fund-directory-null">暂无快照</span>
-        ) : (
-          <span className="fund-directory-nav">
-            <strong>{item.latestNav.toFixed(4)}</strong>
-            <small>{item.latestNavDate ?? "--"}</small>
-          </span>
-        )}
-      </td>
-      <FundPercentCell value={item.return1d} />
-      <FundPercentCell value={item.return1m} />
-      <FundPercentCell value={item.return3m} />
-      <FundPercentCell value={item.return6m} />
-      <FundPercentCell value={item.return1y} />
-      <td>
-        {item.dataPointCount > 0 ? (
-          <span className="fund-directory-source fund-directory-source--local">{item.dataPointCount.toLocaleString("en-US")} 点</span>
-        ) : item.metricSource === "catalog_snapshot" ? (
-          <span className="fund-directory-source fund-directory-source--snapshot">目录快照</span>
-        ) : (
-          <span className="fund-directory-source">待拉取</span>
-        )}
-      </td>
-      <td>
-        <div className="row-actions">
-          <button type="button" disabled={isImporting} onClick={() => onImport(item.code)}>
-            {item.isImported ? <RefreshCcw size={13} aria-hidden="true" /> : <Plus size={13} aria-hidden="true" />}
-            {isImporting ? "处理中" : item.isImported ? "更新净值" : "加入走势池"}
-          </button>
-          {item.assetId && (
-            <button type="button" onClick={() => onSelectAsset(item.assetId ?? "")}>
-              <ExternalLink size={13} aria-hidden="true" />
-              查看走势
-            </button>
-          )}
-        </div>
-      </td>
-    </tr>
-  );
-}
-
-function FundPercentCell({ value }: { value: number | null }): JSX.Element {
-  const tone = value === null ? "neutral" : value >= 0 ? "positive" : "negative";
-  const strength = value === null ? "neutral" : Math.abs(value) >= 10 ? "strong" : Math.abs(value) >= 3 ? "medium" : "soft";
-  return (
-    <td>
-      <span className={`fund-return-pill fund-return-pill--${tone} fund-return-pill--${strength}`}>{formatPercent(value)}</span>
-    </td>
   );
 }
 
@@ -291,10 +225,6 @@ function createStatusOptions(data: FundCatalogPageResponse | null): ControlOptio
 
 function getImportStatus(value: string): FundCatalogImportStatus {
   return value === "imported" || value === "not_imported" ? value : "all";
-}
-
-function formatPercent(value: number | null): string {
-  return value === null ? "暂无快照" : `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
 }
 
 function fundCatalogSortLabel(sort: FundCatalogSortKey): string {

@@ -284,6 +284,29 @@ fund_catalog_metrics(
 
 这个表由 `data-adapters` 拉供应商轻量排行/估值接口，`data-storage` 保存，`local-runtime` 合并到目录页。前端只展示 contract，不自己推导。
 
+## 任务管理模块的边界示例
+
+后台任务是本地 runtime 的可观测事实，不是某个页面自己的 loading 状态。同步行情、基金目录、基金导入、未来的扫描重算和数据修复任务，都应进入同一条任务记录链路。
+
+### 正确分层
+
+```txt
+业务任务启动
+  -> data-storage: ingestion_jobs / task tables 读写
+  -> local-runtime: 任务生命周期、聚合、疑似卡住判断、API contract 填充
+  -> market-domain: RuntimeTask / TaskCenterResponse 等 contract
+  -> apps/web-shell: 顶部活动提示、任务中心页面、筛选与跳转
+  -> packages/ui: 通用按钮、Badge、状态组件
+```
+
+### 任务中心与页面 loading
+
+- `ingestion_jobs` 是任务事实来源，记录本地后台任务的开始、结束、状态、错误和元数据。
+- `TaskCenterService` 负责把底层 job 聚合成用户可理解的运行中、疑似卡住、失败、管线健康度。
+- 页面自己的 `isLoading` / `isRefreshing` 只表达当前页面请求状态，不能替代后台任务事实。
+- 顶部任务按钮和全局活动提示条只消费 `/api/tasks`，不直接猜测某个业务请求是否还在运行。
+- 新增任务类型时，先确保 runtime 记录任务生命周期，再让前端展示；不要只在按钮旁边放一个局部 spinner。
+
 ## 新功能落地检查
 
 新增功能前先回答：
