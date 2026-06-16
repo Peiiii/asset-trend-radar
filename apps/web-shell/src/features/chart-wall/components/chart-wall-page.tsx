@@ -24,6 +24,7 @@ import { formatDateTime, formatPrice } from "@/shared/utils/format-number.utils"
 import { AssetChartCard } from "./asset-chart-card";
 import { BreadthStrip, SummaryStrip } from "./dashboard-strips";
 import { DataHealthSection } from "./data-health-section";
+import { ExchangeTable } from "./exchange-table/exchange-table";
 import { FundDirectorySection } from "./fund-directory-section";
 import "./market-chart-primitives.css";
 import { chartWallApiService } from "../services/chart-wall-api.service";
@@ -643,91 +644,6 @@ function ChartGrid({ items, sort, onSelect, onPin, onCompare }: { items: ChartWa
       ))}
     </div>
   );
-}
-
-function ExchangeTable({ items, sort, order, onSort, onSelect, onPin, onCompare }: { items: ChartWallItem[]; sort: string; order: ChartWallSortOrder; onSort(value: string, order?: ChartWallSortOrder): void; onSelect(assetId: string): void; onPin(assetId: string): void; onCompare(assetId: string): void }): JSX.Element {
-  if (items.length === 0) {
-    return <EmptyState title="没有匹配资产" description="换一个市场、品种、信号或搜索词试试。" />;
-  }
-
-  const handleSort = (value: string): void => {
-    onSort(value, value === sort ? toggleSortOrder(order) : defaultOrderForSort(value));
-  };
-
-  return (
-    <div className="asset-table-wrapper asset-table-wrapper--dense">
-      <table>
-        <thead>
-          <tr>
-            <SortableHeader label="资产" sortValue="symbol" currentSort={sort} order={order} onSort={handleSort} />
-            <th>市场</th>
-            <th>品种</th>
-            <th>最新价</th>
-            <SortableHeader label="1D" sortValue="return_1d" currentSort={sort} order={order} onSort={handleSort} />
-            <SortableHeader label="1M" sortValue="return_1m" currentSort={sort} order={order} onSort={handleSort} />
-            <SortableHeader label="3M" sortValue="return_3m" currentSort={sort} order={order} onSort={handleSort} />
-            <SortableHeader label="6M" sortValue="return_6m" currentSort={sort} order={order} onSort={handleSort} />
-            <SortableHeader label="1Y" sortValue="return_1y" currentSort={sort} order={order} onSort={handleSort} />
-            <SortableHeader label="量比" sortValue="volume_ratio" currentSort={sort} order={order} onSort={handleSort} />
-            <SortableHeader label="回撤" sortValue="drawdown" currentSort={sort} order={order} onSort={handleSort} />
-            <SortableHeader label="趋势" sortValue="trend_score" currentSort={sort} order={order} onSort={handleSort} />
-            <th>MACD</th>
-            <SortableHeader label="事件" sortValue="event_count" currentSort={sort} order={order} onSort={handleSort} />
-            <th>操作</th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((item) => (
-            <tr key={item.id} onDoubleClick={() => onSelect(item.id)}>
-              <td>
-                <button type="button" className="asset-table-identity" onClick={() => onSelect(item.id)}>
-                  <strong>{item.name}</strong>
-                  <span>{item.symbol}</span>
-                </button>
-              </td>
-              <td>{item.market}</td>
-              <td>{assetTypeLabel(item.assetType)}</td>
-              <td>{formatPrice(item.lastPrice, item.currency)}</td>
-              <PercentCell value={item.return1d} />
-              <PercentCell value={item.return1m} />
-              <PercentCell value={item.return3m} />
-              <PercentCell value={item.return6m} />
-              <PercentCell value={item.return1y} />
-              <td>{typeof item.volumeRatio === "number" ? `${item.volumeRatio.toFixed(2)}x` : "暂无"}</td>
-              <PercentCell value={item.drawdownPct} />
-              <td>{item.trendScore}</td>
-              <td>{macdLabel(item.macdState)}</td>
-              <td>{item.events.length}</td>
-              <td>
-                <div className="row-actions">
-                  <button type="button" onClick={() => onPin(item.id)}>{item.isPinned ? "取消自选" : "自选"}</button>
-                  <button type="button" onClick={() => onCompare(item.id)}>{item.isCompared ? "取消对比" : "对比"}</button>
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function SortableHeader({ label, sortValue, currentSort, order, onSort }: { label: string; sortValue: string; currentSort: string; order: ChartWallSortOrder; onSort(value: string): void }): JSX.Element {
-  const isActive = currentSort === sortValue;
-
-  return (
-    <th>
-      <button type="button" className={isActive ? "sortable-header sortable-header--active" : "sortable-header"} onClick={() => onSort(sortValue)}>
-        {label}
-        {isActive && <span aria-hidden="true">{order === "desc" ? "↓" : "↑"}</span>}
-      </button>
-    </th>
-  );
-}
-
-function PercentCell({ value }: { value: number | null }): JSX.Element {
-  const tone = value === null ? "neutral" : value >= 0 ? "positive" : "negative";
-  return <td className={`percent-cell percent-cell--${tone}`}>{formatPercent(value)}</td>;
 }
 
 function EventListSection({ events }: { events: ScannerEventsResponse["events"] }): JSX.Element {

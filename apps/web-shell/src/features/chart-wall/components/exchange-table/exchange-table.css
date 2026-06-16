@@ -1,0 +1,205 @@
+.exchange-table-wrapper {
+  position: relative;
+  overflow-x: auto;
+  border: 1px solid #d7dde7;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.exchange-table {
+  width: 100%;
+  min-width: 1640px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.exchange-table th,
+.exchange-table td {
+  padding: 11px 12px;
+  border-bottom: 1px solid #e5eaf1;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.exchange-table th {
+  background: #ffffff;
+  color: #657184;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.exchange-table td {
+  background: #ffffff;
+  color: #243044;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.exchange-table tbody tr:hover td,
+.exchange-table tbody tr:focus-within td {
+  background: #f7fafc;
+}
+
+.exchange-table__rank {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  width: 52px;
+  min-width: 52px;
+  color: #7a8595;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.exchange-table th.exchange-table__rank {
+  z-index: 6;
+}
+
+.exchange-table__asset-heading,
+.exchange-table__asset-cell {
+  position: sticky;
+  left: 52px;
+  min-width: 238px;
+  box-shadow: 1px 0 0 #e5eaf1;
+  transition: box-shadow 160ms ease;
+}
+
+.exchange-table__asset-heading {
+  z-index: 6;
+}
+
+.exchange-table__asset-cell {
+  z-index: 3;
+}
+
+.exchange-table-wrapper--left-shadow .exchange-table__asset-heading,
+.exchange-table-wrapper--left-shadow .exchange-table__asset-cell {
+  box-shadow: 1px 0 0 #e5eaf1, 12px 0 18px -18px rgba(15, 23, 42, 0.58);
+}
+
+.exchange-table__actions-heading,
+.exchange-table__actions-cell {
+  position: sticky;
+  right: 0;
+  min-width: 156px;
+  box-shadow: -1px 0 0 #e5eaf1;
+  transition: box-shadow 160ms ease;
+}
+
+.exchange-table__actions-heading {
+  z-index: 7;
+}
+
+.exchange-table__actions-cell {
+  z-index: 4;
+}
+
+.exchange-table-wrapper--right-shadow .exchange-table__actions-heading,
+.exchange-table-wrapper--right-shadow .exchange-table__actions-cell {
+  box-shadow: -1px 0 0 #e5eaf1, -12px 0 18px -18px rgba(15, 23, 42, 0.58);
+}
+
+.exchange-table__identity {
+  display: block;
+  min-width: 192px;
+  max-width: 238px;
+  margin: -5px -6px;
+  padding: 5px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.exchange-table__identity:hover,
+.exchange-table__identity:focus-visible {
+  background: #eef3f8;
+  color: #111827;
+  outline: 0;
+}
+
+.exchange-table__identity strong,
+.exchange-table__identity span,
+.exchange-table__data-density strong,
+.exchange-table__data-density small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.exchange-table__identity strong {
+  max-width: 226px;
+}
+
+.exchange-table__identity span {
+  max-width: 226px;
+  margin-top: 3px;
+  color: #687386;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.exchange-table__sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: -4px -6px;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-weight: 950;
+}
+
+.exchange-table__sort:hover,
+.exchange-table__sort:focus-visible {
+  background: #eef3f8;
+  color: #1f6f5f;
+  outline: 0;
+}
+
+.exchange-table__sort--active {
+  color: #1f6f5f;
+}
+
+.exchange-table__price {
+  font-size: 14px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.exchange-table__metric .gi-price-change,
+.exchange-table .gi-signal-badge,
+.exchange-table .gi-trend-badge {
+  font-variant-numeric: tabular-nums;
+}
+
+.exchange-table__data-density {
+  display: block;
+  max-width: 164px;
+}
+
+.exchange-table__data-density strong {
+  color: #243044;
+  font-variant-numeric: tabular-nums;
+}
+
+.exchange-table__data-density small {
+  margin-top: 3px;
+  color: #738095;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.exchange-table__actions {
+  justify-content: flex-end;
+}
+
+.exchange-table__actions button {
+  gap: 5px;
+}
