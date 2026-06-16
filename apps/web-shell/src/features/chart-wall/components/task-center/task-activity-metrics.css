@@ -1,0 +1,52 @@
+.task-activity-panel__metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.task-activity-metric {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid #d7dde7;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
+  color: #536176;
+}
+
+.task-activity-metric:hover {
+  border-color: #b8c5d6;
+  background: #ffffff;
+}
+
+.task-activity-metric span {
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.task-activity-metric strong {
+  color: #172033;
+  font-size: 16px;
+  font-weight: 950;
+}
+
+.task-activity-metric--blue {
+  border-color: #bdd6f3;
+  background: #edf5ff;
+  color: #265f9e;
+}
+
+.task-activity-metric--amber {
+  border-color: #efd39b;
+  background: #fff8e8;
+  color: #986211;
+}
+
+.task-activity-metric--negative {
+  border-color: #f2c4c4;
+  background: #fff1f1;
+  color: #a43131;
+}

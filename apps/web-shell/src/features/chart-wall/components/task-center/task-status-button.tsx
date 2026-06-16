@@ -14,6 +14,21 @@ type TaskStatusButtonProps = {
   onClick(): void;
 };
 
+type TaskStatusMetric = {
+  label: string;
+  value: number | string;
+  tone: "neutral" | "blue" | "amber" | "negative";
+};
+
+type TaskStatusState = {
+  tone: "neutral" | "blue" | "positive" | "negative" | "amber";
+  label: string;
+  secondary: string;
+  title: string;
+  icon: JSX.Element;
+  metrics: TaskStatusMetric[];
+};
+
 export function TaskStatusButton({ data, isLoading, error, isPolling, lastLoadedAt, pollIntervalMs, onClick }: TaskStatusButtonProps): JSX.Element {
   const state = getTaskStatusState(data, isLoading, error, isPolling, lastLoadedAt, pollIntervalMs);
 
@@ -24,13 +39,21 @@ export function TaskStatusButton({ data, isLoading, error, isPolling, lastLoaded
         <span className="task-status-button__label">{state.label}</span>
         <span className="task-status-button__meta">{state.secondary}</span>
       </span>
+      <span className="task-status-button__metrics" aria-hidden="true">
+        {state.metrics.map((metric) => (
+          <span key={metric.label} className={`task-status-button__metric task-status-button__metric--${metric.tone}`}>
+            {metric.label} {metric.value}
+          </span>
+        ))}
+      </span>
     </button>
   );
 }
 
-function getTaskStatusState(data: TaskCenterResponse | null, isLoading: boolean, error: string | null, isPolling: boolean, lastLoadedAt: string | null, pollIntervalMs: number): { tone: "neutral" | "blue" | "positive" | "negative" | "amber"; label: string; secondary: string; title: string; icon: JSX.Element } {
+function getTaskStatusState(data: TaskCenterResponse | null, isLoading: boolean, error: string | null, isPolling: boolean, lastLoadedAt: string | null, pollIntervalMs: number): TaskStatusState {
   const pollingLabel = isPolling ? `${formatPollInterval(pollIntervalMs)}轮询` : "未轮询";
   const loadedLabel = lastLoadedAt ? `上次 ${formatDateTime(lastLoadedAt)}` : "尚未拉取";
+  const metrics = buildTaskStatusMetrics(data, isLoading);
 
   if (error) {
     return {
@@ -38,7 +61,8 @@ function getTaskStatusState(data: TaskCenterResponse | null, isLoading: boolean,
       label: "任务异常",
       secondary: loadedLabel,
       title: `任务中心加载失败: ${error}，${pollingLabel}`,
-      icon: <XCircle size={16} aria-hidden="true" />
+      icon: <XCircle size={16} aria-hidden="true" />,
+      metrics
     };
   }
 
@@ -47,8 +71,9 @@ function getTaskStatusState(data: TaskCenterResponse | null, isLoading: boolean,
       tone: "amber",
       label: `疑似卡住 ${data.staleRunningCount}`,
       secondary: data.latestTask ? `最近 ${data.latestTask.label}` : "需要排查",
-      title: `有后台任务疑似卡住，${pollingLabel}，点击查看任务中心`,
-      icon: <AlertTriangle size={16} aria-hidden="true" />
+      title: `有后台任务疑似卡住，运行 ${data.runningCount}，失败 ${data.failedCount}，${pollingLabel}，点击查看任务中心`,
+      icon: <AlertTriangle size={16} aria-hidden="true" />,
+      metrics
     };
   }
 
@@ -57,8 +82,9 @@ function getTaskStatusState(data: TaskCenterResponse | null, isLoading: boolean,
       tone: "blue",
       label: `运行中 ${data.runningCount}`,
       secondary: data.latestTask ? data.latestTask.label : "正在同步",
-      title: `有后台任务正在运行，${pollingLabel}，点击查看任务中心`,
-      icon: <Loader2 size={16} aria-hidden="true" />
+      title: `有后台任务正在运行，卡住 ${data.staleRunningCount}，失败 ${data.failedCount}，${pollingLabel}，点击查看任务中心`,
+      icon: <Loader2 size={16} aria-hidden="true" />,
+      metrics
     };
   }
 
@@ -67,8 +93,9 @@ function getTaskStatusState(data: TaskCenterResponse | null, isLoading: boolean,
       tone: "negative",
       label: `失败 ${data.failedCount}`,
       secondary: data.latestTask ? `最近 ${data.latestTask.label}` : "查看错误",
-      title: `最近任务存在失败，${pollingLabel}，点击查看任务中心`,
-      icon: <XCircle size={16} aria-hidden="true" />
+      title: `最近任务存在失败，运行 ${data.runningCount}，卡住 ${data.staleRunningCount}，${pollingLabel}，点击查看任务中心`,
+      icon: <XCircle size={16} aria-hidden="true" />,
+      metrics
     };
   }
 
@@ -77,8 +104,9 @@ function getTaskStatusState(data: TaskCenterResponse | null, isLoading: boolean,
       tone: "positive",
       label: "任务正常",
       secondary: data.latestTask ? `最近 ${data.latestTask.label}` : loadedLabel,
-      title: data.latestTask ? `最近任务: ${data.latestTask.label}，${pollingLabel}` : `暂无任务异常，${pollingLabel}`,
-      icon: <CheckCircle2 size={16} aria-hidden="true" />
+      title: data.latestTask ? `最近任务: ${data.latestTask.label}，运行 ${data.runningCount}，失败 ${data.failedCount}，${pollingLabel}` : `暂无任务异常，${pollingLabel}`,
+      icon: <CheckCircle2 size={16} aria-hidden="true" />,
+      metrics
     };
   }
 
@@ -87,6 +115,19 @@ function getTaskStatusState(data: TaskCenterResponse | null, isLoading: boolean,
     label: isLoading ? "任务加载" : "任务中心",
     secondary: isLoading ? "同步状态中" : "点击查看",
     title: "点击查看任务中心",
-    icon: <ListChecks size={16} aria-hidden="true" />
+    icon: <ListChecks size={16} aria-hidden="true" />,
+    metrics
   };
+}
+
+function buildTaskStatusMetrics(data: TaskCenterResponse | null, isLoading: boolean): TaskStatusMetric[] {
+  if (!data) {
+    return [{ label: "状态", value: isLoading ? "拉取中" : "未知", tone: "neutral" }];
+  }
+
+  return [
+    { label: "运行", value: data.runningCount, tone: data.runningCount > 0 ? "blue" : "neutral" },
+    { label: "卡住", value: data.staleRunningCount, tone: data.staleRunningCount > 0 ? "amber" : "neutral" },
+    { label: "失败", value: data.failedCount, tone: data.failedCount > 0 ? "negative" : "neutral" }
+  ];
 }

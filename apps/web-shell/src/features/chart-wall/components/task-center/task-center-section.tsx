@@ -5,6 +5,7 @@ import type { RuntimeTask, RuntimeTaskPipelineSummary, TaskCenterResponse } from
 import { formatDateTime } from "@/shared/utils/format-number.utils";
 import { buildTaskActivitySummary, filterTasks, formatDuration, formatMetadata, formatPollInterval, getTaskFilterOptions, pipelineStatusLabel, pipelineTone, taskStatusLabel, taskStatusTone } from "./task-center.utils";
 import type { TaskFilter, TaskTone } from "./task-center.utils";
+import "./task-activity-metrics.css";
 import "./task-center-section.css";
 import "./task-center-overview.css";
 
@@ -100,6 +101,12 @@ function TaskActivityPanel({ data, isPolling, lastLoadedAt, pollIntervalMs }: { 
         <span className="task-activity-panel__eyebrow">后台活动</span>
         <h3>{summary.title}</h3>
         <p>{summary.description}</p>
+        <div className="task-activity-panel__metrics" aria-label="后台任务关键指标">
+          <TaskActivityMetric label="运行中" value={data.runningCount} tone={data.runningCount > 0 ? "blue" : "neutral"} />
+          <TaskActivityMetric label="疑似卡住" value={data.staleRunningCount} tone={data.staleRunningCount > 0 ? "amber" : "neutral"} />
+          <TaskActivityMetric label="失败" value={data.failedCount} tone={data.failedCount > 0 ? "negative" : "neutral"} />
+          <TaskActivityMetric label="总记录" value={data.totalCount} tone="neutral" />
+        </div>
       </div>
       <dl>
         <TaskMeta label="最近任务" value={summary.latestTaskLabel} />
@@ -110,6 +117,15 @@ function TaskActivityPanel({ data, isPolling, lastLoadedAt, pollIntervalMs }: { 
         <TaskMeta label="后端生成" value={formatDateTime(data.generatedAt)} />
       </dl>
     </section>
+  );
+}
+
+function TaskActivityMetric({ label, value, tone }: { label: string; value: number; tone: TaskTone }): JSX.Element {
+  return (
+    <span className={`task-activity-metric task-activity-metric--${tone}`}>
+      <span>{label}</span>
+      <strong>{value.toLocaleString("en-US")}</strong>
+    </span>
   );
 }
 
