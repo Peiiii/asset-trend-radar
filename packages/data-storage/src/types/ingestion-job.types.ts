@@ -10,3 +10,11 @@ export type IngestionJobSummary = {
   errorMessage: string | null;
   metadata: Record<string, unknown>;
 };
+
+export type IngestionJobStatusCounts = {
+  totalCount: number;
+  runningCount: number;
+  successCount: number;
+  failedCount: number;
+  staleRunningCount: number;
+};

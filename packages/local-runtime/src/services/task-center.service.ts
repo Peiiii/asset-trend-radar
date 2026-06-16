@@ -9,18 +9,20 @@ export class TaskCenterService {
   public constructor(private readonly ingestionJobRepository: SqliteIngestionJobRepository) {}
 
   public getTaskCenter = (limit = 80): TaskCenterResponse => {
+    const staleRunningStartedBefore = Date.now() - staleRunningMs;
+    const counts = this.ingestionJobRepository.getStatusCounts(staleRunningStartedBefore);
     const jobs = this.ingestionJobRepository.listRecentJobs(limit);
     const tasks = jobs.map(this.toRuntimeTask);
-    const activeTasks = tasks.filter((task) => task.status === "running" || task.isStale);
-    const recentFailures = tasks.filter((task) => task.status === "failed").slice(0, 8);
+    const activeTasks = this.ingestionJobRepository.listRunningJobs(24).map(this.toRuntimeTask);
+    const recentFailures = this.ingestionJobRepository.listRecentJobsByStatus("failed", 8).map(this.toRuntimeTask);
 
     return {
       generatedAt: new Date().toISOString(),
-      totalCount: this.ingestionJobRepository.countJobs(),
-      runningCount: tasks.filter((task) => task.status === "running" && !task.isStale).length,
-      successCount: tasks.filter((task) => task.status === "success").length,
-      failedCount: tasks.filter((task) => task.status === "failed").length,
-      staleRunningCount: tasks.filter((task) => task.isStale).length,
+      totalCount: counts.totalCount,
+      runningCount: counts.runningCount,
+      successCount: counts.successCount,
+      failedCount: counts.failedCount,
+      staleRunningCount: counts.staleRunningCount,
       latestTask: tasks[0] ?? null,
       activeTasks,
       recentFailures,

@@ -1,5 +1,5 @@
 import type { DatabaseSync } from "node:sqlite";
-import type { IngestionJobStatus, IngestionJobSummary } from "../types/ingestion-job.types";
+import type { IngestionJobStatus, IngestionJobStatusCounts, IngestionJobSummary } from "../types/ingestion-job.types";
 
 export class SqliteIngestionJobRepository {
   public constructor(private readonly database: DatabaseSync) {}
@@ -87,9 +87,54 @@ export class SqliteIngestionJobRepository {
     return rows.map(this.toSummary).filter((job): job is IngestionJobSummary => Boolean(job));
   };
 
-  public countJobs = (): number => {
-    const row = this.database.prepare("SELECT COUNT(*) AS count FROM ingestion_jobs").get() as { count?: number } | undefined;
-    return Number(row?.count ?? 0);
+  public listRunningJobs = (limit: number): IngestionJobSummary[] => {
+    const rows = this.database
+      .prepare(
+        `SELECT id, vendor, dataset, status, started_at, finished_at, error_message, metadata_json
+         FROM ingestion_jobs
+         WHERE status = 'running'
+         ORDER BY COALESCE(started_at, 0) DESC
+         LIMIT ?`
+      )
+      .all(Math.max(1, Math.min(limit, 200)));
+
+    return rows.map(this.toSummary).filter((job): job is IngestionJobSummary => Boolean(job));
+  };
+
+  public listRecentJobsByStatus = (status: IngestionJobStatus, limit: number): IngestionJobSummary[] => {
+    const rows = this.database
+      .prepare(
+        `SELECT id, vendor, dataset, status, started_at, finished_at, error_message, metadata_json
+         FROM ingestion_jobs
+         WHERE status = ?
+         ORDER BY COALESCE(started_at, 0) DESC
+         LIMIT ?`
+      )
+      .all(status, Math.max(1, Math.min(limit, 200)));
+
+    return rows.map(this.toSummary).filter((job): job is IngestionJobSummary => Boolean(job));
+  };
+
+  public getStatusCounts = (staleRunningStartedBefore: number): IngestionJobStatusCounts => {
+    const row = this.database
+      .prepare(
+        `SELECT
+           COUNT(*) AS total_count,
+           SUM(CASE WHEN status = 'running' AND COALESCE(started_at, 0) >= ? THEN 1 ELSE 0 END) AS running_count,
+           SUM(CASE WHEN status = 'success' THEN 1 ELSE 0 END) AS success_count,
+           SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) AS failed_count,
+           SUM(CASE WHEN status = 'running' AND COALESCE(started_at, 0) < ? THEN 1 ELSE 0 END) AS stale_running_count
+         FROM ingestion_jobs`
+      )
+      .get(staleRunningStartedBefore, staleRunningStartedBefore) as Record<string, number | null> | undefined;
+
+    return {
+      totalCount: Number(row?.total_count ?? 0),
+      runningCount: Number(row?.running_count ?? 0),
+      successCount: Number(row?.success_count ?? 0),
+      failedCount: Number(row?.failed_count ?? 0),
+      staleRunningCount: Number(row?.stale_running_count ?? 0)
+    };
   };
 
   private toSummary = (row: unknown): IngestionJobSummary | null => {

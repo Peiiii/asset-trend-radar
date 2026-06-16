@@ -141,6 +141,7 @@ try {
   await fetchJson("/api/refresh", { method: "POST" });
   const finalHealth = await fetchJson("/api/data-health");
   const taskCenter = await fetchJson("/api/tasks?limit=40");
+  const tinyTaskCenter = await fetchJson("/api/tasks?limit=1");
   const markets = new Set(chartWall.items.map((item) => item.market));
   const assetTypes = new Set(chartWall.items.map((item) => item.assetType));
   const levels = new Set(chartWall.items.map((item) => item.level));
@@ -240,6 +241,12 @@ try {
   assert(finalHealth.lastIngestionAt !== initialHealth.lastIngestionAt, "expected refresh endpoint to update ingestion time");
   assert(taskCenter.tasks.length >= 2 && typeof taskCenter.runningCount === "number", "expected task center endpoint with recent tasks");
   assert(taskCenter.totalCount >= taskCenter.tasks.length, "expected task center total count to cover returned recent tasks");
+  assert(tinyTaskCenter.tasks.length === 1, "expected task center limit to only constrain recent task list");
+  assert(tinyTaskCenter.totalCount === taskCenter.totalCount, "expected task center total count to ignore task list limit");
+  assert(tinyTaskCenter.runningCount === taskCenter.runningCount, "expected task center running count to ignore task list limit");
+  assert(tinyTaskCenter.failedCount === taskCenter.failedCount, "expected task center failed count to ignore task list limit");
+  assert(tinyTaskCenter.staleRunningCount === taskCenter.staleRunningCount, "expected task center stale running count to ignore task list limit");
+  assert(tinyTaskCenter.successCount === taskCenter.successCount, "expected task center success count to ignore task list limit");
   assert(Array.isArray(taskCenter.activeTasks) && Array.isArray(taskCenter.recentFailures), "expected task center focus task collections");
   assert(Array.isArray(taskCenter.pipelineSummaries) && taskCenter.pipelineSummaries.length >= 2, "expected task center pipeline summaries");
   assert(

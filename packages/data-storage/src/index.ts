@@ -8,5 +8,5 @@ export { SqliteMarketDataRepository } from "./repositories/sqlite-market-data.re
 export { SqliteScannerEventRepository } from "./repositories/sqlite-scanner-event.repository";
 export { SqliteWatchlistRepository } from "./repositories/sqlite-watchlist.repository";
 export { SqliteDatabaseService } from "./services/sqlite-database.service";
-export type { IngestionJobStatus, IngestionJobSummary } from "./types/ingestion-job.types";
+export type { IngestionJobStatus, IngestionJobStatusCounts, IngestionJobSummary } from "./types/ingestion-job.types";
 export { sqliteMigrationVersion } from "./utils/sqlite-migration.utils";
