@@ -1,10 +1,15 @@
 .compare-panel {
   min-width: 0;
-  margin-top: 14px;
+  margin-bottom: 14px;
   padding: 14px;
   border: 1px solid #d7dde7;
   border-radius: 8px;
   background: #ffffff;
+}
+
+.compare-panel--pending {
+  border-color: #bdd6f3;
+  background: #f7fbff;
 }
 
 .compare-token-row {
@@ -36,6 +41,19 @@
   background: #eef4fb;
   color: #182032;
   outline: 0;
+}
+
+.compare-panel__pending {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #edf5ff;
+  color: #265f9e;
+  font-size: 13px;
+  font-weight: 850;
 }
 
 .compare-performance-chart {

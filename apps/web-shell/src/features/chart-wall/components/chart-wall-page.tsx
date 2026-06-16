@@ -480,12 +480,12 @@ export function ChartWallPage(): JSX.Element {
                   description={`${rangeLabel(data.chartWall.range)} / ${timeframeLabel(data.chartWall.timeframe)} / ${sortDisplayLabel(sort)} ${sortOrderLabel(order)} / ${filteredItems.length} 个资产`}
                   generatedAt={data.chartWall.generatedAt}
                 />
+                <ComparePanel compareData={compareData} compareAssetIds={compareAssetIds} allItems={chartItems} onRemove={handleCompare} onClear={() => setCompareAssetIds([])} />
                 {viewMode === "grid" ? (
                   <ChartGrid items={filteredItems} sort={sort} onSelect={selectAsset} onPin={handlePin} onCompare={handleCompare} />
                 ) : (
                   <ExchangeTable items={filteredItems} sort={sort} order={order} onSort={setSortQueryValue} onSelect={selectAsset} onPin={handlePin} onCompare={handleCompare} />
                 )}
-                <ComparePanel compareData={compareData} compareAssetIds={compareAssetIds} allItems={chartItems} onRemove={handleCompare} onClear={() => setCompareAssetIds([])} />
               </section>
               <aside className="event-rail" aria-label="机会事件">
                 <EventListSection events={data.scannerEvents.events.slice(0, 8)} />
