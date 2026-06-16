@@ -15,10 +15,12 @@ type TaskCenterSectionProps = {
   isPolling: boolean;
   lastLoadedAt: string | null;
   pollIntervalMs: number;
+  isStartingSync: boolean;
+  onStartSync(): void;
   onRefresh(): void;
 };
 
-export function TaskCenterSection({ data, error, isLoading, isPolling, lastLoadedAt, pollIntervalMs, onRefresh }: TaskCenterSectionProps): JSX.Element {
+export function TaskCenterSection({ data, error, isLoading, isPolling, lastLoadedAt, pollIntervalMs, isStartingSync, onStartSync, onRefresh }: TaskCenterSectionProps): JSX.Element {
   const [taskFilter, setTaskFilter] = useState<TaskFilter>("all");
   const filteredTasks = useMemo(() => filterTasks(data?.tasks ?? [], taskFilter), [data, taskFilter]);
   const filterOptions = useMemo(() => getTaskFilterOptions(data), [data]);
@@ -30,10 +32,16 @@ export function TaskCenterSection({ data, error, isLoading, isPolling, lastLoade
           <h2>任务中心</h2>
           <p>后台同步、基金目录、基金导入和刷新任务都会记录在这里；运行中任务会自动刷新，失败任务保留错误信息。</p>
         </div>
-        <Button type="button" variant="ghost" onClick={onRefresh}>
-          <RefreshCcw size={15} aria-hidden="true" />
-          刷新任务
-        </Button>
+        <div className="task-center-hero__actions">
+          <Button type="button" onClick={onStartSync} disabled={isStartingSync}>
+            <RefreshCcw size={15} aria-hidden="true" />
+            {isStartingSync ? "同步中" : "启动同步"}
+          </Button>
+          <Button type="button" variant="ghost" onClick={onRefresh} disabled={isLoading}>
+            <RefreshCcw size={15} aria-hidden="true" />
+            刷新任务
+          </Button>
+        </div>
       </div>
 
       {isLoading && !data && <LoadingState />}

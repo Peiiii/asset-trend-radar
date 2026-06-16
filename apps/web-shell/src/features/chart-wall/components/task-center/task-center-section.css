@@ -34,6 +34,14 @@
   gap: 6px;
 }
 
+.task-center-hero__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
 .task-summary-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
@@ -231,6 +239,10 @@
 
   .task-center-hero {
     display: grid;
+  }
+
+  .task-center-hero__actions {
+    justify-content: flex-start;
   }
 
   .task-record-toolbar {

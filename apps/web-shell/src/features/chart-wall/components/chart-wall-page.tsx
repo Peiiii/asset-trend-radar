@@ -294,8 +294,9 @@ export function ChartWallPage(): JSX.Element {
     };
   }, [activeView, range, routeAssetId, timeframe]);
 
-  const handleRefresh = (): void => {
-    void refresh();
+  const handleRefresh = async (): Promise<void> => {
+    await refresh();
+    await taskCenterQuery.reload();
   };
 
   const handlePin = (assetId: string): void => {
@@ -644,6 +645,10 @@ export function ChartWallPage(): JSX.Element {
               isPolling={taskCenterQuery.isPolling}
               lastLoadedAt={taskCenterQuery.lastLoadedAt}
               pollIntervalMs={taskCenterQuery.pollIntervalMs}
+              isStartingSync={isRefreshing}
+              onStartSync={() => {
+                void handleRefresh();
+              }}
               onRefresh={() => {
                 void taskCenterQuery.reload();
               }}
