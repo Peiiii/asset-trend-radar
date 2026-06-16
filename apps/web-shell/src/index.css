@@ -954,14 +954,12 @@ h3 {
   background: #ffffff;
 }
 
-.provider-grid article,
-.watchlist-meta {
+.provider-grid article {
   display: flex;
 }
 
 .provider-grid span,
-.provider-grid small,
-.watchlist-meta span {
+.provider-grid small {
   display: block;
   color: #687386;
   font-size: 12px;
@@ -983,19 +981,6 @@ h3 {
 .provider-grid strong {
   min-width: 0;
   flex: 1;
-}
-
-.watchlist-meta {
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 12px;
-}
-
-.watchlist-meta span {
-  min-height: 26px;
-  padding: 5px 8px;
-  border-radius: 999px;
-  background: #edf1f6;
 }
 
 .data-health-grid {

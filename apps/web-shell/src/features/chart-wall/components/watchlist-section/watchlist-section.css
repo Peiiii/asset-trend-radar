@@ -1,0 +1,221 @@
+.watchlist-section {
+  gap: 14px;
+}
+
+.watchlist-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.watchlist-summary-card,
+.watchlist-events,
+.watchlist-table-wrapper {
+  border: 1px solid #d7dde7;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.watchlist-summary-card {
+  min-width: 0;
+  padding: 12px;
+}
+
+.watchlist-summary-card span,
+.watchlist-summary-card small {
+  display: block;
+  color: #687386;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.watchlist-summary-card strong {
+  display: block;
+  margin: 6px 0 4px;
+  color: #172033;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.watchlist-meta,
+.watchlist-events header,
+.watchlist-event-card,
+.watchlist-table__actions {
+  display: flex;
+  align-items: center;
+}
+
+.watchlist-meta {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.watchlist-meta span {
+  display: block;
+  min-height: 26px;
+  padding: 6px 10px;
+  border: 1px solid #d9e2ec;
+  border-radius: 999px;
+  background: #f7f9fc;
+  color: #687386;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.watchlist-events {
+  padding: 12px;
+}
+
+.watchlist-events header {
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.watchlist-events h3 {
+  margin: 0;
+  color: #172033;
+  font-size: 15px;
+}
+
+.watchlist-events header span {
+  display: inline-grid;
+  min-width: 30px;
+  height: 26px;
+  place-items: center;
+  border-radius: 999px;
+  background: #fff1d6;
+  color: #986211;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.watchlist-event-list {
+  display: grid;
+  gap: 8px;
+}
+
+.watchlist-event-card {
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+  min-height: 58px;
+  padding: 9px 10px;
+  border: 1px solid #e1e6ee;
+  border-radius: 8px;
+  background: #fbfdff;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.16s ease, background 0.16s ease, transform 0.16s ease;
+}
+
+.watchlist-event-card:hover,
+.watchlist-event-card:focus-visible {
+  border-color: #9fb0c7;
+  background: #f4f8fd;
+  outline: 0;
+  transform: translateY(-1px);
+}
+
+.watchlist-event-card span {
+  min-width: 0;
+}
+
+.watchlist-event-card strong,
+.watchlist-event-card b,
+.watchlist-event-card small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.watchlist-event-card strong,
+.watchlist-event-card b {
+  color: #172033;
+  font-size: 13px;
+}
+
+.watchlist-event-card small {
+  margin-top: 3px;
+  color: #687386;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.watchlist-table-wrapper {
+  overflow-x: auto;
+}
+
+.watchlist-table {
+  width: 100%;
+  min-width: 850px;
+  border-collapse: collapse;
+}
+
+.watchlist-table th,
+.watchlist-table td {
+  padding: 12px;
+  border-bottom: 1px solid #e7edf5;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.watchlist-table th {
+  color: #657184;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.watchlist-table td {
+  color: #243044;
+  font-size: 13px;
+  font-weight: 800;
+  vertical-align: middle;
+}
+
+.watchlist-table td strong,
+.watchlist-table td small {
+  display: block;
+}
+
+.watchlist-table td small {
+  margin-top: 3px;
+  color: #687386;
+  font-size: 11px;
+}
+
+.watchlist-table tbody tr {
+  cursor: pointer;
+  transition: background 0.16s ease;
+}
+
+.watchlist-table tbody tr:hover {
+  background: #f8fbff;
+}
+
+.watchlist-table__actions {
+  gap: 6px;
+}
+
+.watchlist-table__actions .gi-button {
+  gap: 6px;
+}
+
+@media (max-width: 1080px) {
+  .watchlist-summary-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .watchlist-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .watchlist-event-card {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

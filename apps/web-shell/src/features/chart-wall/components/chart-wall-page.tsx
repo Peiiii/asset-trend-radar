@@ -19,7 +19,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { NavLink, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { AppShell, Button, EmptyState, ErrorState, FilterChip, IconButton, LoadingState, RangePicker, Select, TimeframePicker } from "@gold-insights/ui";
 import type { ControlOption } from "@gold-insights/ui";
-import type { ChartWallFacet, ChartWallItem, ChartWallSortOrder, ScannerEventsResponse, WatchlistSummary } from "@gold-insights/market-domain";
+import type { ChartWallFacet, ChartWallItem, ChartWallSortOrder, ScannerEventsResponse } from "@gold-insights/market-domain";
 import type { AssetDetailData, ChartWallFilters, ChartWallPageData, CompareData } from "@/shared/types/api.types";
 import { formatDateTime } from "@/shared/utils/format-number.utils";
 import { AssetChartCard } from "./asset-chart-card";
@@ -34,6 +34,7 @@ import { ScannerSection } from "./scanner-section/scanner-section";
 import { TaskCenterSection } from "./task-center-section";
 import { TaskStatusButton } from "./task-status-button";
 import { UniverseSection } from "./universe-section/universe-section";
+import { WatchlistSection } from "./watchlist-section/watchlist-section";
 import { chartWallApiService } from "../services/chart-wall-api.service";
 import { useFundDirectoryQuery } from "../hooks/use-fund-directory-query";
 import { useChartWallQuery } from "../hooks/use-chart-wall-query";
@@ -702,41 +703,6 @@ function EventListSection({ events }: { events: ScannerEventsResponse["events"] 
         </div>
       )}
     </>
-  );
-}
-
-function WatchlistSection({
-  watchlists,
-  chartItems,
-  onSelect,
-  onCompare,
-  onRemove
-}: {
-  watchlists: WatchlistSummary[];
-  chartItems: ChartWallItem[];
-  onSelect(assetId: string): void;
-  onCompare(assetId: string): void;
-  onRemove(assetId: string): void;
-}): JSX.Element {
-  const assetIds = new Set(watchlists.flatMap((watchlist) => watchlist.assets.map((asset) => asset.id)));
-  const items = chartItems.filter((item) => assetIds.has(item.id)).map((item) => ({ ...item, isPinned: true }));
-
-  return (
-    <section className="single-view-section">
-      <SectionHeader title="自选图表墙" description={`${items.length} 个自选资产`} />
-      {items.length === 0 ? (
-        <EmptyState title="自选为空" description="在图表卡片或行情表上点击自选即可加入。" />
-      ) : (
-        <>
-          <ChartGrid items={items} onSelect={onSelect} onPin={onRemove} onCompare={onCompare} />
-          <div className="watchlist-meta">
-            {watchlists.map((watchlist) => (
-              <span key={watchlist.id}>{watchlist.name}: {watchlist.assets.length}</span>
-            ))}
-          </div>
-        </>
-      )}
-    </section>
   );
 }
 
