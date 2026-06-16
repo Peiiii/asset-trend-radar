@@ -18,7 +18,7 @@ import { NavLink, useLocation, useNavigate, useParams, useSearchParams } from "r
 import { AppShell, Button, EmptyState, ErrorState, IconButton, LoadingState, RangePicker, TimeframePicker } from "@gold-insights/ui";
 import type { ControlOption } from "@gold-insights/ui";
 import type { ChartWallSortOrder, ScannerEventsResponse } from "@gold-insights/market-domain";
-import type { AssetDetailData, ChartWallFilters, ChartWallPageData, CompareData } from "@/shared/types/api.types";
+import type { AssetDetailData, ChartWallFilters, ChartWallPageData } from "@/shared/types/api.types";
 import { formatDateTime } from "@/shared/utils/format-number.utils";
 import { assetTypeFallbackOptions, defaultFilters, levelFallbackOptions, marketFallbackOptions, signalFallbackOptions, sortOptions, sortOrderOptions, tagFallbackOptions } from "../configs/chart-wall-page.config";
 import { ActiveFilterChips } from "./active-filter-chips/active-filter-chips";
@@ -44,6 +44,7 @@ import { WatchlistSection } from "./watchlist-section/watchlist-section";
 import { chartWallApiService } from "../services/chart-wall-api.service";
 import { useFundDirectoryQuery } from "../hooks/use-fund-directory-query";
 import { useChartWallQuery } from "../hooks/use-chart-wall-query";
+import { useCompareSelection } from "../hooks/use-compare-selection";
 import { useFundDirectoryUrlState } from "../hooks/use-fund-directory-url-state";
 import { useTaskCenterQuery } from "../hooks/use-task-center-query";
 
@@ -82,8 +83,7 @@ export function ChartWallPage(): JSX.Element {
   const scannerMarket = getSearchValue(searchParams, "scannerMarket", "all");
   const scannerQuery = getSearchValue(searchParams, "scannerQ", "");
   const fundDirectory = useFundDirectoryUrlState(searchParams, setSearchParams);
-  const [compareAssetIds, setCompareAssetIds] = useState<string[]>([]);
-  const [compareData, setCompareData] = useState<CompareData | null>(null);
+  const compareSelection = useCompareSelection(range, timeframe);
   const [isFundCatalogSyncing, setIsFundCatalogSyncing] = useState(false);
   const [importingFundCode, setImportingFundCode] = useState<string | null>(null);
   const [fundImportMessage, setFundImportMessage] = useState<string | null>(null);
@@ -144,8 +144,7 @@ export function ChartWallPage(): JSX.Element {
   const { data, error, isLoading, isRefreshing, refresh, reload } = useChartWallQuery(filters);
   const fundDirectoryQuery = useFundDirectoryQuery(fundDirectory.filters, activeView === "fund-directory");
   const taskCenterQuery = useTaskCenterQuery(true);
-  const comparedSet = useMemo(() => new Set(compareAssetIds), [compareAssetIds]);
-  const chartItems = useMemo(() => (data?.chartWall.items ?? []).map((item) => ({ ...item, isCompared: comparedSet.has(item.id) })), [comparedSet, data]);
+  const chartItems = useMemo(() => (data?.chartWall.items ?? []).map((item) => ({ ...item, isCompared: compareSelection.comparedSet.has(item.id) })), [compareSelection.comparedSet, data]);
 
   const filteredItems = useMemo(() => {
     const keyword = search.trim().toLowerCase();
@@ -163,20 +162,11 @@ export function ChartWallPage(): JSX.Element {
   const selectedListItem = useMemo(() => chartItems.find((item) => item.id === routeAssetId) ?? filteredItems[0] ?? chartItems[0] ?? null, [chartItems, filteredItems, routeAssetId]);
   const selectedItem = useMemo(() => {
     if (activeView === "asset-detail") {
-      return assetDetailData?.item ? { ...assetDetailData.item, isCompared: comparedSet.has(assetDetailData.item.id) } : null;
+      return assetDetailData?.item ? { ...assetDetailData.item, isCompared: compareSelection.comparedSet.has(assetDetailData.item.id) } : null;
     }
 
     return selectedListItem;
-  }, [activeView, assetDetailData, comparedSet, selectedListItem]);
-
-  useEffect(() => {
-    if (compareAssetIds.length < 2) {
-      setCompareData(null);
-      return;
-    }
-
-    void chartWallApiService.fetchCompare(compareAssetIds, range, timeframe).then(setCompareData).catch(() => setCompareData(null));
-  }, [compareAssetIds, range, timeframe]);
+  }, [activeView, assetDetailData, compareSelection.comparedSet, selectedListItem]);
 
   useEffect(() => {
     if (activeView !== "asset-detail" || !routeAssetId) {
@@ -222,10 +212,6 @@ export function ChartWallPage(): JSX.Element {
       setAssetDetailData((current) => (current?.item.id === assetId ? { ...current, item: { ...current.item, isPinned: !current.item.isPinned } } : current));
       return reload();
     });
-  };
-
-  const handleCompare = (assetId: string): void => {
-    setCompareAssetIds((current) => (current.includes(assetId) ? current.filter((id) => id !== assetId) : [...current, assetId].slice(-6)));
   };
 
   const handleFundCatalogSync = async (): Promise<void> => {
@@ -447,8 +433,8 @@ export function ChartWallPage(): JSX.Element {
               {activeView === "chart-wall" && (
                 <>
                   <MarketPulseBoard items={filteredItems} activeMarket={market} onMarketSelect={(value) => setQueryValue("market", value, defaultFilters.market)} />
-                  <SortAwareMoversStrip items={filteredItems} sort={sort} order={order} onSelect={selectAsset} onCompare={handleCompare} />
-                  <OpportunityLeaderboard items={filteredItems} onSelect={selectAsset} onCompare={handleCompare} />
+                  <SortAwareMoversStrip items={filteredItems} sort={sort} order={order} onSelect={selectAsset} onCompare={compareSelection.toggleCompare} />
+                  <OpportunityLeaderboard items={filteredItems} onSelect={selectAsset} onCompare={compareSelection.toggleCompare} />
                 </>
               )}
             </>
@@ -462,11 +448,11 @@ export function ChartWallPage(): JSX.Element {
                   description={`${rangeLabel(data.chartWall.range)} / ${timeframeLabel(data.chartWall.timeframe)} / ${sortDisplayLabel(sort)} ${sortOrderLabel(order)} / ${filteredItems.length} 个资产`}
                   generatedAt={data.chartWall.generatedAt}
                 />
-                <ComparePanel compareData={compareData} compareAssetIds={compareAssetIds} allItems={chartItems} onRemove={handleCompare} onClear={() => setCompareAssetIds([])} />
+                <ComparePanel compareData={compareSelection.compareData} compareAssetIds={compareSelection.compareAssetIds} allItems={chartItems} onRemove={compareSelection.toggleCompare} onClear={compareSelection.clearCompare} />
                 {viewMode === "grid" ? (
-                  <ChartGrid items={filteredItems} sort={sort} onSelect={selectAsset} onPin={handlePin} onCompare={handleCompare} onResetFilters={resetFilters} />
+                  <ChartGrid items={filteredItems} sort={sort} onSelect={selectAsset} onPin={handlePin} onCompare={compareSelection.toggleCompare} onResetFilters={resetFilters} />
                 ) : (
-                  <ExchangeTable items={filteredItems} sort={sort} order={order} onSort={setSortQueryValue} onSelect={selectAsset} onPin={handlePin} onCompare={handleCompare} />
+                  <ExchangeTable items={filteredItems} sort={sort} order={order} onSort={setSortQueryValue} onSelect={selectAsset} onPin={handlePin} onCompare={compareSelection.toggleCompare} />
                 )}
               </section>
               <aside className="event-rail" aria-label="机会事件">
@@ -539,7 +525,7 @@ export function ChartWallPage(): JSX.Element {
                 relatedItems={filteredItems.filter((item) => item.id !== selectedItem?.id && item.market === selectedItem?.market).slice(0, 8)}
                 onSelect={selectAsset}
                 onPin={handlePin}
-                onCompare={handleCompare}
+                onCompare={compareSelection.toggleCompare}
               />
             )
           )}
@@ -549,7 +535,7 @@ export function ChartWallPage(): JSX.Element {
               watchlists={data.watchlists.watchlists}
               chartItems={chartItems}
               onSelect={selectAsset}
-              onCompare={handleCompare}
+              onCompare={compareSelection.toggleCompare}
               onRemove={(assetId) => {
                 void chartWallApiService.removeWatchlistAsset(assetId).then(() => reload());
               }}
@@ -585,7 +571,7 @@ export function ChartWallPage(): JSX.Element {
                   onSort={setSortQueryValue}
                   onSelect={selectAsset}
                   onPin={handlePin}
-                  onCompare={handleCompare}
+                  onCompare={compareSelection.toggleCompare}
                 />
               }
             />
