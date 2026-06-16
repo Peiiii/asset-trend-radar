@@ -17,12 +17,13 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { NavLink, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { AppShell, Button, EmptyState, ErrorState, FilterChip, IconButton, LoadingState, RangePicker, Select, TimeframePicker } from "@gold-insights/ui";
+import { AppShell, Button, EmptyState, ErrorState, IconButton, LoadingState, RangePicker, Select, TimeframePicker } from "@gold-insights/ui";
 import type { ControlOption } from "@gold-insights/ui";
 import type { ChartWallFacet, ChartWallItem, ChartWallSortOrder, ScannerEventsResponse } from "@gold-insights/market-domain";
 import type { AssetDetailData, ChartWallFilters, ChartWallPageData, CompareData } from "@/shared/types/api.types";
 import { formatDateTime } from "@/shared/utils/format-number.utils";
 import { AssetChartCard } from "./asset-chart-card";
+import { ActiveFilterChips } from "./active-filter-chips/active-filter-chips";
 import { AssetDetailSection } from "./asset-detail-section/asset-detail-section";
 import { ComparePanel } from "./compare-panel/compare-panel";
 import { BreadthStrip, SummaryStrip } from "./dashboard-strips";
@@ -483,7 +484,13 @@ export function ChartWallPage(): JSX.Element {
             <StrategyPresetStrip currentFilters={{ market, assetType, signal, sort, order, range, timeframe }} onApply={applyStrategyPreset} />
           )}
 
-          <ActiveFilterChips filters={{ market, assetType, level, signal, sort, order, search }} onRemove={removeFilterChip} onReset={resetFilters} />
+          <ActiveFilterChips
+            filters={{ market, assetType, level, signal, sort, order, search }}
+            defaults={{ sort: defaultFilters.sort, order: defaultFilters.order }}
+            options={{ assetTypes: assetTypeFallbackOptions, levels: levelFallbackOptions, signals: signalFallbackOptions, sorts: sortOptions, orders: sortOrderOptions }}
+            onRemove={removeFilterChip}
+            onReset={resetFilters}
+          />
         </>
       )}
       {data && activeView === "chart-wall" && assetType === "fund" && <FundScopeStrip data={data} market={market} />}
@@ -655,26 +662,6 @@ function SidebarButton({ active, title, label, children, to }: SidebarButtonProp
       {children}
       <span>{label}</span>
     </NavLink>
-  );
-}
-
-function ActiveFilterChips({ filters, onRemove, onReset }: { filters: Record<string, string>; onRemove(key: string): void; onReset(): void }): JSX.Element | null {
-  const activeEntries = Object.entries(filters).filter(([key, value]) => !isDefaultFilterValue(key, value));
-
-  if (activeEntries.length === 0) {
-    return null;
-  }
-
-  return (
-    <section className="active-filter-strip" aria-label="当前筛选">
-      {activeEntries.map(([key, value]) => {
-        const label = `${filterLabel(key)}: ${activeFilterValueLabel(key, value)}`;
-        return (
-          <FilterChip key={key} label={label} onClick={() => onRemove(key)} title={`移除${label}`} aria-label={`移除${label}`} />
-        );
-      })}
-      <FilterChip label="清空筛选" onClick={onReset} />
-    </section>
   );
 }
 
@@ -889,47 +876,6 @@ function facetOptions(allLabel: string, facets: ChartWallFacet[] | undefined, fa
     }),
     ...facetExtras
   ];
-}
-
-function filterLabel(key: string): string {
-  const labels: Record<string, string> = {
-    market: "市场",
-    assetType: "品种",
-    level: "层级",
-    signal: "信号",
-    sort: "排序",
-    order: "方向",
-    search: "搜索"
-  };
-  return labels[key] ?? key;
-}
-
-function isDefaultFilterValue(key: string, value: string): boolean {
-  return value.length === 0 || value === "all" || (key === "sort" && value === defaultFilters.sort) || (key === "order" && value === defaultFilters.order);
-}
-
-function activeFilterValueLabel(key: string, value: string): string {
-  if (key === "assetType") {
-    return optionLabel(assetTypeFallbackOptions, value);
-  }
-
-  if (key === "level") {
-    return optionLabel(levelFallbackOptions, value);
-  }
-
-  if (key === "signal") {
-    return optionLabel(signalFallbackOptions, value);
-  }
-
-  if (key === "sort") {
-    return optionLabel(sortOptions, value);
-  }
-
-  if (key === "order") {
-    return optionLabel(sortOrderOptions, value);
-  }
-
-  return value;
 }
 
 function optionLabel(options: ControlOption[], value: string): string {
