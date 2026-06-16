@@ -820,19 +820,9 @@ h3 {
   margin-top: 10px;
 }
 
-.view-mode-toggle,
 .row-actions {
   display: flex;
   align-items: center;
-}
-
-.view-mode-toggle {
-  gap: 4px;
-}
-
-.view-mode-toggle .gi-icon-button {
-  width: 36px;
-  height: 36px;
 }
 
 .market-layout {

@@ -4,7 +4,6 @@ import {
   BarChart3,
   BookOpen,
   Database,
-  Grid3X3,
   LineChart,
   ListChecks,
   Network,
@@ -12,14 +11,13 @@ import {
   Search,
   Sparkles,
   Star,
-  Table2,
   X
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { NavLink, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { AppShell, Button, EmptyState, ErrorState, IconButton, LoadingState, RangePicker, Select, TimeframePicker } from "@gold-insights/ui";
+import { AppShell, Button, EmptyState, ErrorState, IconButton, LoadingState, RangePicker, TimeframePicker } from "@gold-insights/ui";
 import type { ControlOption } from "@gold-insights/ui";
-import type { ChartWallFacet, ChartWallItem, ChartWallSortOrder, ScannerEventsResponse } from "@gold-insights/market-domain";
+import type { ChartWallItem, ChartWallSortOrder, ScannerEventsResponse } from "@gold-insights/market-domain";
 import type { AssetDetailData, ChartWallFilters, ChartWallPageData, CompareData } from "@/shared/types/api.types";
 import { formatDateTime } from "@/shared/utils/format-number.utils";
 import { AssetChartCard } from "./asset-chart-card";
@@ -27,6 +25,7 @@ import { ActiveFilterChips } from "./active-filter-chips/active-filter-chips";
 import { AssetDetailSection } from "./asset-detail-section/asset-detail-section";
 import { ComparePanel } from "./compare-panel/compare-panel";
 import { BreadthStrip, SummaryStrip } from "./dashboard-strips";
+import { ChartWallControls, type ChartWallViewMode } from "./chart-wall-controls/chart-wall-controls";
 import { DataHealthSection } from "./data-health-section/data-health-section";
 import { ExchangeTable } from "./exchange-table/exchange-table";
 import { FundDirectorySection } from "./fund-directory-section";
@@ -47,7 +46,6 @@ import { useFundDirectoryUrlState } from "../hooks/use-fund-directory-url-state"
 import { useTaskCenterQuery } from "../hooks/use-task-center-query";
 
 type ActiveView = "chart-wall" | "fund-directory" | "universe" | "scanner" | "asset-detail" | "watchlist" | "tasks" | "data-health";
-type ViewMode = "grid" | "table";
 
 const viewTitles: Record<ActiveView, string> = {
   "chart-wall": "全市场图表墙",
@@ -477,31 +475,21 @@ export function ChartWallPage(): JSX.Element {
         </section>
       ) : activeView === "fund-directory" || activeView === "tasks" ? null : (
         <>
-          <section className="control-strip" aria-label="图表控制">
-            <Select id="market-filter" label="市场" value={market} onChange={(value) => setQueryValue("market", value, defaultFilters.market)} options={facetOptions("全部市场", data?.chartWall.facets?.markets, marketFallbackOptions)} />
-            <Select id="asset-type-filter" label="品种" value={assetType} onChange={(value) => setQueryValue("assetType", value, defaultFilters.assetType)} options={facetOptions("全部品种", data?.chartWall.facets?.assetTypes, assetTypeFallbackOptions)} />
-            <Select id="level-filter" label="层级" value={level} onChange={(value) => setQueryValue("level", value, defaultFilters.level)} options={facetOptions("全部层级", data?.chartWall.facets?.levels, levelFallbackOptions)} />
-            <Select id="tag-filter" label="主题" value={tag} onChange={(value) => setQueryValue("tag", value, defaultFilters.tag)} options={facetOptions("全部主题", data?.chartWall.facets?.tags, tagFallbackOptions)} />
-            <Select id="signal-filter" label="信号" value={signal} onChange={(value) => setQueryValue("signal", value, defaultFilters.signal)} options={facetOptions("全部信号", data?.chartWall.facets?.signals, signalFallbackOptions)} />
-            <Select id="sort-filter" label="排序" value={sort} onChange={(value) => setSortQueryValue(value, defaultOrderForSort(value))} options={sortOptions} />
-            <Select id="sort-order-filter" label="方向" value={order} onChange={(value) => setSortQueryValue(sort, getSortOrder(value))} options={sortOrderOptions} />
-            <RangePicker value={range} onChange={(value) => setQueryValue("range", value, defaultFilters.range)} />
-            <TimeframePicker value={timeframe} onChange={(value) => setQueryValue("timeframe", value, defaultFilters.timeframe)} />
-            <div className="view-mode-toggle" aria-label="图表墙视图">
-              <IconButton label="卡片视图" className={viewMode === "grid" ? "gi-icon-button--active" : ""} onClick={() => setQueryValue("view", "grid", "grid")}>
-                <Grid3X3 size={17} aria-hidden="true" />
-              </IconButton>
-              <IconButton label="表格视图" className={viewMode === "table" ? "gi-icon-button--active" : ""} onClick={() => setQueryValue("view", "table", "grid")}>
-                <Table2 size={17} aria-hidden="true" />
-              </IconButton>
-            </div>
-            <Button variant="ghost" onClick={resetFilters}>
-              重置
-            </Button>
-            <Button variant="ghost" onClick={handleRefresh} disabled={isRefreshing}>
-              {isRefreshing ? "刷新中" : "重新采集"}
-            </Button>
-          </section>
+          <ChartWallControls
+            values={{ market, assetType, level, tag, signal, sort, order, range, timeframe, viewMode }}
+            defaults={defaultFilters}
+            facets={data?.chartWall.facets}
+            options={{ markets: marketFallbackOptions, assetTypes: assetTypeFallbackOptions, levels: levelFallbackOptions, tags: tagFallbackOptions, signals: signalFallbackOptions, sorts: sortOptions, orders: sortOrderOptions }}
+            isRefreshing={isRefreshing}
+            onQueryChange={setQueryValue}
+            onSortChange={setSortQueryValue}
+            onDefaultOrder={defaultOrderForSort}
+            onParseOrder={getSortOrder}
+            onReset={resetFilters}
+            onRefresh={() => {
+              void handleRefresh();
+            }}
+          />
 
           {activeView === "chart-wall" && (
             <StrategyPresetStrip currentFilters={{ market, assetType, tag, signal, sort, order, range, timeframe }} onApply={applyStrategyPreset} />
@@ -860,7 +848,7 @@ function getSearchValue(searchParams: URLSearchParams, name: string, fallback: s
   return searchParams.get(name) ?? fallback;
 }
 
-function getViewMode(value: string): ViewMode {
+function getViewMode(value: string): ChartWallViewMode {
   return value === "table" ? "table" : "grid";
 }
 
@@ -882,31 +870,6 @@ function sortDisplayLabel(sort: string): string {
 
 function sortOrderLabel(order: ChartWallSortOrder): string {
   return optionLabel(sortOrderOptions, order);
-}
-
-function facetOptions(allLabel: string, facets: ChartWallFacet[] | undefined, fallback: ControlOption[]): ControlOption[] {
-  const hasFacetCounts = Boolean(facets);
-  const countByValue = new Map((facets ?? []).map((facet) => [facet.value, facet.count]));
-  const labelByValue = new Map((facets ?? []).map((facet) => [facet.value, facet.label]));
-  const fallbackValues = new Set(fallback.map((option) => option.value));
-  const allFacetCount = facets?.find((facet) => facet.value === "all")?.count;
-  const facetExtras = (facets ?? [])
-    .filter((facet) => facet.value !== "all" && !fallbackValues.has(facet.value))
-    .map((facet) => ({ value: facet.value, label: facet.label, count: facet.count }));
-  const totalCount = allFacetCount ?? (facets ?? []).filter((facet) => facet.value !== "all").reduce((sum, facet) => sum + facet.count, 0);
-
-  return [
-    { value: "all", label: allLabel, count: hasFacetCounts ? totalCount : undefined },
-    ...fallback.map((option) => {
-      const count = countByValue.get(option.value);
-      return {
-        ...option,
-        label: labelByValue.get(option.value) ?? option.label,
-        count: typeof count === "number" ? count : hasFacetCounts ? 0 : undefined
-      };
-    }),
-    ...facetExtras
-  ];
 }
 
 function optionLabel(options: ControlOption[], value: string): string {
