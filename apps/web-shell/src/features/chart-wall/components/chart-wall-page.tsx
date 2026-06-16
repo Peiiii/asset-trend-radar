@@ -26,7 +26,7 @@ import { AssetChartCard } from "./asset-chart-card";
 import { AssetDetailSection } from "./asset-detail-section/asset-detail-section";
 import { ComparePanel } from "./compare-panel/compare-panel";
 import { BreadthStrip, SummaryStrip } from "./dashboard-strips";
-import { DataHealthSection } from "./data-health-section";
+import { DataHealthSection } from "./data-health-section/data-health-section";
 import { ExchangeTable } from "./exchange-table/exchange-table";
 import { FundDirectorySection } from "./fund-directory-section";
 import "./market-chart-primitives.css";
