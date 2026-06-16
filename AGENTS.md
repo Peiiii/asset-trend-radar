@@ -2,6 +2,11 @@
 
 ## Code Maintainability
 
+- Package/app responsibility boundaries are defined in
+  `docs/designs/2026-06-16-package-app-boundary-contract.md`. Before adding a
+  feature, decide whether each piece belongs to market-domain, data-adapters,
+  data-storage, local-runtime, ui, or app code. Update the contract first if a
+  feature needs a new boundary.
 - Touching source, scripts, tests, or runtime configuration requires a
   maintainability closeout before final delivery.
 - Run `pnpm typecheck` for TypeScript or runtime-path changes. Lint and tests do
