@@ -33,6 +33,7 @@ import { MarketPulseBoard } from "./market-pulse-board/market-pulse-board";
 import "./market-chart-primitives.css";
 import { OpportunityLeaderboard } from "./opportunity-leaderboard/opportunity-leaderboard";
 import { ScannerSection } from "./scanner-section/scanner-section";
+import { StrategyPresetStrip, type StrategyPresetFilters } from "./strategy-preset-strip/strategy-preset-strip";
 import { TaskCenterSection } from "./task-center/task-center-section";
 import { TaskStatusButton } from "./task-center/task-status-button";
 import { UniverseSection } from "./universe-section/universe-section";
@@ -327,6 +328,23 @@ export function ChartWallPage(): JSX.Element {
     setSearchParams(new URLSearchParams());
   };
 
+  const applyStrategyPreset = (preset: StrategyPresetFilters): void => {
+    const next = new URLSearchParams(searchParams);
+    next.delete("q");
+    next.delete("level");
+
+    for (const [key, value] of Object.entries(preset)) {
+      const fallback = defaultFilters[key as keyof typeof defaultFilters] ?? "";
+      if (!value || value === fallback) {
+        next.delete(key);
+      } else {
+        next.set(key, value);
+      }
+    }
+
+    setSearchParams(next);
+  };
+
   const removeFilterChip = (key: string): void => {
     const next = new URLSearchParams(searchParams);
     const queryKey = key === "search" ? "q" : key;
@@ -460,6 +478,10 @@ export function ChartWallPage(): JSX.Element {
               {isRefreshing ? "刷新中" : "重新采集"}
             </Button>
           </section>
+
+          {activeView === "chart-wall" && (
+            <StrategyPresetStrip currentFilters={{ market, assetType, signal, sort, order, range, timeframe }} onApply={applyStrategyPreset} />
+          )}
 
           <ActiveFilterChips filters={{ market, assetType, level, signal, sort, order, search }} onRemove={removeFilterChip} onReset={resetFilters} />
         </>
