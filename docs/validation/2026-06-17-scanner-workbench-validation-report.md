@@ -76,9 +76,9 @@ curl http://127.0.0.1:5193/scanner -> 200
 ## 维护性结果
 
 - `chart-wall-page.tsx` 从 1327 行基线内继续下降到 1171 行，扫描页逻辑不再内联在主页面。
+- `scanner-section.tsx` 进一步拆为页面结构、row 子组件、options、types、utils；主组件从 322 行降到 140 行。
 - `index.css` 删除旧扫描表格样式，扫描样式移动到组件目录。
-- 维护性 guard 通过，没有新增 package deep import 或红区增长。
-- guard 提示 `scanner-section.tsx` 当前 322 行，接近 360 行阈值；下一轮如果继续增强扫描页，应优先拆出 scanner options、summary 或 row 子组件，避免继续增长。
+- 维护性 guard 通过，没有新增 package deep import 或红区增长，也不再提示扫描组件接近单文件上限。
 
 ## 已知限制
 
