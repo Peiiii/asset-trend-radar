@@ -141,7 +141,7 @@ try {
   const assetTypes = new Set(chartWall.items.map((item) => item.assetType));
   const levels = new Set(chartWall.items.map((item) => item.level));
 
-  assert(initialHealth.assetCount >= 125, "expected full asset universe with hierarchy nodes and expanded funds");
+  assert(initialHealth.assetCount >= 150, "expected full asset universe with hierarchy nodes, expanded funds, and expanded commodities");
   assert(initialHealth.barCount >= 45 * 1000, "expected multi-asset startup ingestion to persist full daily history and intraday bars");
   assert(initialHealth.latestBarAt !== null, "expected latest bar timestamp");
   assert(initialHealth.lastIngestionAt !== null, "expected ingestion timestamp");
@@ -156,9 +156,9 @@ try {
   assert(initialHealth.latestJob?.status === "success", "expected latest ingestion job status");
   assert(chartWall.sources.includes("yahoo"), "expected Yahoo source");
   assert(chartWall.sources.includes("eastmoney"), "expected Eastmoney source");
-  assert(chartWall.items.length >= 100, "expected broad chart wall items");
+  assert(chartWall.items.length >= 125, "expected broad chart wall items with expanded commodities");
   assert(chartWall.summary.visibleItems === chartWall.items.length, "expected chart wall summary visible count");
-  assert(chartWall.summary.totalUniverseAssets >= 60, "expected chart wall summary universe count");
+  assert(chartWall.summary.totalUniverseAssets >= 85, "expected chart wall summary universe count with expanded commodities");
   assert(chartWall.facets.markets.some((facet) => facet.value === "美股"), "expected market facets");
   assert(chartWall.facets.assetTypes.some((facet) => facet.value === "fund"), "expected fund asset facet");
   assert(chartWall.facets.signals.some((facet) => facet.value === "breakout"), "expected signal facets");
@@ -168,7 +168,7 @@ try {
   assert(aShareWall.items.length >= 8 && aShareWall.items.every((item) => item.market === "A 股"), "expected A-share filtered chart wall");
   assert(fundWall.items.length >= 60 && fundWall.items.every((item) => item.assetType === "fund"), "expected expanded real fund/ETF chart wall");
   assert(fundWall.items.some((item) => item.market === "基金" && item.source === "eastmoney"), "expected China mutual funds from Eastmoney");
-  assert(commodityWall.items.length >= 6 && commodityWall.items.every((item) => item.market === "商品"), "expected commodity chart wall");
+  assert(commodityWall.items.length >= 30 && commodityWall.items.every((item) => item.market === "商品"), "expected expanded commodity chart wall");
   assert(isSortedDesc(sortedReturnWall.items, (item) => item.return1m), "expected return_1m sorting");
   assert(cryptoOneMonthWall.order === "desc" && isSortedDesc(cryptoOneMonthWall.items, (item) => item.return1m), "expected explicit sort order for crypto 1M return");
   assert(
@@ -224,7 +224,7 @@ try {
   assert(universeTree.nodes.length >= 6 && universeTree.nodes.every((node) => node.count > 0), "expected universe tree with asset-class nodes");
   assert(watchlists.watchlists.some((watchlist) => watchlist.assets.some((asset) => asset.id === "us-nvda")), "expected watchlist add asset");
   assert(pinnedWall.items.some((item) => item.id === "us-nvda" && item.isPinned), "expected pinned signal filter");
-  assert(finalHealth.providers.some((provider) => provider.id === "yahoo" && provider.assetCount >= 55), "expected Yahoo provider health");
+  assert(finalHealth.providers.some((provider) => provider.id === "yahoo" && provider.assetCount >= 75), "expected Yahoo provider health with expanded commodities");
   assert(finalHealth.providers.some((provider) => provider.id === "eastmoney" && provider.assetCount >= 40), "expected Eastmoney provider health");
   assert(finalHealth.lastIngestionAt !== initialHealth.lastIngestionAt, "expected refresh endpoint to update ingestion time");
   assert(taskCenter.tasks.length >= 2 && typeof taskCenter.runningCount === "number", "expected task center endpoint with recent tasks");
