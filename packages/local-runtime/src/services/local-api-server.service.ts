@@ -3,6 +3,7 @@ import type { AssetsController } from "../controllers/assets.controller";
 import type { ChartWallController } from "../controllers/chart-wall.controller";
 import type { CompareController } from "../controllers/compare.controller";
 import type { DataHealthController } from "../controllers/data-health.controller";
+import type { FundDiscoveryController } from "../controllers/fund-discovery.controller";
 import type { RefreshController } from "../controllers/refresh.controller";
 import type { ScannerController } from "../controllers/scanner.controller";
 import type { UniverseController } from "../controllers/universe.controller";
@@ -24,6 +25,7 @@ export class LocalApiServerService {
     private readonly scannerController: ScannerController,
     private readonly compareController: CompareController,
     private readonly watchlistsController: WatchlistsController,
+    private readonly fundDiscoveryController: FundDiscoveryController,
     private readonly refreshController: RefreshController,
     private readonly requestContextProvider = new RequestContextProvider(),
     private readonly jsonResponseProvider = new JsonResponseProvider(),
@@ -106,6 +108,16 @@ export class LocalApiServerService {
 
       if (request.method === "POST" && url.pathname === "/api/refresh") {
         await this.refreshController.handleRefresh(response);
+        return;
+      }
+
+      if (request.method === "GET" && url.pathname === "/api/funds/eastmoney/search") {
+        await this.fundDiscoveryController.handleSearch(url, response);
+        return;
+      }
+
+      if (request.method === "POST" && url.pathname === "/api/funds/eastmoney/import") {
+        await this.fundDiscoveryController.handleImport(request, response);
         return;
       }
 

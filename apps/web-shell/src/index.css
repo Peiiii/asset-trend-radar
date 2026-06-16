@@ -399,6 +399,104 @@ h3 {
   cursor: pointer;
 }
 
+.fund-discovery-panel {
+  display: grid;
+  gap: 10px;
+  margin: -4px 0 16px;
+  padding: 12px;
+  border: 1px solid #d7dde7;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.fund-discovery-panel__search,
+.fund-result-card footer,
+.fund-result-card > div {
+  display: flex;
+  align-items: center;
+}
+
+.fund-discovery-panel__search {
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.fund-discovery-panel__search > div {
+  min-width: 132px;
+}
+
+.fund-discovery-panel__search strong,
+.fund-discovery-panel__search span,
+.fund-result-card strong,
+.fund-result-card span,
+.fund-result-card small {
+  display: block;
+}
+
+.fund-discovery-panel__search span,
+.fund-result-card span,
+.fund-result-card small {
+  color: #667386;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.fund-discovery-panel__search .search-control {
+  width: min(360px, 100%);
+}
+
+.fund-discovery-panel__status {
+  color: #1f6f5f;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.fund-discovery-panel__status--error {
+  color: #a43131;
+}
+
+.fund-result-strip {
+  display: grid;
+  grid-auto-columns: minmax(240px, 280px);
+  grid-auto-flow: column;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.fund-result-card {
+  min-height: 132px;
+  padding: 10px;
+  border: 1px solid #d7dde7;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.fund-result-card > div {
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.fund-result-card strong {
+  overflow: hidden;
+  color: #1f2937;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fund-result-card small {
+  min-height: 34px;
+  line-height: 1.4;
+}
+
+.fund-result-card footer {
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+}
+
 .view-mode-toggle,
 .sub-control-strip,
 .compare-token-row,
@@ -1450,14 +1548,20 @@ h3 {
   }
 
   .control-strip,
-  .sub-control-strip {
+  .sub-control-strip,
+  .fund-discovery-panel__search {
     align-items: stretch;
     flex-direction: column;
   }
 
   .gi-select,
-  .gi-select select {
+  .gi-select select,
+  .fund-discovery-panel__search .search-control {
     width: 100%;
+  }
+
+  .fund-result-strip {
+    grid-auto-columns: minmax(220px, 86vw);
   }
 
   .return-matrix {

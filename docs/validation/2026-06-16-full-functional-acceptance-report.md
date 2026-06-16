@@ -21,7 +21,7 @@ f82a7eb Initialize local market insight dashboard
 | ETF / 可交易基金 | Yahoo Finance chart endpoint | 25 个 | 包含美股 ETF、A 股 ETF、港股 ETF、商品 ETF、债券 ETF |
 | 场外基金净值 | 东方财富 F10 历史净值接口 | 44 个 | 接口形态：`https://fundf10.eastmoney.com/F10DataApi.aspx?type=lsjz&code=<基金代码>&page=<页码>&per=49` |
 
-当前基金/ETF 合计 69 个。之前页面看起来“只有几只基金”，原因不是数据源只能拿几只，而是资产宇宙里只维护了少量场外基金种子；本轮已扩展到 44 只常见场外基金。终态设计仍然应该继续做自动基金池同步，从东方财富/天天基金的基金列表、排行、主题分类接口中定期发现全量基金，而不是长期依赖人工种子。
+当前基金/ETF 合计 69 个，另支持按基金代码/名称从东方财富基金库搜索并按需导入。之前页面看起来“只有几只基金”，原因不是数据源只能拿几只，而是资产宇宙里只维护了少量场外基金种子；本轮已扩展到 44 只常见场外基金，并补上本地动态导入闭环。终态设计仍然应该继续做自动基金池同步，从东方财富/天天基金的基金列表、排行、主题分类接口中定期发现全量基金，而不是长期依赖人工种子。
 
 场外基金只有每日单位净值，没有交易所 K 线里的开高低收和成交量。系统为了复用同一套趋势、MACD、图表墙和比较逻辑，会把单位净值映射为 `open/high/low/close = unit_nav`，`volume = 0`。这不是假数据，而是基金净值数据在 K 线模型中的统一表示。
 
@@ -61,14 +61,19 @@ f82a7eb Initialize local market insight dashboard
 {
   "status": "passed",
   "sources": ["yahoo", "eastmoney"],
-  "assetCount": 131,
-  "barCount": 161639,
+  "assetCount": 132,
+  "barCount": 162347,
   "chartWallItems": 111,
   "fundItems": 69,
   "commodityItems": 12,
   "mutualFundBars": 365,
-  "rawFileCount": 312,
-  "databaseSizeBytes": 58974208
+  "importedFund": {
+    "id": "fund-cn-000011",
+    "barsImported": 756,
+    "chartWallVisible": true
+  },
+  "rawFileCount": 313,
+  "databaseSizeBytes": 59633664
 }
 ```
 
@@ -76,8 +81,8 @@ f82a7eb Initialize local market insight dashboard
 
 ```json
 [
-  { "source": "yahoo", "count": 128375 },
-  { "source": "eastmoney", "count": 33264 }
+  { "source": "yahoo", "count": 128327 },
+  { "source": "eastmoney", "count": 34020 }
 ]
 ```
 
@@ -85,10 +90,10 @@ f82a7eb Initialize local market insight dashboard
 
 ```json
 [
-  { "timeframe": "15m", "count": 14795 },
-  { "timeframe": "1d", "count": 117217 },
-  { "timeframe": "1h", "count": 14795 },
-  { "timeframe": "4h", "count": 14832 }
+  { "timeframe": "15m", "count": 14788 },
+  { "timeframe": "1d", "count": 117973 },
+  { "timeframe": "1h", "count": 14788 },
+  { "timeframe": "4h", "count": 14798 }
 ]
 ```
 
@@ -111,6 +116,8 @@ f82a7eb Initialize local market insight dashboard
 | 真实数据优先，无假行情 | 通过 | smoke 重新拉取 Yahoo + Eastmoney，共 161,685 条 bars |
 | 场外基金净值 | 通过 | Eastmoney 44 只基金、33,264 条净值 bars |
 | 基金/ETF 图表墙 | 通过 | `assetType=fund` 返回 69 个基金/ETF |
+| 基金搜索 | 通过 | `/api/funds/eastmoney/search?keyword=000011` 返回华夏大盘精选混合A |
+| 基金按需导入 | 通过 | `/api/funds/eastmoney/import` 导入 `fund-cn-000011`，756 条净值，图表墙可见 |
 | 多图同屏图表墙 | 通过 | 全市场图表墙返回 111 个可展示资产 |
 | 多市场筛选 | 通过 | A 股筛选返回 12 个资产，商品筛选返回 12 个资产 |
 | 多品种覆盖 | 通过 | fund / commodity / index / equity / macro / crypto 全部出现 |
@@ -156,17 +163,22 @@ pnpm smoke
 {
   "status": "passed",
   "sources": ["yahoo", "eastmoney"],
-  "assetCount": 131,
-  "barCount": 161639,
+  "assetCount": 132,
+  "barCount": 162347,
   "chartWallItems": 111,
   "fundItems": 69,
   "commodityItems": 12,
   "mutualFundBars": 365,
+  "importedFund": {
+    "id": "fund-cn-000011",
+    "barsImported": 756,
+    "chartWallVisible": true
+  },
   "markets": ["美股", "基金", "A 股", "商品", "宏观", "外汇", "债券", "港股", "加密"],
   "assetTypes": ["fund", "commodity", "index", "equity", "macro", "crypto"],
   "levels": ["sector-index", "instrument", "broad-index", "company", "macro-indicator", "theme-basket"],
-  "rawFileCount": 312,
-  "databaseSizeBytes": 58974208,
+  "rawFileCount": 313,
+  "databaseSizeBytes": 59633664,
   "aShareItems": 12,
   "weeklyItems": 111,
   "monthlyItems": 111,
@@ -175,8 +187,8 @@ pnpm smoke
   "fourHourItems": 67,
   "compareAssets": 4,
   "watchlistAssets": 1,
-  "latestBarAt": "2026-06-16T14:12:19.000Z",
-  "lastIngestionAt": "2026-06-16T14:12:22.912Z"
+  "latestBarAt": "2026-06-16T14:25:38.000Z",
+  "lastIngestionAt": "2026-06-16T14:25:44.370Z"
 }
 ```
 
@@ -206,6 +218,19 @@ Runtime:  http://127.0.0.1:3193/
     "histogramBars": 186,
     "axisTexts": ["3.281", "1.425", "MACD", "09-03", "06-15"]
   }
+}
+```
+
+基金发现与导入：
+
+```json
+{
+  "searchKeyword": "000011",
+  "result": "华夏大盘精选混合A / 000011 / 混合型-灵活 / 华夏基金",
+  "importStatus": "华夏大盘精选混合A 已导入，756 条净值",
+  "urlAfterImport": "http://127.0.0.1:5193/chart-wall?view=grid&range=6m&timeframe=1d&market=基金&assetType=fund",
+  "fundCardsAfterImport": 45,
+  "targetVisible": true
 }
 ```
 
@@ -247,34 +272,40 @@ Runtime:  http://127.0.0.1:3193/
 2. 接入东方财富 F10 场外基金历史净值。
 3. 扩展 44 只常见场外基金种子。
 4. 扩展 25 个 ETF/可交易基金。
-5. 场外基金只抓 1d，避免伪造分钟级净值。
-6. 基金净值映射为统一 OHLCV 模型。
-7. chart wall 增加 source、dataPointCount、first/latest bar。
-8. chart wall 增加 1D/1W/1M/3M/6M/1Y 固定窗口收益。
-9. chart wall 增加 drawdown、volumeRatio、MA、MACD、RSI。
-10. 增加 summary 和 facets。
-11. 增加 signal filter。
-12. 增加 return、volume、drawdown、event、market、asset type 等排序。
-13. 左侧导航改为 React Router NavLink。
-14. 页面状态进入 URL query。
-15. 前端源码迁移到 `apps/web-shell/src`。
-16. 后端核心放在 package，入口保持薄壳。
-17. API 启动和后台 refresh 解耦。
-18. ingestion 增加并发保护。
-19. ingestion 改为 4 路有限并发。
-20. health 能展示 running job。
-21. data health 增加 raw/db/timeframe/source/provider/job。
-22. 卡片名称主、代码辅。
-23. 表格名称主、代码辅。
-24. 技术图价格与 MACD 共用 x 轴。
-25. 卡片 MACD 只展示 histogram，避免 DIF/DEA 压缩柱体。
-26. 详情页保留 DIF/DEA。
-27. MACD 正红负绿并显示零轴。
-28. 图表加入坐标和时间刻度。
-29. hover tooltip 展示具体点位数据。
-30. smoke 增加 Eastmoney 和 fund 断言。
-31. smoke readiness 等待真实数据源完整落库。
-32. smoke 等待预算调整为真实网络数据量可接受的 420 秒。
+5. 增加东方财富基金搜索 API。
+6. 增加按基金代码动态导入 API。
+7. 导入基金会写入资产、净值 bars、指标、扫描事件和 raw JSONL。
+8. 前端增加紧凑基金发现工具。
+9. 动态导入后自动切换到基金筛选并刷新图表墙。
+10. smoke 覆盖动态基金搜索和导入。
+11. 场外基金只抓 1d，避免伪造分钟级净值。
+12. 基金净值映射为统一 OHLCV 模型。
+13. chart wall 增加 source、dataPointCount、first/latest bar。
+14. chart wall 增加 1D/1W/1M/3M/6M/1Y 固定窗口收益。
+15. chart wall 增加 drawdown、volumeRatio、MA、MACD、RSI。
+16. 增加 summary 和 facets。
+17. 增加 signal filter。
+18. 增加 return、volume、drawdown、event、market、asset type 等排序。
+19. 左侧导航改为 React Router NavLink。
+20. 页面状态进入 URL query。
+21. 前端源码迁移到 `apps/web-shell/src`。
+22. 后端核心放在 package，入口保持薄壳。
+23. API 启动和后台 refresh 解耦。
+24. ingestion 增加并发保护。
+25. ingestion 改为 4 路有限并发。
+26. health 能展示 running job。
+27. data health 增加 raw/db/timeframe/source/provider/job。
+28. 卡片名称主、代码辅。
+29. 表格名称主、代码辅。
+30. 技术图价格与 MACD 共用 x 轴。
+31. 卡片 MACD 只展示 histogram，避免 DIF/DEA 压缩柱体。
+32. 详情页保留 DIF/DEA。
+33. MACD 正红负绿并显示零轴。
+34. 图表加入坐标和时间刻度。
+35. hover tooltip 展示具体点位数据。
+36. smoke 增加 Eastmoney 和 fund 断言。
+37. smoke readiness 等待真实数据源完整落库。
+38. smoke 等待预算调整为真实网络数据量可接受的 420 秒。
 
 ## 已知边界
 

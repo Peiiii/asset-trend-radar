@@ -1,4 +1,4 @@
-import type { ChartWallResponse, CompareResponse, DataHealthResponse, ScannerEventsResponse, UniverseTreeResponse, WatchlistsResponse } from "@gold-insights/market-domain";
+import type { ChartWallResponse, CompareResponse, DataHealthResponse, FundImportResponse, FundSearchResponse, ScannerEventsResponse, UniverseTreeResponse, WatchlistsResponse } from "@gold-insights/market-domain";
 
 export type ChartWallPageData = {
   chartWall: ChartWallResponse;
@@ -20,3 +20,5 @@ export type ChartWallFilters = {
 };
 
 export type CompareData = CompareResponse;
+export type FundSearchData = FundSearchResponse;
+export type FundImportData = FundImportResponse;

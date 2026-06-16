@@ -1,6 +1,10 @@
 import type { ServerResponse } from "node:http";
 
 export class ErrorResponseProvider {
+  public writeBadRequest = (response: ServerResponse, message: string): void => {
+    this.writeError(response, 400, "bad_request", message);
+  };
+
   public writeNotFound = (response: ServerResponse): void => {
     this.writeError(response, 404, "not_found", "接口不存在");
   };

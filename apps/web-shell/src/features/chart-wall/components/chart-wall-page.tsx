@@ -16,7 +16,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { NavLink, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { AppShell, Button, EmptyState, ErrorState, IconButton, LoadingState, RangePicker, Select, SparklineChart, TechnicalChart, TimeframePicker } from "@gold-insights/ui";
-import type { ChartWallFacet, ChartWallItem, ChartWallSummary, ScannerEventsResponse, UniverseTreeNode, WatchlistSummary } from "@gold-insights/market-domain";
+import type { ChartWallFacet, ChartWallItem, ChartWallSummary, FundSearchResult, ScannerEventsResponse, UniverseTreeNode, WatchlistSummary } from "@gold-insights/market-domain";
 import type { ChartWallFilters, ChartWallPageData, CompareData } from "@/shared/types/api.types";
 import { formatDateTime, formatPrice } from "@/shared/utils/format-number.utils";
 import { AssetChartCard } from "./asset-chart-card";
@@ -107,6 +107,12 @@ export function ChartWallPage(): JSX.Element {
   const scannerMinSeverity = getSearchValue(searchParams, "severity", "0");
   const [compareAssetIds, setCompareAssetIds] = useState<string[]>([]);
   const [compareData, setCompareData] = useState<CompareData | null>(null);
+  const [fundKeyword, setFundKeyword] = useState("");
+  const [fundResults, setFundResults] = useState<FundSearchResult[]>([]);
+  const [fundSearchError, setFundSearchError] = useState<string | null>(null);
+  const [isFundSearching, setIsFundSearching] = useState(false);
+  const [importingFundCode, setImportingFundCode] = useState<string | null>(null);
+  const [fundImportMessage, setFundImportMessage] = useState<string | null>(null);
 
   const setQueryValue = useCallback((name: string, value: string, fallback = ""): void => {
     const next = new URLSearchParams(searchParams);
@@ -140,6 +146,7 @@ export function ChartWallPage(): JSX.Element {
   const { data, error, isLoading, isRefreshing, refresh, reload } = useChartWallQuery(filters);
   const comparedSet = useMemo(() => new Set(compareAssetIds), [compareAssetIds]);
   const chartItems = useMemo(() => (data?.chartWall.items ?? []).map((item) => ({ ...item, isCompared: comparedSet.has(item.id) })), [comparedSet, data]);
+  const knownFundCodes = useMemo(() => new Set(chartItems.filter((item) => item.dataSource === "eastmoney").map((item) => item.symbol)), [chartItems]);
 
   const filteredItems = useMemo(() => {
     const keyword = search.trim().toLowerCase();
@@ -177,6 +184,48 @@ export function ChartWallPage(): JSX.Element {
 
   const handleCompare = (assetId: string): void => {
     setCompareAssetIds((current) => (current.includes(assetId) ? current.filter((id) => id !== assetId) : [...current, assetId].slice(-6)));
+  };
+
+  const handleFundSearch = async (): Promise<void> => {
+    const keyword = fundKeyword.trim();
+
+    if (keyword.length === 0) {
+      setFundResults([]);
+      setFundSearchError(null);
+      return;
+    }
+
+    setIsFundSearching(true);
+    setFundSearchError(null);
+    setFundImportMessage(null);
+    try {
+      const response = await chartWallApiService.searchEastmoneyFunds(keyword);
+      setFundResults(response.results);
+    } catch (nextError) {
+      setFundSearchError(nextError instanceof Error ? nextError.message : "基金搜索失败");
+    } finally {
+      setIsFundSearching(false);
+    }
+  };
+
+  const handleFundImport = async (code: string): Promise<void> => {
+    setImportingFundCode(code);
+    setFundSearchError(null);
+    setFundImportMessage(null);
+    try {
+      const response = await chartWallApiService.importEastmoneyFund(code);
+      const next = new URLSearchParams(searchParams);
+      next.set("market", "基金");
+      next.set("assetType", "fund");
+      next.set("timeframe", "1d");
+      setSearchParams(next);
+      setFundImportMessage(`${response.asset.name} 已导入，${response.barsImported.toLocaleString("en-US")} 条净值`);
+      await reload();
+    } catch (nextError) {
+      setFundSearchError(nextError instanceof Error ? nextError.message : "基金导入失败");
+    } finally {
+      setImportingFundCode(null);
+    }
   };
 
   const selectAsset = (assetId: string): void => {
@@ -270,6 +319,24 @@ export function ChartWallPage(): JSX.Element {
       </section>
 
       <ActiveFilterChips filters={{ market, assetType, level, signal, sort, search }} onReset={resetFilters} />
+      {activeView === "chart-wall" && (
+        <FundDiscoveryPanel
+          keyword={fundKeyword}
+          results={fundResults}
+          knownFundCodes={knownFundCodes}
+          error={fundSearchError}
+          message={fundImportMessage}
+          isSearching={isFundSearching}
+          importingCode={importingFundCode}
+          onKeywordChange={setFundKeyword}
+          onSearch={() => {
+            void handleFundSearch();
+          }}
+          onImport={(code) => {
+            void handleFundImport(code);
+          }}
+        />
+      )}
 
       {isLoading && <LoadingState />}
       {!isLoading && error && <ErrorState title="行情加载失败" message={error} />}
@@ -366,6 +433,80 @@ function ActiveFilterChips({ filters, onReset }: { filters: Record<string, strin
         <span key={key}>{filterLabel(key)}: {value}</span>
       ))}
       <button type="button" onClick={onReset}>清空筛选</button>
+    </section>
+  );
+}
+
+type FundDiscoveryPanelProps = {
+  keyword: string;
+  results: FundSearchResult[];
+  knownFundCodes: Set<string>;
+  error: string | null;
+  message: string | null;
+  isSearching: boolean;
+  importingCode: string | null;
+  onKeywordChange(value: string): void;
+  onSearch(): void;
+  onImport(code: string): void;
+};
+
+function FundDiscoveryPanel({
+  keyword,
+  results,
+  knownFundCodes,
+  error,
+  message,
+  isSearching,
+  importingCode,
+  onKeywordChange,
+  onSearch,
+  onImport
+}: FundDiscoveryPanelProps): JSX.Element {
+  return (
+    <section className="fund-discovery-panel" aria-label="基金发现">
+      <form
+        className="fund-discovery-panel__search"
+        onSubmit={(event) => {
+          event.preventDefault();
+          onSearch();
+        }}
+      >
+        <div>
+          <strong>基金发现</strong>
+          <span>东方财富基金库</span>
+        </div>
+        <label className="search-control" htmlFor="fund-discovery-search">
+          <Search size={17} aria-hidden="true" />
+          <input id="fund-discovery-search" value={keyword} onChange={(event) => onKeywordChange(event.target.value)} placeholder="005827、白酒、半导体" />
+        </label>
+        <Button type="submit" variant="secondary" disabled={isSearching}>
+          {isSearching ? "搜索中" : "搜索"}
+        </Button>
+      </form>
+      {(error || message) && <p className={error ? "fund-discovery-panel__status fund-discovery-panel__status--error" : "fund-discovery-panel__status"}>{error ?? message}</p>}
+      {results.length > 0 && (
+        <div className="fund-result-strip">
+          {results.map((result) => {
+            const isKnown = knownFundCodes.has(result.code);
+            const isImporting = importingCode === result.code;
+            return (
+              <article key={result.code} className="fund-result-card">
+                <div>
+                  <strong>{result.name}</strong>
+                  <span>{result.code}</span>
+                </div>
+                <small>{[result.fundType, result.company, ...result.themes.slice(0, 2)].filter(Boolean).join(" / ")}</small>
+                <footer>
+                  <span>{result.latestNav === null ? "净值暂无" : `${result.latestNav.toFixed(4)} / ${result.latestNavDate ?? "--"}`}</span>
+                  <Button variant={isKnown ? "ghost" : "secondary"} disabled={isImporting} onClick={() => onImport(result.code)}>
+                    {isImporting ? "导入中" : isKnown ? "更新" : "导入"}
+                  </Button>
+                </footer>
+              </article>
+            );
+          })}
+        </div>
+      )}
     </section>
   );
 }

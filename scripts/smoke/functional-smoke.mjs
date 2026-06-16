@@ -104,6 +104,16 @@ try {
   const assetBars = await fetchJson("/api/assets/us-nvda/bars?range=3m&timeframe=1d");
   const assetIndicators = await fetchJson("/api/assets/us-nvda/indicators?range=3m&timeframe=1d");
   const mutualFundBars = await fetchJson("/api/assets/fund-cn-005827/bars?range=1y&timeframe=1d");
+  const fundSearch = await fetchJson("/api/funds/eastmoney/search?keyword=000011&limit=5");
+  const importedFund = await fetchJson("/api/funds/eastmoney/import", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json"
+    },
+    body: JSON.stringify({ code: "000011" })
+  });
+  const importedFundBars = await fetchJson("/api/assets/fund-cn-000011/bars?range=1y&timeframe=1d");
+  const importedFundWall = await fetchJson("/api/chart-wall?range=6m&timeframe=1d&universe=global&level=all&market=%E5%9F%BA%E9%87%91&assetType=fund&sort=return_1m");
   const scannerEvents = await fetchJson("/api/scanner/events?universe=global&eventType=all");
   const compare = await fetchJson("/api/compare?assetIds=us-nvda,cn-csi300,cmd-gold,btcusdt&range=6m&timeframe=1d");
   const universeTree = await fetchJson("/api/universe/tree");
@@ -166,6 +176,10 @@ try {
   assert(assetBars.bars.length >= 60, "expected 3M asset bars");
   assert(assetIndicators.indicators.length >= 60, "expected 3M indicators");
   assert(mutualFundBars.source === "eastmoney" && mutualFundBars.bars.length >= 180, "expected Eastmoney mutual fund daily NAV history");
+  assert(fundSearch.results.some((item) => item.code === "000011" && item.name.includes("华夏大盘")), "expected Eastmoney fund discovery search result");
+  assert(importedFund.asset?.id === "fund-cn-000011" && importedFund.barsImported >= 180, "expected dynamic Eastmoney fund import");
+  assert(importedFundBars.source === "eastmoney" && importedFundBars.bars.length >= 180, "expected imported fund bars endpoint");
+  assert(importedFundWall.items.some((item) => item.id === "fund-cn-000011" && item.source === "eastmoney"), "expected imported fund in chart wall");
   assert(Array.isArray(scannerEvents.events), "expected scanner events endpoint");
   assert(compare.assets.length >= 4 && compare.assets.every((item) => item.bars.length >= 120), "expected compare data");
   assert(universeTree.nodes.length >= 6 && universeTree.nodes.every((node) => node.count > 0), "expected universe tree with asset-class nodes");
@@ -186,6 +200,11 @@ try {
         fundItems: fundWall.items.length,
         commodityItems: commodityWall.items.length,
         mutualFundBars: mutualFundBars.bars.length,
+        importedFund: {
+          id: importedFund.asset.id,
+          barsImported: importedFund.barsImported,
+          chartWallVisible: importedFundWall.items.some((item) => item.id === "fund-cn-000011")
+        },
         markets: [...markets],
         assetTypes: [...assetTypes],
         levels: [...levels],

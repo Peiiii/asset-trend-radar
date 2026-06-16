@@ -16,5 +16,6 @@ export type {
   WatchlistsResponse
 } from "./types/chart-wall.types";
 export type { IndicatorPoint, MacdState, TrendSnapshot } from "./types/indicator.types";
+export type { FundImportResponse, FundSearchResponse, FundSearchResult } from "./types/fund-discovery.types";
 export type { ScannerEvent, ScannerEventType } from "./types/scanner-event.types";
 export { dayMs, getRangePointLimit, toIsoDateTime } from "./utils/timeframe.utils";

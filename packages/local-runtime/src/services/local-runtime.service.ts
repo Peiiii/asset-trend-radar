@@ -3,6 +3,7 @@ import { AssetsController } from "../controllers/assets.controller";
 import { ChartWallController } from "../controllers/chart-wall.controller";
 import { CompareController } from "../controllers/compare.controller";
 import { DataHealthController } from "../controllers/data-health.controller";
+import { FundDiscoveryController } from "../controllers/fund-discovery.controller";
 import { RefreshController } from "../controllers/refresh.controller";
 import { ScannerController } from "../controllers/scanner.controller";
 import { UniverseController } from "../controllers/universe.controller";
@@ -10,6 +11,7 @@ import { WatchlistsController } from "../controllers/watchlists.controller";
 import { assetUniverse, tradableAssetUniverse } from "../configs/asset-universe.config";
 import type { LocalRuntimeOptions, LocalRuntimeStartResult } from "../types/local-runtime-options.types";
 import { ChartWallQueryService } from "./chart-wall-query.service";
+import { FundDiscoveryService } from "./fund-discovery.service";
 import { IngestionWorkerService } from "./ingestion-worker.service";
 import { LocalApiServerService } from "./local-api-server.service";
 
@@ -47,6 +49,13 @@ export class LocalRuntimeService {
       ingestionJobRepository,
       watchlistRepository
     );
+    const fundDiscoveryService = new FundDiscoveryService(
+      this.options.historyLimit,
+      assetRepository,
+      marketDataRepository,
+      scannerEventRepository,
+      rawFileRepository
+    );
 
     this.apiServerService = new LocalApiServerService(
       this.options,
@@ -57,6 +66,7 @@ export class LocalRuntimeService {
       new ScannerController(queryService),
       new CompareController(queryService),
       new WatchlistsController(queryService),
+      new FundDiscoveryController(fundDiscoveryService),
       new RefreshController(this.ingestionWorkerService)
     );
   }
