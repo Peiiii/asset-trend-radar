@@ -34,6 +34,7 @@ import { MarketPulseBoard } from "./market-pulse-board/market-pulse-board";
 import "./market-chart-primitives.css";
 import { OpportunityLeaderboard } from "./opportunity-leaderboard/opportunity-leaderboard";
 import { ScannerSection } from "./scanner-section/scanner-section";
+import { SortAwareMoversStrip } from "./sort-aware-movers-strip/sort-aware-movers-strip";
 import { StrategyPresetStrip, type StrategyPresetFilters } from "./strategy-preset-strip/strategy-preset-strip";
 import { TaskCenterSection } from "./task-center/task-center-section";
 import { TaskStatusButton } from "./task-center/task-status-button";
@@ -529,6 +530,7 @@ export function ChartWallPage(): JSX.Element {
               {activeView === "chart-wall" && (
                 <>
                   <MarketPulseBoard items={filteredItems} activeMarket={market} onMarketSelect={(value) => setQueryValue("market", value, defaultFilters.market)} />
+                  <SortAwareMoversStrip items={filteredItems} sort={sort} order={order} onSelect={selectAsset} onCompare={handleCompare} />
                   <OpportunityLeaderboard items={filteredItems} onSelect={selectAsset} onCompare={handleCompare} />
                 </>
               )}
