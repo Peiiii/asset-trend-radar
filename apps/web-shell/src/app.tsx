@@ -11,6 +11,7 @@ export default function App(): JSX.Element {
         <Route path="/universe" element={<ChartWallPage />} />
         <Route path="/scanner" element={<ChartWallPage />} />
         <Route path="/watchlist" element={<ChartWallPage />} />
+        <Route path="/tasks" element={<ChartWallPage />} />
         <Route path="/data-health" element={<ChartWallPage />} />
         <Route path="/assets/:assetId" element={<ChartWallPage />} />
         <Route path="*" element={<Navigate to="/chart-wall" replace />} />

@@ -1,4 +1,4 @@
-import type { AssetDetailResponse, ChartWallResponse, CompareResponse, DataHealthResponse, FundCatalogPageResponse, FundCatalogSummaryResponse, FundCatalogSyncResponse, FundImportResponse, FundSearchResponse, ScannerEventsResponse, UniverseTreeResponse, WatchlistsResponse } from "@gold-insights/market-domain";
+import type { AssetDetailResponse, ChartWallResponse, CompareResponse, DataHealthResponse, FundCatalogPageResponse, FundCatalogSummaryResponse, FundCatalogSyncResponse, FundImportResponse, FundSearchResponse, ScannerEventsResponse, TaskCenterResponse, UniverseTreeResponse, WatchlistsResponse } from "@gold-insights/market-domain";
 import type { ChartWallFilters, ChartWallPageData, FundCatalogPageFilters } from "@/shared/types/api.types";
 
 export class ChartWallApiService {
@@ -28,6 +28,9 @@ export class ChartWallApiService {
 
   public fetchAssetDetail = async (assetId: string, range: string, timeframe: string, signal?: AbortSignal): Promise<AssetDetailResponse> =>
     this.fetchJson<AssetDetailResponse>(`/api/assets/${encodeURIComponent(assetId)}/detail?range=${encodeURIComponent(range)}&timeframe=${encodeURIComponent(timeframe)}`, signal);
+
+  public fetchTaskCenter = async (signal?: AbortSignal): Promise<TaskCenterResponse> =>
+    this.fetchJson<TaskCenterResponse>("/api/tasks?limit=80", signal);
 
   public fetchFundCatalogPage = async (filters: FundCatalogPageFilters, signal?: AbortSignal): Promise<FundCatalogPageResponse> => {
     const query = new URLSearchParams({

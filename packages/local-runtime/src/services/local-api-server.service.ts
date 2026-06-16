@@ -6,6 +6,7 @@ import type { DataHealthController } from "../controllers/data-health.controller
 import type { FundDiscoveryController } from "../controllers/fund-discovery.controller";
 import type { RefreshController } from "../controllers/refresh.controller";
 import type { ScannerController } from "../controllers/scanner.controller";
+import type { TasksController } from "../controllers/tasks.controller";
 import type { UniverseController } from "../controllers/universe.controller";
 import type { WatchlistsController } from "../controllers/watchlists.controller";
 import { ErrorResponseProvider } from "../providers/error-response.provider";
@@ -23,6 +24,7 @@ export class LocalApiServerService {
     private readonly dataHealthController: DataHealthController,
     private readonly universeController: UniverseController,
     private readonly scannerController: ScannerController,
+    private readonly tasksController: TasksController,
     private readonly compareController: CompareController,
     private readonly watchlistsController: WatchlistsController,
     private readonly fundDiscoveryController: FundDiscoveryController,
@@ -88,6 +90,11 @@ export class LocalApiServerService {
 
       if (request.method === "GET" && url.pathname === "/api/scanner/events") {
         this.scannerController.handleEvents(url, response);
+        return;
+      }
+
+      if (request.method === "GET" && url.pathname === "/api/tasks") {
+        this.tasksController.handleTasks(url, response);
         return;
       }
 

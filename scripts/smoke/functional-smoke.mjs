@@ -136,6 +136,7 @@ try {
   const pinnedWall = await fetchJson("/api/chart-wall?range=6m&timeframe=1d&universe=global&level=all&market=all&assetType=all&signal=pinned&sort=trend_score");
   await fetchJson("/api/refresh", { method: "POST" });
   const finalHealth = await fetchJson("/api/data-health");
+  const taskCenter = await fetchJson("/api/tasks?limit=40");
   const markets = new Set(chartWall.items.map((item) => item.market));
   const assetTypes = new Set(chartWall.items.map((item) => item.assetType));
   const levels = new Set(chartWall.items.map((item) => item.level));
@@ -226,6 +227,9 @@ try {
   assert(finalHealth.providers.some((provider) => provider.id === "yahoo" && provider.assetCount >= 55), "expected Yahoo provider health");
   assert(finalHealth.providers.some((provider) => provider.id === "eastmoney" && provider.assetCount >= 40), "expected Eastmoney provider health");
   assert(finalHealth.lastIngestionAt !== initialHealth.lastIngestionAt, "expected refresh endpoint to update ingestion time");
+  assert(taskCenter.tasks.length >= 2 && typeof taskCenter.runningCount === "number", "expected task center endpoint with recent tasks");
+  assert(taskCenter.tasks.some((task) => task.vendor === "multi-source" && task.dataset === "global-bars-1d"), "expected global ingestion task in task center");
+  assert(taskCenter.tasks.some((task) => task.vendor === "eastmoney" && task.dataset.startsWith("fund-import")), "expected fund import task in task center");
 
   console.log(
     JSON.stringify(
@@ -260,6 +264,11 @@ try {
         fourHourItems: fourHourWall.items.length,
         compareAssets: compare.assets.length,
         watchlistAssets: watchlists.watchlists[0]?.assets.length ?? 0,
+        taskCenter: {
+          tasks: taskCenter.tasks.length,
+          runningCount: taskCenter.runningCount,
+          failedCount: taskCenter.failedCount
+        },
         latestBarAt: finalHealth.latestBarAt,
         lastIngestionAt: finalHealth.lastIngestionAt
       },

@@ -13,6 +13,11 @@ export const getTimeframeQueryParam = (url: URL): Timeframe => {
 
 export const getStringQueryParam = (url: URL, name: string, fallback: string): string => url.searchParams.get(name) ?? fallback;
 
+export const getIntegerQueryParam = (url: URL, name: string, fallback: number, min: number, max: number): number => {
+  const value = Number(url.searchParams.get(name));
+  return Number.isInteger(value) ? Math.min(Math.max(value, min), max) : fallback;
+};
+
 export const getSortOrderQueryParam = (url: URL): ChartWallSortOrder => (url.searchParams.get("order") === "asc" ? "asc" : "desc");
 
 export const getAssetIdsQueryParam = (url: URL): string[] =>

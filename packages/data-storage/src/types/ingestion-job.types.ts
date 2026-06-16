@@ -8,4 +8,5 @@ export type IngestionJobSummary = {
   startedAt: number | null;
   finishedAt: number | null;
   errorMessage: string | null;
+  metadata: Record<string, unknown>;
 };

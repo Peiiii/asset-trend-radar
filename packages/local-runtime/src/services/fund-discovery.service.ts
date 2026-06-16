@@ -1,5 +1,5 @@
 import { EastmoneyFundCatalogProvider, EastmoneyFundDataProvider, EastmoneyFundRankProvider, EastmoneyFundSearchProvider } from "@gold-insights/data-adapters";
-import type { FundCatalogPageRecord, LocalRawFileRepository, SqliteAssetRepository, SqliteFundCatalogRepository, SqliteMarketDataRepository, SqliteScannerEventRepository } from "@gold-insights/data-storage";
+import type { FundCatalogPageRecord, LocalRawFileRepository, SqliteAssetRepository, SqliteFundCatalogRepository, SqliteIngestionJobRepository, SqliteMarketDataRepository, SqliteScannerEventRepository } from "@gold-insights/data-storage";
 import { calculateIndicators } from "@gold-insights/indicator-engine";
 import type { AssetSummary, FundCatalogEntry, FundCatalogImportStatus, FundCatalogPageItem, FundCatalogPageResponse, FundCatalogSortKey, FundCatalogSummaryResponse, FundCatalogSyncResponse, FundImportResponse, FundSearchResponse, FundSearchResult, OhlcvBar, SortOrder } from "@gold-insights/market-domain";
 import { dayMs, toIsoDateTime } from "@gold-insights/market-domain";
@@ -16,6 +16,7 @@ export class FundDiscoveryService {
     private readonly marketDataRepository: SqliteMarketDataRepository,
     private readonly scannerEventRepository: SqliteScannerEventRepository,
     private readonly fundCatalogRepository: SqliteFundCatalogRepository,
+    private readonly ingestionJobRepository: SqliteIngestionJobRepository,
     private readonly rawFileRepository: LocalRawFileRepository,
     private readonly catalogProvider = new EastmoneyFundCatalogProvider(),
     private readonly rankProvider = new EastmoneyFundRankProvider(),
@@ -123,16 +124,19 @@ export class FundDiscoveryService {
   };
 
   public syncCatalog = async (): Promise<FundCatalogSyncResponse> => {
-    const entries = await this.catalogProvider.fetchCatalog();
-    const insertedOrUpdated = this.fundCatalogRepository.upsertEntries(entries);
-    const metricSnapshotsUpdated = await this.syncCatalogMetrics();
+    const jobId = `fund-catalog-${Date.now()}`;
+    return this.runTrackedTask(jobId, "eastmoney", "fund-catalog", { source: "eastmoney" }, async () => {
+      const entries = await this.catalogProvider.fetchCatalog();
+      const insertedOrUpdated = this.fundCatalogRepository.upsertEntries(entries);
+      const metricSnapshotsUpdated = await this.syncCatalogMetrics();
 
-    return {
-      generatedAt: new Date().toISOString(),
-      summary: this.fundCatalogRepository.getSummary(),
-      insertedOrUpdated,
-      metricSnapshotsUpdated
-    };
+      return {
+        generatedAt: new Date().toISOString(),
+        summary: this.fundCatalogRepository.getSummary(),
+        insertedOrUpdated,
+        metricSnapshotsUpdated
+      };
+    });
   };
 
   public syncCatalogIfEmpty = async (): Promise<void> => {
@@ -174,41 +178,58 @@ export class FundDiscoveryService {
 
   public importEastmoneyFund = async (code: string): Promise<FundImportResponse> => {
     const normalizedCode = this.normalizeCode(code);
-    const searchResult = await this.findFundByCode(normalizedCode);
-    const asset = this.toAsset(searchResult ?? {
-      code: normalizedCode,
-      name: normalizedCode,
-      fundType: null,
-      company: null,
-      managers: [],
-      latestNav: null,
-      latestNavDate: null,
-      themes: [],
-      canBuy: false
-    });
-    const response = await this.dataProvider.fetchBars({
-      asset,
-      timeframe: "1d",
-      limit: this.historyLimit
-    });
-    const indicators = calculateIndicators(response.bars);
-    const events = this.scannerEngine.createEvents(asset.id, response.bars, indicators);
+    const jobId = `fund-import-${normalizedCode}-${Date.now()}`;
 
-    this.assetRepository.upsertAssets([asset]);
-    this.rawFileRepository.appendRecords(response.source, "bars-1d", asset.id, response.rawRecords);
-    this.marketDataRepository.upsertBars(response.bars);
-    this.marketDataRepository.upsertIndicators(indicators);
-    this.scannerEventRepository.replaceEventsForAsset(asset.id, events);
+    return this.runTrackedTask(jobId, "eastmoney", `fund-import:${normalizedCode}`, { code: normalizedCode }, async () => {
+      const searchResult = await this.findFundByCode(normalizedCode);
+      const asset = this.toAsset(searchResult ?? {
+        code: normalizedCode,
+        name: normalizedCode,
+        fundType: null,
+        company: null,
+        managers: [],
+        latestNav: null,
+        latestNavDate: null,
+        themes: [],
+        canBuy: false
+      });
+      const response = await this.dataProvider.fetchBars({
+        asset,
+        timeframe: "1d",
+        limit: this.historyLimit
+      });
+      const indicators = calculateIndicators(response.bars);
+      const events = this.scannerEngine.createEvents(asset.id, response.bars, indicators);
 
-    return {
-      generatedAt: new Date().toISOString(),
-      asset,
-      barsImported: response.bars.length,
-      firstBarAt: toIsoDateTime(response.bars[0]?.ts ?? null),
-      latestBarAt: toIsoDateTime(response.bars.at(-1)?.ts ?? null),
-      source: response.source,
-      searchResult
-    };
+      this.assetRepository.upsertAssets([asset]);
+      this.rawFileRepository.appendRecords(response.source, "bars-1d", asset.id, response.rawRecords);
+      this.marketDataRepository.upsertBars(response.bars);
+      this.marketDataRepository.upsertIndicators(indicators);
+      this.scannerEventRepository.replaceEventsForAsset(asset.id, events);
+
+      return {
+        generatedAt: new Date().toISOString(),
+        asset,
+        barsImported: response.bars.length,
+        firstBarAt: toIsoDateTime(response.bars[0]?.ts ?? null),
+        latestBarAt: toIsoDateTime(response.bars.at(-1)?.ts ?? null),
+        source: response.source,
+        searchResult
+      };
+    });
+  };
+
+  private runTrackedTask = async <Result,>(id: string, vendor: string, dataset: string, metadata: Record<string, unknown>, handler: () => Promise<Result>): Promise<Result> => {
+    this.ingestionJobRepository.startJob(id, vendor, dataset, metadata);
+
+    try {
+      const result = await handler();
+      this.ingestionJobRepository.finishJob(id, "success", null);
+      return result;
+    } catch (error) {
+      this.ingestionJobRepository.finishJob(id, "failed", error instanceof Error ? error.message : "unknown task error");
+      throw error;
+    }
   };
 
   private findFundByCode = async (code: string): Promise<FundSearchResult | null> => {

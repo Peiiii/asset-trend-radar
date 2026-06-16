@@ -6,6 +6,7 @@ import {
   Database,
   Grid3X3,
   LineChart,
+  ListChecks,
   Network,
   RefreshCcw,
   Search,
@@ -27,12 +28,14 @@ import { DataHealthSection } from "./data-health-section";
 import { ExchangeTable } from "./exchange-table/exchange-table";
 import { FundDirectorySection } from "./fund-directory-section";
 import "./market-chart-primitives.css";
+import { TaskCenterSection } from "./task-center-section";
 import { chartWallApiService } from "../services/chart-wall-api.service";
 import { useFundDirectoryQuery } from "../hooks/use-fund-directory-query";
 import { useChartWallQuery } from "../hooks/use-chart-wall-query";
 import { useFundDirectoryUrlState } from "../hooks/use-fund-directory-url-state";
+import { useTaskCenterQuery } from "../hooks/use-task-center-query";
 
-type ActiveView = "chart-wall" | "fund-directory" | "universe" | "scanner" | "asset-detail" | "watchlist" | "data-health";
+type ActiveView = "chart-wall" | "fund-directory" | "universe" | "scanner" | "asset-detail" | "watchlist" | "tasks" | "data-health";
 type ViewMode = "grid" | "table";
 
 const viewTitles: Record<ActiveView, string> = {
@@ -42,6 +45,7 @@ const viewTitles: Record<ActiveView, string> = {
   scanner: "机会扫描",
   "asset-detail": "资产详情",
   watchlist: "自选图表墙",
+  tasks: "任务中心",
   "data-health": "数据源与任务状态"
 };
 
@@ -204,6 +208,7 @@ export function ChartWallPage(): JSX.Element {
   );
   const { data, error, isLoading, isRefreshing, refresh, reload } = useChartWallQuery(filters);
   const fundDirectoryQuery = useFundDirectoryQuery(fundDirectory.filters, activeView === "fund-directory");
+  const taskCenterQuery = useTaskCenterQuery(activeView === "tasks");
   const comparedSet = useMemo(() => new Set(compareAssetIds), [compareAssetIds]);
   const chartItems = useMemo(() => (data?.chartWall.items ?? []).map((item) => ({ ...item, isCompared: comparedSet.has(item.id) })), [comparedSet, data]);
 
@@ -362,6 +367,9 @@ export function ChartWallPage(): JSX.Element {
             <SidebarButton active={activeView === "watchlist"} label="自选" title="自选图表墙" to={`/watchlist${currentSearch}`}>
               <Star size={18} aria-hidden="true" />
             </SidebarButton>
+            <SidebarButton active={activeView === "tasks"} label="任务中心" title="任务中心" to={`/tasks${currentSearch}`}>
+              <ListChecks size={18} aria-hidden="true" />
+            </SidebarButton>
             <SidebarButton active={activeView === "data-health"} label="数据状态" title="数据源与任务状态" to={`/data-health${currentSearch}`}>
               <Database size={18} aria-hidden="true" />
             </SidebarButton>
@@ -405,7 +413,7 @@ export function ChartWallPage(): JSX.Element {
             {isRefreshing ? "刷新中" : "重新采集"}
           </Button>
         </section>
-      ) : activeView === "fund-directory" ? null : (
+      ) : activeView === "fund-directory" || activeView === "tasks" ? null : (
         <>
           <section className="control-strip" aria-label="图表控制">
             <Select id="market-filter" label="市场" value={market} onChange={(value) => setQueryValue("market", value, defaultFilters.market)} options={facetOptions("全部市场", data?.chartWall.facets?.markets, marketFallbackOptions)} />
@@ -442,7 +450,7 @@ export function ChartWallPage(): JSX.Element {
 
       {!isLoading && !error && data && (
         <>
-          {activeView !== "asset-detail" && activeView !== "fund-directory" && (
+          {activeView !== "asset-detail" && activeView !== "fund-directory" && activeView !== "tasks" && (
             <>
               <SummaryStrip data={data} visibleSearchCount={filteredItems.length} />
               <BreadthStrip data={data} />
@@ -537,6 +545,17 @@ export function ChartWallPage(): JSX.Element {
               onCompare={handleCompare}
               onRemove={(assetId) => {
                 void chartWallApiService.removeWatchlistAsset(assetId).then(() => reload());
+              }}
+            />
+          )}
+
+          {activeView === "tasks" && (
+            <TaskCenterSection
+              data={taskCenterQuery.data}
+              error={taskCenterQuery.error}
+              isLoading={taskCenterQuery.isLoading}
+              onRefresh={() => {
+                void taskCenterQuery.reload();
               }}
             />
           )}
@@ -982,6 +1001,9 @@ function getActiveView(pathname: string): ActiveView {
   if (pathname.startsWith("/watchlist")) {
     return "watchlist";
   }
+  if (pathname.startsWith("/tasks")) {
+    return "tasks";
+  }
   if (pathname.startsWith("/data-health")) {
     return "data-health";
   }
@@ -1018,6 +1040,10 @@ function getAssetDetailReturnLabel(path: string): string {
     return "自选";
   }
 
+  if (path.startsWith("/tasks")) {
+    return "任务中心";
+  }
+
   if (path.startsWith("/data-health")) {
     return "数据状态";
   }
@@ -1046,7 +1072,7 @@ function isSafeWorkspacePath(path: string): boolean {
     return false;
   }
 
-  return ["/chart-wall", "/funds", "/universe", "/scanner", "/watchlist", "/data-health"].some((prefix) => path === prefix || path.startsWith(`${prefix}?`));
+  return ["/chart-wall", "/funds", "/universe", "/scanner", "/watchlist", "/tasks", "/data-health"].some((prefix) => path === prefix || path.startsWith(`${prefix}?`));
 }
 
 function getSearchValue(searchParams: URLSearchParams, name: string, fallback: string): string {

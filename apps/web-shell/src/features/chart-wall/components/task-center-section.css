@@ -1,0 +1,199 @@
+.task-center-section {
+  display: grid;
+  gap: 14px;
+}
+
+.task-center-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px;
+  border: 1px solid #d7dde7;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.task-center-hero p {
+  max-width: 740px;
+  margin: 6px 0 0;
+  color: #5f6d7f;
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.5;
+}
+
+.task-center-hero .gi-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.task-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+  gap: 10px;
+}
+
+.task-summary-card {
+  min-height: 82px;
+  padding: 13px;
+  border: 1px solid #d7dde7;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.task-summary-card span {
+  display: block;
+  margin-bottom: 8px;
+  color: #657184;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.task-summary-card strong {
+  color: #172033;
+  font-size: 20px;
+  font-weight: 950;
+}
+
+.task-summary-card--positive {
+  border-color: #b9e5d6;
+  background: #edf9f4;
+}
+
+.task-summary-card--negative {
+  border-color: #f2c4c4;
+  background: #fff1f1;
+}
+
+.task-summary-card--amber {
+  border-color: #efd39b;
+  background: #fff8e8;
+}
+
+.task-summary-card--blue {
+  border-color: #bdd6f3;
+  background: #edf5ff;
+}
+
+.task-list {
+  display: grid;
+  gap: 10px;
+}
+
+.task-card {
+  display: grid;
+  grid-template-columns: 118px minmax(0, 1fr);
+  gap: 12px;
+  padding: 13px;
+  border: 1px solid #d7dde7;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.task-card--running {
+  border-color: #bdd6f3;
+}
+
+.task-card--failed,
+.task-card--stale {
+  border-color: #f2c4c4;
+}
+
+.task-card__status {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: #516077;
+}
+
+.task-card--running .task-card__status svg {
+  color: #265f9e;
+}
+
+.task-card--success .task-card__status svg {
+  color: #146a58;
+}
+
+.task-card--failed .task-card__status svg,
+.task-card--stale .task-card__status svg {
+  color: #a43131;
+}
+
+.task-card__main {
+  min-width: 0;
+}
+
+.task-card__main header {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.task-card__main strong {
+  color: #172033;
+  font-size: 15px;
+}
+
+.task-card__main header span {
+  color: #657184;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.task-card dl {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.task-card dt {
+  color: #728096;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.task-card dd {
+  margin: 3px 0 0;
+  overflow: hidden;
+  color: #243044;
+  font-size: 12px;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-card__error,
+.task-card__metadata {
+  margin: 10px 0 0;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.task-card__error {
+  color: #a43131;
+}
+
+.task-card__metadata {
+  color: #657184;
+}
+
+@media (max-width: 760px) {
+  .task-center-hero,
+  .task-card {
+    grid-template-columns: 1fr;
+  }
+
+  .task-center-hero {
+    display: grid;
+  }
+
+  .task-card dl {
+    grid-template-columns: 1fr 1fr;
+  }
+}

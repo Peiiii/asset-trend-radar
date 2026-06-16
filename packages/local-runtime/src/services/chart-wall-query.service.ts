@@ -118,8 +118,8 @@ export class ChartWallQueryService {
   };
 
   public getDataHealth = (): DataHealthResponse => {
-    const latestJob = this.ingestionJobRepository.getLatestJob();
-    const latestFinishedJob = this.ingestionJobRepository.getLatestFinishedJob();
+    const latestJob = this.ingestionJobRepository.getLatestJobForDataset("multi-source", "global-bars-1d");
+    const latestFinishedJob = this.ingestionJobRepository.getLatestFinishedJobForDataset("multi-source", "global-bars-1d");
 
     return {
       databasePath: this.options.databasePath,
