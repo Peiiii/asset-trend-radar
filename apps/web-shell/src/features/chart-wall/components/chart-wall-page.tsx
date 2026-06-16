@@ -17,12 +17,13 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { NavLink, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { AppShell, Button, EmptyState, ErrorState, FilterChip, IconButton, LoadingState, RangePicker, Select, TechnicalChart, TimeframePicker } from "@gold-insights/ui";
+import { AppShell, Button, EmptyState, ErrorState, FilterChip, IconButton, LoadingState, RangePicker, Select, TimeframePicker } from "@gold-insights/ui";
 import type { ControlOption } from "@gold-insights/ui";
 import type { ChartWallFacet, ChartWallItem, ChartWallSortOrder, ScannerEventsResponse, UniverseTreeNode, WatchlistSummary } from "@gold-insights/market-domain";
 import type { AssetDetailData, ChartWallFilters, ChartWallPageData, CompareData } from "@/shared/types/api.types";
-import { formatDateTime, formatPrice } from "@/shared/utils/format-number.utils";
+import { formatDateTime } from "@/shared/utils/format-number.utils";
 import { AssetChartCard } from "./asset-chart-card";
+import { AssetDetailSection } from "./asset-detail-section/asset-detail-section";
 import { ComparePanel } from "./compare-panel/compare-panel";
 import { BreadthStrip, SummaryStrip } from "./dashboard-strips";
 import { DataHealthSection } from "./data-health-section";
@@ -736,112 +737,6 @@ function UniverseNodeCard({ node, onSelectAsset }: { node: UniverseTreeNode; onS
   );
 }
 
-function AssetDetailSection({
-  item,
-  relatedItems,
-  onSelect,
-  onPin,
-  onCompare
-}: {
-  item: ChartWallItem | null;
-  relatedItems: ChartWallItem[];
-  onSelect(assetId: string): void;
-  onPin(assetId: string): void;
-  onCompare(assetId: string): void;
-}): JSX.Element {
-  if (!item) {
-    return <EmptyState title="没有可查看资产" description="当前筛选条件下没有资产。" />;
-  }
-
-  return (
-    <section className="single-view-section">
-      <div className="asset-detail-context-row">
-        <span>{item.market}</span>
-        <span>{assetTypeLabel(item.assetType)}</span>
-      </div>
-      <SectionHeader title={`${item.name} / ${item.symbol}`} description={`${item.exchange} / ${item.source ?? item.dataSource ?? "unknown"} / ${formatDateTime(item.latestBarAt)}`} />
-      <div className="asset-detail-grid">
-        <article className="asset-detail-main">
-          <div className="asset-detail-main__hero">
-            <DetailMetric label="最新价" value={formatPrice(item.lastPrice, item.currency)} />
-            <DetailMetric label="区间收益" value={formatPercent(item.returnPct)} />
-            <DetailMetric label="趋势分" value={String(item.trendScore)} />
-            <DetailMetric label="量比" value={typeof item.volumeRatio === "number" ? `${item.volumeRatio.toFixed(2)}x` : "暂无"} />
-            <DetailMetric label="当前回撤" value={formatPercent(item.drawdownPct)} />
-            <DetailMetric label="数据点" value={(item.dataPointCount ?? item.sparkline.length).toString()} />
-          </div>
-          <TechnicalChart points={item.sparkline} indicators={item.indicators} height={380} showMacdSignalLines variant="detail" />
-          <div className="return-matrix">
-            <DetailMetric label="1D" value={formatPercent(item.return1d)} />
-            <DetailMetric label="1W" value={formatPercent(item.return1w)} />
-            <DetailMetric label="1M" value={formatPercent(item.return1m)} />
-            <DetailMetric label="3M" value={formatPercent(item.return3m)} />
-            <DetailMetric label="6M" value={formatPercent(item.return6m)} />
-            <DetailMetric label="1Y" value={formatPercent(item.return1y)} />
-          </div>
-          <div className="asset-detail-main__actions">
-            <Button onClick={() => onPin(item.id)}>{item.isPinned ? "取消自选" : "加入自选"}</Button>
-            <Button onClick={() => onCompare(item.id)} variant="ghost">
-              {item.isCompared ? "取消对比" : "加入对比"}
-            </Button>
-          </div>
-        </article>
-        <article className="asset-detail-side">
-          <h2>指标快照</h2>
-          <dl>
-            <DetailRow label="MACD" value={`${macdLabel(item.macdState)} / Hist ${formatNumber(item.macdHist)}`} />
-            <DetailRow label="DIF / DEA" value={`${formatNumber(item.macdDif)} / ${formatNumber(item.macdDea)}`} />
-            <DetailRow label="MA20 / MA50 / MA200" value={`${formatNumber(item.ma20)} / ${formatNumber(item.ma50)} / ${formatNumber(item.ma200)}`} />
-            <DetailRow label="RSI14" value={formatNumber(item.rsi14)} />
-            <DetailRow label="突破状态" value={breakoutLabel(item.breakoutState)} />
-            <DetailRow label="最新时间" value={formatDateTime(item.latestBarAt)} />
-          </dl>
-        </article>
-      </div>
-      <SectionHeader title="触发事件" description={`${item.events.length} 个扫描事件`} />
-      {item.events.length === 0 ? (
-        <EmptyState title="暂无触发事件" description="该资产当前没有触发已配置的扫描规则。" />
-      ) : (
-        <div className="event-list event-list--wide">
-          {item.events.map((event) => (
-            <article key={event.id} className="event-card">
-              <div>
-                <strong>{event.title}</strong>
-                <span>{event.severity}</span>
-              </div>
-              <p>{event.summary}</p>
-            </article>
-          ))}
-        </div>
-      )}
-      {relatedItems.length > 0 && (
-        <>
-          <SectionHeader title="相关资产" description="同市场内的可比资产" />
-          <ChartGrid items={relatedItems} onSelect={onSelect} onPin={onPin} onCompare={onCompare} />
-        </>
-      )}
-    </section>
-  );
-}
-
-function DetailMetric({ label, value }: { label: string; value: string }): JSX.Element {
-  return (
-    <div>
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </div>
-  );
-}
-
-function DetailRow({ label, value }: { label: string; value: string }): JSX.Element {
-  return (
-    <div>
-      <dt>{label}</dt>
-      <dd>{value}</dd>
-    </div>
-  );
-}
-
 function WatchlistSection({
   watchlists,
   chartItems,
@@ -1060,42 +955,6 @@ function activeFilterValueLabel(key: string, value: string): string {
 
 function optionLabel(options: ControlOption[], value: string): string {
   return options.find((option) => option.value === value)?.label ?? value;
-}
-
-function assetTypeLabel(assetType: string): string {
-  return assetTypeFallbackOptions.find((option) => option.value === assetType)?.label ?? assetType;
-}
-
-function macdLabel(state: string): string {
-  const labels: Record<string, string> = {
-    "bullish-cross": "金叉",
-    "bearish-cross": "死叉",
-    "above-zero": "零轴上",
-    "below-zero": "零轴下",
-    neutral: "中性"
-  };
-  return labels[state] ?? state;
-}
-
-function breakoutLabel(state: string): string {
-  if (state === "breakout-60d") {
-    return "60D 突破";
-  }
-  if (state === "breakout-20d") {
-    return "20D 突破";
-  }
-  if (state === "insufficient-data") {
-    return "数据积累中";
-  }
-  return "区间内";
-}
-
-function formatPercent(value: number | null | undefined): string {
-  return value === null || value === undefined ? "暂无" : `${value.toFixed(2)}%`;
-}
-
-function formatNumber(value: number | null | undefined): string {
-  return value === null || value === undefined ? "暂无" : value.toFixed(2);
 }
 
 function rangeLabel(value: string): string {
