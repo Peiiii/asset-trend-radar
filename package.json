@@ -12,7 +12,13 @@
     "lint": "eslint . --max-warnings=0",
     "preview": "vite preview --host 127.0.0.1 --port 4193 --strictPort",
     "smoke": "node scripts/smoke/functional-smoke.mjs",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint:new-code:governance": "node scripts/governance/checks/lint-new-code-governance.mjs",
+    "check:governance-backlog-ratchet": "node scripts/governance/backlog/check-governance-backlog-ratchet.mjs",
+    "lint:maintainability:hotspots": "node scripts/governance/maintainability/maintainability-hotspots.mjs",
+    "lint:maintainability:guard": "pnpm lint:new-code:governance && pnpm check:governance-backlog-ratchet",
+    "lint:maintainability": "pnpm lint:maintainability:guard && pnpm lint:maintainability:hotspots",
+    "validate": "pnpm typecheck && pnpm lint && pnpm lint:maintainability"
   },
   "dependencies": {
     "@gold-insights/data-adapters": "workspace:*",

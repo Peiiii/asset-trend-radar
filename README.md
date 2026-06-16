@@ -17,8 +17,22 @@ pnpm install
 pnpm dev
 pnpm typecheck
 pnpm lint
+pnpm lint:maintainability
+pnpm validate
 pnpm build
 ```
+
+## Maintainability Governance
+
+This repo keeps an adopted debt baseline and a new-code guard inspired by
+`../nextbot`.
+
+- `pnpm lint:new-code:governance` checks touched files.
+- `pnpm check:governance-backlog-ratchet` prevents known red zones from growing.
+- `pnpm lint:maintainability:hotspots` shows large-file and wide-directory
+  refactor targets.
+
+See `docs/maintainability-governance.md` for the operating rules.
 
 ## Current Shape
 

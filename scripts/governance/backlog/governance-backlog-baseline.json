@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "updatedAt": "2026-06-16",
+  "description": "Adopted maintainability baseline. Counts may go down, but must not go up without an explicit debt decision.",
+  "policy": {
+    "sourceFileLineLimit": 360,
+    "sourceFileWarningLimit": 280,
+    "directoryFileLimit": 12
+  },
+  "metrics": {
+    "oversizedSourceFiles": 3,
+    "oversizedDirectories": 1,
+    "packageDeepImportViolations": 0,
+    "sourceFileNameViolations": 0
+  },
+  "oversizedSourceFiles": [
+    {
+      "path": "apps/web-shell/src/index.css",
+      "lines": 1820,
+      "reason": "adopted legacy stylesheet red zone"
+    },
+    {
+      "path": "apps/web-shell/src/features/chart-wall/components/chart-wall-page.tsx",
+      "lines": 1327,
+      "reason": "adopted chart wall page red zone"
+    },
+    {
+      "path": "packages/local-runtime/src/services/chart-wall-query.service.ts",
+      "lines": 645,
+      "reason": "adopted chart wall query service red zone"
+    }
+  ],
+  "oversizedDirectories": [
+    {
+      "path": "packages/ui/src/components",
+      "directSourceFiles": 18,
+      "reason": "adopted shared component flat-directory red zone"
+    }
+  ]
+}
