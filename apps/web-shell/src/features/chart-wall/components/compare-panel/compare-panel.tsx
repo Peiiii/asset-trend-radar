@@ -3,8 +3,9 @@ import { useMemo } from "react";
 import { Button, LoadingState, PriceChange, SignalBadge } from "@gold-insights/ui";
 import type { ChartWallItem } from "@gold-insights/market-domain";
 import type { CompareData } from "@/shared/types/api.types";
+import { CompareInsightStrip } from "./compare-insight-strip";
 import { ComparePerformanceChart } from "./compare-performance-chart";
-import { buildCompareMetrics, formatPercent, formatPriceValue, getReturnTone } from "./compare-panel.utils";
+import { buildCompareInsights, buildCompareMetrics, formatPercent, formatPriceValue, getReturnTone } from "./compare-panel.utils";
 import "./compare-panel.css";
 
 type ComparePanelProps = {
@@ -17,6 +18,7 @@ type ComparePanelProps = {
 
 export function ComparePanel({ compareData, compareAssetIds, allItems, onRemove, onClear }: ComparePanelProps): JSX.Element | null {
   const metrics = useMemo(() => compareData ? buildCompareMetrics(compareData, allItems) : [], [allItems, compareData]);
+  const insights = useMemo(() => buildCompareInsights(metrics), [metrics]);
 
   if (compareAssetIds.length === 0) {
     return null;
@@ -45,6 +47,7 @@ export function ComparePanel({ compareData, compareAssetIds, allItems, onRemove,
         <LoadingState />
       ) : compareData ? (
         <>
+          <CompareInsightStrip insights={insights} />
           <ComparePerformanceChart metrics={metrics} />
           <div className="compare-metric-table-wrapper">
             <table className="compare-metric-table">
