@@ -29,6 +29,7 @@ import { BreadthStrip, SummaryStrip } from "./dashboard-strips";
 import { DataHealthSection } from "./data-health-section/data-health-section";
 import { ExchangeTable } from "./exchange-table/exchange-table";
 import { FundDirectorySection } from "./fund-directory-section";
+import { MarketPulseBoard } from "./market-pulse-board/market-pulse-board";
 import "./market-chart-primitives.css";
 import { OpportunityLeaderboard } from "./opportunity-leaderboard/opportunity-leaderboard";
 import { ScannerSection } from "./scanner-section/scanner-section";
@@ -463,7 +464,10 @@ export function ChartWallPage(): JSX.Element {
               <SummaryStrip data={data} visibleSearchCount={filteredItems.length} />
               <BreadthStrip data={data} />
               {activeView === "chart-wall" && (
-                <OpportunityLeaderboard items={filteredItems} onSelect={selectAsset} onCompare={handleCompare} />
+                <>
+                  <MarketPulseBoard items={filteredItems} activeMarket={market} onMarketSelect={(value) => setQueryValue("market", value, defaultFilters.market)} />
+                  <OpportunityLeaderboard items={filteredItems} onSelect={selectAsset} onCompare={handleCompare} />
+                </>
               )}
             </>
           )}
