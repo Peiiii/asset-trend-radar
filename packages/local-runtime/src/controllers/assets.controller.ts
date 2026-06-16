@@ -33,6 +33,21 @@ export class AssetsController {
     return true;
   };
 
+  public handleDetail = (assetId: string, url: URL, response: ServerResponse): boolean => {
+    const payload = this.queryService.getAssetDetail({
+      assetId,
+      range: getRangeQueryParam(url),
+      timeframe: getTimeframeQueryParam(url)
+    });
+
+    if (!payload) {
+      return false;
+    }
+
+    this.jsonResponseProvider.writeJson(response, payload);
+    return true;
+  };
+
   public handleBars = (assetId: string, url: URL, response: ServerResponse): boolean => {
     const payload = this.queryService.getAssetBars({
       assetId,

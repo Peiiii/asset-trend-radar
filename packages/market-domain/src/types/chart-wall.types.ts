@@ -95,6 +95,13 @@ export type ChartWallResponse = {
   items: ChartWallItem[];
 };
 
+export type AssetDetailResponse = {
+  generatedAt: string;
+  timeframe: string;
+  range: string;
+  item: ChartWallItem;
+};
+
 export type DataHealthResponse = {
   databasePath: string;
   rawDataPath: string;

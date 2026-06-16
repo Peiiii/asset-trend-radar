@@ -2,6 +2,7 @@ export type { AssetLevel, AssetSummary, AssetType, MarketDataSource } from "./ty
 export type { OhlcvBar, SparklinePoint, Timeframe } from "./types/bar.types";
 export type {
   AssetBarsResponse,
+  AssetDetailResponse,
   ChartWallFacet,
   ChartWallFacets,
   ChartWallFundScope,

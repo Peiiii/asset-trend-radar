@@ -1,4 +1,4 @@
-import type { ChartWallResponse, CompareResponse, DataHealthResponse, FundCatalogSummaryResponse, FundCatalogSyncResponse, FundImportResponse, FundSearchResponse, ScannerEventsResponse, UniverseTreeResponse, WatchlistsResponse } from "@gold-insights/market-domain";
+import type { AssetDetailResponse, ChartWallResponse, CompareResponse, DataHealthResponse, FundCatalogSummaryResponse, FundCatalogSyncResponse, FundImportResponse, FundSearchResponse, ScannerEventsResponse, UniverseTreeResponse, WatchlistsResponse } from "@gold-insights/market-domain";
 import type { ChartWallFilters, ChartWallPageData } from "@/shared/types/api.types";
 
 export class ChartWallApiService {
@@ -25,6 +25,9 @@ export class ChartWallApiService {
 
   public fetchCompare = async (assetIds: string[], range: string, timeframe: string): Promise<CompareResponse> =>
     this.fetchJson<CompareResponse>(`/api/compare?assetIds=${encodeURIComponent(assetIds.join(","))}&range=${encodeURIComponent(range)}&timeframe=${encodeURIComponent(timeframe)}`);
+
+  public fetchAssetDetail = async (assetId: string, range: string, timeframe: string, signal?: AbortSignal): Promise<AssetDetailResponse> =>
+    this.fetchJson<AssetDetailResponse>(`/api/assets/${encodeURIComponent(assetId)}/detail?range=${encodeURIComponent(range)}&timeframe=${encodeURIComponent(timeframe)}`, signal);
 
   public searchEastmoneyFunds = async (keyword: string): Promise<FundSearchResponse> =>
     this.fetchJson<FundSearchResponse>(`/api/funds/eastmoney/search?keyword=${encodeURIComponent(keyword)}&limit=24`);

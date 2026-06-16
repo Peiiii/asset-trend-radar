@@ -154,6 +154,17 @@ export class LocalApiServerService {
         return;
       }
 
+      const assetDetailMatch = /^\/api\/assets\/([^/]+)\/detail$/.exec(url.pathname);
+      if (request.method === "GET" && assetDetailMatch) {
+        const handled = this.assetsController.handleDetail(assetDetailMatch[1], url, response);
+
+        if (!handled) {
+          this.errorResponseProvider.writeNotFound(response);
+        }
+
+        return;
+      }
+
       const assetIndicatorsMatch = /^\/api\/assets\/([^/]+)\/indicators$/.exec(url.pathname);
       if (request.method === "GET" && assetIndicatorsMatch) {
         const handled = this.assetsController.handleIndicators(assetIndicatorsMatch[1], url, response);

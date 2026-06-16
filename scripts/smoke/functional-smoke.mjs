@@ -105,6 +105,7 @@ try {
   const oneHourWall = await fetchJson("/api/chart-wall?range=1m&timeframe=1h&universe=global&level=all&market=all&assetType=all&sort=trend_score");
   const fourHourWall = await fetchJson("/api/chart-wall?range=1m&timeframe=4h&universe=global&level=all&market=all&assetType=all&sort=trend_score");
   const assetDetail = await fetchJson("/api/assets/us-nvda");
+  const assetDrilldownDetail = await fetchJson("/api/assets/us-nvda/detail?range=1m&timeframe=1d");
   const assetBars = await fetchJson("/api/assets/us-nvda/bars?range=3m&timeframe=1d");
   const assetIndicators = await fetchJson("/api/assets/us-nvda/indicators?range=3m&timeframe=1d");
   const mutualFundBars = await fetchJson("/api/assets/fund-cn-005827/bars?range=1y&timeframe=1d");
@@ -188,6 +189,7 @@ try {
   );
   assert(chartWall.items.some((item) => item.return1m !== null && item.return6m !== null && item.drawdownPct !== null), "expected fixed-window return and drawdown metrics");
   assert(assetDetail.asset.symbol === "NVDA", "expected asset detail response");
+  assert(assetDrilldownDetail.item.id === "us-nvda" && assetDrilldownDetail.item.symbol === "NVDA" && assetDrilldownDetail.item.dataPointCount >= 15, "expected independent asset drilldown detail response");
   assert(assetBars.bars.length >= 60, "expected 3M asset bars");
   assert(assetIndicators.indicators.length >= 60, "expected 3M indicators");
   assert(mutualFundBars.source === "eastmoney" && mutualFundBars.bars.length >= 180, "expected Eastmoney mutual fund daily NAV history");

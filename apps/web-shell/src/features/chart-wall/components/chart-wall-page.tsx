@@ -19,7 +19,7 @@ import { NavLink, useLocation, useNavigate, useParams, useSearchParams } from "r
 import { AppShell, Button, EmptyState, ErrorState, FilterChip, IconButton, LoadingState, RangePicker, Select, SparklineChart, TechnicalChart, TimeframePicker } from "@gold-insights/ui";
 import type { ControlOption } from "@gold-insights/ui";
 import type { ChartWallFacet, ChartWallItem, ChartWallSortOrder, ChartWallSummary, FundCatalogSummary, FundSearchResult, ScannerEventsResponse, UniverseTreeNode, WatchlistSummary } from "@gold-insights/market-domain";
-import type { ChartWallFilters, ChartWallPageData, CompareData } from "@/shared/types/api.types";
+import type { AssetDetailData, ChartWallFilters, ChartWallPageData, CompareData } from "@/shared/types/api.types";
 import { formatDateTime, formatPrice } from "@/shared/utils/format-number.utils";
 import { AssetChartCard } from "./asset-chart-card";
 import { chartWallApiService } from "../services/chart-wall-api.service";
@@ -145,6 +145,9 @@ export function ChartWallPage(): JSX.Element {
   const [importingFundCode, setImportingFundCode] = useState<string | null>(null);
   const [fundImportMessage, setFundImportMessage] = useState<string | null>(null);
   const [fundCatalogSummary, setFundCatalogSummary] = useState<FundCatalogSummary | null>(null);
+  const [assetDetailData, setAssetDetailData] = useState<AssetDetailData | null>(null);
+  const [assetDetailError, setAssetDetailError] = useState<string | null>(null);
+  const [isAssetDetailLoading, setIsAssetDetailLoading] = useState(false);
 
   const setQueryValue = useCallback((name: string, value: string, fallback = ""): void => {
     const next = new URLSearchParams(searchParams);
@@ -214,7 +217,14 @@ export function ChartWallPage(): JSX.Element {
     });
   }, [chartItems, search]);
 
-  const selectedItem = useMemo(() => chartItems.find((item) => item.id === routeAssetId) ?? filteredItems[0] ?? chartItems[0] ?? null, [chartItems, filteredItems, routeAssetId]);
+  const selectedListItem = useMemo(() => chartItems.find((item) => item.id === routeAssetId) ?? filteredItems[0] ?? chartItems[0] ?? null, [chartItems, filteredItems, routeAssetId]);
+  const selectedItem = useMemo(() => {
+    if (activeView === "asset-detail") {
+      return assetDetailData?.item ? { ...assetDetailData.item, isCompared: comparedSet.has(assetDetailData.item.id) } : null;
+    }
+
+    return selectedListItem;
+  }, [activeView, assetDetailData, comparedSet, selectedListItem]);
 
   useEffect(() => {
     if (compareAssetIds.length < 2) {
@@ -225,14 +235,49 @@ export function ChartWallPage(): JSX.Element {
     void chartWallApiService.fetchCompare(compareAssetIds, range, timeframe).then(setCompareData).catch(() => setCompareData(null));
   }, [compareAssetIds, range, timeframe]);
 
+  useEffect(() => {
+    if (activeView !== "asset-detail" || !routeAssetId) {
+      setAssetDetailData(null);
+      setAssetDetailError(null);
+      setIsAssetDetailLoading(false);
+      return undefined;
+    }
+
+    const controller = new AbortController();
+    setIsAssetDetailLoading(true);
+    setAssetDetailError(null);
+
+    void chartWallApiService
+      .fetchAssetDetail(routeAssetId, range, timeframe, controller.signal)
+      .then(setAssetDetailData)
+      .catch((nextError: unknown) => {
+        if (!controller.signal.aborted) {
+          setAssetDetailError(nextError instanceof Error ? nextError.message : "资产详情加载失败");
+          setAssetDetailData(null);
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setIsAssetDetailLoading(false);
+        }
+      });
+
+    return () => {
+      controller.abort();
+    };
+  }, [activeView, range, routeAssetId, timeframe]);
+
   const handleRefresh = (): void => {
     void refresh();
   };
 
   const handlePin = (assetId: string): void => {
-    const item = chartItems.find((candidate) => candidate.id === assetId);
+    const item = chartItems.find((candidate) => candidate.id === assetId) ?? (assetDetailData?.item.id === assetId ? assetDetailData.item : null);
     const request = item?.isPinned ? chartWallApiService.removeWatchlistAsset(assetId) : chartWallApiService.addWatchlistAsset(assetId);
-    void request.then(() => reload());
+    void request.then(() => {
+      setAssetDetailData((current) => (current?.item.id === assetId ? { ...current, item: { ...current.item, isPinned: !current.item.isPinned } } : current));
+      return reload();
+    });
   };
 
   const handleCompare = (assetId: string): void => {
@@ -304,6 +349,9 @@ export function ChartWallPage(): JSX.Element {
   const currentSearch = getSearchWithout(searchParams, ["from"]);
   const assetDetailReturnPath = getAssetDetailReturnPath(searchParams);
   const assetDetailReturnLabel = getAssetDetailReturnLabel(assetDetailReturnPath);
+  const handleAssetDetailBack = (): void => {
+    navigate(assetDetailReturnPath);
+  };
 
   const selectAsset = (assetId: string): void => {
     const next = new URLSearchParams(searchParams);
@@ -343,10 +391,17 @@ export function ChartWallPage(): JSX.Element {
         </>
       }
     >
-      <header className="workspace-header">
-        <div>
-          <p className="workspace-header__eyebrow">真实数据源: {data?.chartWall.sources.join(" / ") || "加载中"}</p>
-          <h1>{activeView === "asset-detail" && selectedItem ? selectedItem.name : viewTitles[activeView]}</h1>
+      <header className={`workspace-header ${activeView === "asset-detail" ? "workspace-header--detail" : ""}`}>
+        <div className="workspace-header__title-block">
+          {activeView === "asset-detail" && (
+            <button type="button" className="workspace-header__back-button" onClick={handleAssetDetailBack} aria-label={`返回${assetDetailReturnLabel}`}>
+              <ArrowLeft size={18} aria-hidden="true" />
+            </button>
+          )}
+          <div>
+            <p className="workspace-header__eyebrow">真实数据源: {data?.chartWall.sources.join(" / ") || "加载中"}</p>
+            <h1>{activeView === "asset-detail" && selectedItem ? selectedItem.name : viewTitles[activeView]}</h1>
+          </div>
         </div>
         <div className="workspace-header__actions">
           <label className="search-control" htmlFor="asset-search">
@@ -433,8 +488,12 @@ export function ChartWallPage(): JSX.Element {
 
       {!isLoading && !error && data && (
         <>
-          <SummaryStrip data={data} visibleSearchCount={filteredItems.length} />
-          <BreadthStrip data={data} />
+          {activeView !== "asset-detail" && (
+            <>
+              <SummaryStrip data={data} visibleSearchCount={filteredItems.length} />
+              <BreadthStrip data={data} />
+            </>
+          )}
 
           {activeView === "chart-wall" && (
             <section className="market-layout">
@@ -471,15 +530,19 @@ export function ChartWallPage(): JSX.Element {
           )}
 
           {activeView === "asset-detail" && (
-            <AssetDetailSection
-              item={selectedItem}
-              relatedItems={filteredItems.filter((item) => item.id !== selectedItem?.id && item.market === selectedItem?.market).slice(0, 8)}
-              returnLabel={assetDetailReturnLabel}
-              onBack={() => navigate(assetDetailReturnPath)}
-              onSelect={selectAsset}
-              onPin={handlePin}
-              onCompare={handleCompare}
-            />
+            isAssetDetailLoading ? (
+              <LoadingState />
+            ) : assetDetailError ? (
+              <ErrorState title="资产详情加载失败" message={assetDetailError} />
+            ) : (
+              <AssetDetailSection
+                item={selectedItem}
+                relatedItems={filteredItems.filter((item) => item.id !== selectedItem?.id && item.market === selectedItem?.market).slice(0, 8)}
+                onSelect={selectAsset}
+                onPin={handlePin}
+                onCompare={handleCompare}
+              />
+            )
           )}
 
           {activeView === "watchlist" && (
@@ -945,16 +1008,12 @@ function ScannerSection({
 function AssetDetailSection({
   item,
   relatedItems,
-  returnLabel,
-  onBack,
   onSelect,
   onPin,
   onCompare
 }: {
   item: ChartWallItem | null;
   relatedItems: ChartWallItem[];
-  returnLabel: string;
-  onBack(): void;
   onSelect(assetId: string): void;
   onPin(assetId: string): void;
   onCompare(assetId: string): void;
@@ -966,10 +1025,6 @@ function AssetDetailSection({
   return (
     <section className="single-view-section">
       <div className="asset-detail-context-row">
-        <button type="button" className="asset-detail-back-link" onClick={onBack}>
-          <ArrowLeft size={16} aria-hidden="true" />
-          <span>返回{returnLabel}</span>
-        </button>
         <span>{item.market}</span>
         <span>{assetTypeLabel(item.assetType)}</span>
       </div>
@@ -984,7 +1039,7 @@ function AssetDetailSection({
             <DetailMetric label="当前回撤" value={formatPercent(item.drawdownPct)} />
             <DetailMetric label="数据点" value={(item.dataPointCount ?? item.sparkline.length).toString()} />
           </div>
-          <TechnicalChart points={item.sparkline} indicators={item.indicators} height={230} showMacdSignalLines />
+          <TechnicalChart points={item.sparkline} indicators={item.indicators} height={380} showMacdSignalLines variant="detail" />
           <div className="return-matrix">
             <DetailMetric label="1D" value={formatPercent(item.return1d)} />
             <DetailMetric label="1W" value={formatPercent(item.return1w)} />
@@ -1028,8 +1083,12 @@ function AssetDetailSection({
           ))}
         </div>
       )}
-      <SectionHeader title="相关资产" description="同市场内的可比资产" />
-      <ChartGrid items={relatedItems} onSelect={onSelect} onPin={onPin} onCompare={onCompare} />
+      {relatedItems.length > 0 && (
+        <>
+          <SectionHeader title="相关资产" description="同市场内的可比资产" />
+          <ChartGrid items={relatedItems} onSelect={onSelect} onPin={onPin} onCompare={onCompare} />
+        </>
+      )}
     </section>
   );
 }

@@ -1,4 +1,4 @@
-import { type MouseEvent, useMemo, useState } from "react";
+import { type MouseEvent, useEffect, useMemo, useRef, useState } from "react";
 import type { IndicatorPoint, SparklinePoint } from "@gold-insights/market-domain";
 import { chartColors } from "../configs/chart-colors.config";
 
@@ -8,6 +8,7 @@ type TechnicalChartProps = {
   width?: number;
   height?: number;
   showMacdSignalLines?: boolean;
+  variant?: "compact" | "detail";
 };
 
 type TechnicalPoint = SparklinePoint & {
@@ -18,19 +19,49 @@ type TechnicalPoint = SparklinePoint & {
   histHeight: number;
 };
 
-export function TechnicalChart({ points, indicators, width = 300, height = 172, showMacdSignalLines = false }: TechnicalChartProps): JSX.Element {
+export function TechnicalChart({ points, indicators, width = 300, height = 172, showMacdSignalLines = false, variant = "compact" }: TechnicalChartProps): JSX.Element {
+  const frameRef = useRef<HTMLDivElement | null>(null);
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
-  const frame = { left: 40, right: 8, top: 8, bottom: 20 };
-  const priceHeight = Math.round((height - frame.top - frame.bottom) * 0.58);
-  const panelGap = 12;
+  const [chartSize, setChartSize] = useState({ width, height });
+  const chartWidth = Math.max(Math.round(chartSize.width), 220);
+  const chartHeight = Math.max(Math.round(chartSize.height), 150);
+  const isDetail = variant === "detail";
+  const frame = { left: isDetail ? 52 : 40, right: isDetail ? 12 : 8, top: isDetail ? 12 : 8, bottom: isDetail ? 28 : 20 };
+  const priceHeight = Math.round((chartHeight - frame.top - frame.bottom) * (isDetail ? 0.64 : 0.58));
+  const panelGap = isDetail ? 16 : 12;
   const macdTop = frame.top + priceHeight + panelGap;
-  const macdHeight = Math.max(height - frame.bottom - macdTop, 34);
-  const plotWidth = width - frame.left - frame.right;
+  const macdHeight = Math.max(chartHeight - frame.bottom - macdTop, isDetail ? 58 : 34);
+  const plotWidth = chartWidth - frame.left - frame.right;
   const chart = useMemo(
     () => buildTechnicalChart(points, indicators, frame.left, frame.top, plotWidth, priceHeight, macdTop, macdHeight, showMacdSignalLines),
     [frame.left, frame.top, indicators, macdHeight, macdTop, plotWidth, points, priceHeight, showMacdSignalLines]
   );
   const hoverPoint = hoverIndex === null ? null : chart.points[hoverIndex] ?? null;
+
+  useEffect(() => {
+    const element = frameRef.current;
+
+    if (!element) {
+      return undefined;
+    }
+
+    const updateSize = (): void => {
+      const rect = element.getBoundingClientRect();
+      setChartSize((current) => {
+        const nextWidth = Math.max(Math.round(rect.width), 220);
+        const nextHeight = Math.max(Math.round(rect.height), 150);
+        return current.width === nextWidth && current.height === nextHeight ? current : { width: nextWidth, height: nextHeight };
+      });
+    };
+
+    updateSize();
+    const resizeObserver = new ResizeObserver(updateSize);
+    resizeObserver.observe(element);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, []);
 
   const handleMouseMove = (event: MouseEvent<SVGSVGElement>): void => {
     if (chart.points.length === 0) {
@@ -38,7 +69,7 @@ export function TechnicalChart({ points, indicators, width = 300, height = 172, 
     }
 
     const rect = event.currentTarget.getBoundingClientRect();
-    const x = ((event.clientX - rect.left) / rect.width) * width;
+    const x = ((event.clientX - rect.left) / rect.width) * chartWidth;
     const relativeX = Math.min(Math.max(x - frame.left, 0), plotWidth);
     const index = Math.round((relativeX / plotWidth) * (chart.points.length - 1));
     setHoverIndex(index);
@@ -46,10 +77,12 @@ export function TechnicalChart({ points, indicators, width = 300, height = 172, 
 
   if (points.length === 0) {
     return (
-      <svg className="gi-technical-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="价格与 MACD 技术图">
-        <title>暂无技术图数据</title>
-        <line x1={frame.left} x2={width - frame.right} y1={height / 2} y2={height / 2} className="gi-technical-chart__grid-line" />
-      </svg>
+      <div ref={frameRef} className={`gi-technical-chart-frame gi-technical-chart-frame--${variant}`}>
+        <svg className="gi-technical-chart" viewBox={`0 0 ${chartWidth} ${chartHeight}`} role="img" aria-label="价格与 MACD 技术图">
+          <title>暂无技术图数据</title>
+          <line x1={frame.left} x2={chartWidth - frame.right} y1={chartHeight / 2} y2={chartHeight / 2} className="gi-technical-chart__grid-line" />
+        </svg>
+      </div>
     );
   }
 
@@ -57,55 +90,63 @@ export function TechnicalChart({ points, indicators, width = 300, height = 172, 
   const last = points.at(-1)?.c ?? first;
   const lineColor = last >= first ? chartColors.positive : chartColors.negative;
   const barWidth = chart.points.length > 0 ? Math.max(plotWidth / chart.points.length - 1, 1.2) : 1.2;
+  const middlePoint = chart.points[Math.floor(chart.points.length / 2)] ?? null;
 
   return (
-    <svg className="gi-technical-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="价格与 MACD 技术图" onMouseMove={handleMouseMove} onMouseLeave={() => setHoverIndex(null)}>
-      <title>{`最新 ${formatPrice(last)}，MACD ${formatValue(chart.points.at(-1)?.indicator?.macdHist ?? null)}`}</title>
-      <line x1={frame.left} x2={width - frame.right} y1={frame.top} y2={frame.top} className="gi-technical-chart__grid-line" />
-      <line x1={frame.left} x2={width - frame.right} y1={frame.top + priceHeight / 2} y2={frame.top + priceHeight / 2} className="gi-technical-chart__grid-line" />
-      <line x1={frame.left} x2={width - frame.right} y1={frame.top + priceHeight} y2={frame.top + priceHeight} className="gi-technical-chart__axis-line" />
-      <text x="2" y={frame.top + 5} className="gi-technical-chart__axis-text">
-        {formatPrice(chart.priceMax)}
-      </text>
-      <text x="2" y={frame.top + priceHeight} className="gi-technical-chart__axis-text">
-        {formatPrice(chart.priceMin)}
-      </text>
+    <div ref={frameRef} className={`gi-technical-chart-frame gi-technical-chart-frame--${variant}`}>
+      <svg className="gi-technical-chart" viewBox={`0 0 ${chartWidth} ${chartHeight}`} role="img" aria-label="价格与 MACD 技术图" onMouseMove={handleMouseMove} onMouseLeave={() => setHoverIndex(null)}>
+        <title>{`最新 ${formatPrice(last)}，MACD ${formatValue(chart.points.at(-1)?.indicator?.macdHist ?? null)}`}</title>
+        <line x1={frame.left} x2={chartWidth - frame.right} y1={frame.top} y2={frame.top} className="gi-technical-chart__grid-line" />
+        <line x1={frame.left} x2={chartWidth - frame.right} y1={frame.top + priceHeight / 2} y2={frame.top + priceHeight / 2} className="gi-technical-chart__grid-line" />
+        <line x1={frame.left} x2={chartWidth - frame.right} y1={frame.top + priceHeight} y2={frame.top + priceHeight} className="gi-technical-chart__axis-line" />
+        <text x="2" y={frame.top + 7} className="gi-technical-chart__axis-text">
+          {formatPrice(chart.priceMax)}
+        </text>
+        <text x="2" y={frame.top + priceHeight} className="gi-technical-chart__axis-text">
+          {formatPrice(chart.priceMin)}
+        </text>
 
-      <path d={chart.pricePath} fill="none" stroke={lineColor} strokeWidth="2.2" vectorEffect="non-scaling-stroke" />
+        <path d={chart.pricePath} fill="none" stroke={lineColor} strokeWidth={isDetail ? "2.4" : "2.2"} vectorEffect="non-scaling-stroke" />
 
-      <line x1={frame.left} x2={width - frame.right} y1={chart.macdZeroY} y2={chart.macdZeroY} className="gi-technical-chart__macd-zero" />
-      <text x="2" y={macdTop + 8} className="gi-technical-chart__axis-text">
-        MACD
-      </text>
-      {chart.points.map((point, index) => (
-        <rect
-          key={`${point.t}-${index}`}
-          x={point.x - barWidth / 2}
-          y={point.histY}
-          width={barWidth}
-          height={point.histHeight}
-          rx="1"
-          fill={(point.indicator?.macdHist ?? 0) >= 0 ? chartColors.macdPositive : chartColors.macdNegative}
-        />
-      ))}
-      {showMacdSignalLines && chart.difPath && <path d={chart.difPath} fill="none" stroke={chartColors.blue} strokeWidth="1.2" vectorEffect="non-scaling-stroke" />}
-      {showMacdSignalLines && chart.deaPath && <path d={chart.deaPath} fill="none" stroke={chartColors.amber} strokeWidth="1.2" vectorEffect="non-scaling-stroke" />}
+        <line x1={frame.left} x2={chartWidth - frame.right} y1={chart.macdZeroY} y2={chart.macdZeroY} className="gi-technical-chart__macd-zero" />
+        <text x="2" y={macdTop + 8} className="gi-technical-chart__axis-text">
+          MACD
+        </text>
+        {chart.points.map((point, index) => (
+          <rect
+            key={`${point.t}-${index}`}
+            x={point.x - barWidth / 2}
+            y={point.histY}
+            width={barWidth}
+            height={point.histHeight}
+            rx="1"
+            fill={(point.indicator?.macdHist ?? 0) >= 0 ? chartColors.macdPositive : chartColors.macdNegative}
+          />
+        ))}
+        {showMacdSignalLines && chart.difPath && <path d={chart.difPath} fill="none" stroke={chartColors.blue} strokeWidth="1.1" vectorEffect="non-scaling-stroke" />}
+        {showMacdSignalLines && chart.deaPath && <path d={chart.deaPath} fill="none" stroke={chartColors.amber} strokeWidth="1.1" vectorEffect="non-scaling-stroke" />}
 
-      <text x={frame.left} y={height - 4} className="gi-technical-chart__axis-text">
-        {formatDate(points[0]?.t)}
-      </text>
-      <text x={width - frame.right} y={height - 4} textAnchor="end" className="gi-technical-chart__axis-text">
-        {formatDate(points.at(-1)?.t)}
-      </text>
+        <text x={frame.left} y={chartHeight - 6} className="gi-technical-chart__axis-text">
+          {formatDate(points[0]?.t)}
+        </text>
+        {isDetail && middlePoint && (
+          <text x={middlePoint.x} y={chartHeight - 6} textAnchor="middle" className="gi-technical-chart__axis-text">
+            {formatDate(middlePoint.t)}
+          </text>
+        )}
+        <text x={chartWidth - frame.right} y={chartHeight - 6} textAnchor="end" className="gi-technical-chart__axis-text">
+          {formatDate(points.at(-1)?.t)}
+        </text>
 
-      {hoverPoint && (
-        <g className="gi-technical-chart__tooltip">
-          <line x1={hoverPoint.x} x2={hoverPoint.x} y1={frame.top} y2={height - frame.bottom} />
-          <circle cx={hoverPoint.x} cy={hoverPoint.priceY} r="3" />
-          <TooltipBox point={hoverPoint} width={width} />
-        </g>
-      )}
-    </svg>
+        {hoverPoint && (
+          <g className="gi-technical-chart__tooltip">
+            <line x1={hoverPoint.x} x2={hoverPoint.x} y1={frame.top} y2={chartHeight - frame.bottom} />
+            <circle cx={hoverPoint.x} cy={hoverPoint.priceY} r="3" />
+            <TooltipBox point={hoverPoint} width={chartWidth} />
+          </g>
+        )}
+      </svg>
+    </div>
   );
 }
 

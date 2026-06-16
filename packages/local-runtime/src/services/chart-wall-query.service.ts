@@ -4,6 +4,7 @@ import type { SqliteAssetRepository, SqliteIngestionJobRepository, SqliteMarketD
 import { calculateIndicators } from "@gold-insights/indicator-engine";
 import type {
   AssetBarsResponse,
+  AssetDetailResponse,
   ChartWallFacet,
   AssetSummary,
   ChartWallFacets,
@@ -94,6 +95,23 @@ export class ChartWallQueryService {
       bars: series.bars,
       indicators: series.indicators,
       events: this.scannerEventRepository.listEventsForAsset(asset.id)
+    };
+  };
+
+  public getAssetDetail = (query: AssetBarsQuery): AssetDetailResponse | null => {
+    const asset = this.assetRepository.getAsset(query.assetId);
+
+    if (!asset) {
+      return null;
+    }
+
+    const pinnedIds = new Set(this.watchlistRepository.listWatchlists().flatMap((watchlist) => watchlist.assets.map((watchlistAsset) => watchlistAsset.id)));
+
+    return {
+      generatedAt: new Date().toISOString(),
+      timeframe: query.timeframe,
+      range: query.range,
+      item: this.getChartWallItem(asset, { range: query.range, timeframe: query.timeframe, universe: "global", level: "all", market: "all", assetType: "all", sort: "trend_score", order: "desc", signal: "all" }, pinnedIds, new Set())
     };
   };
 

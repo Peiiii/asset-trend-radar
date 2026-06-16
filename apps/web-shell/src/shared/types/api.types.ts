@@ -1,4 +1,4 @@
-import type { ChartWallResponse, CompareResponse, DataHealthResponse, FundCatalogSummaryResponse, FundImportResponse, FundSearchResponse, ScannerEventsResponse, UniverseTreeResponse, WatchlistsResponse } from "@gold-insights/market-domain";
+import type { AssetDetailResponse, ChartWallResponse, CompareResponse, DataHealthResponse, FundCatalogSummaryResponse, FundImportResponse, FundSearchResponse, ScannerEventsResponse, UniverseTreeResponse, WatchlistsResponse } from "@gold-insights/market-domain";
 import type { ChartWallSortOrder } from "@gold-insights/market-domain";
 
 export type ChartWallPageData = {
@@ -23,5 +23,6 @@ export type ChartWallFilters = {
 };
 
 export type CompareData = CompareResponse;
+export type AssetDetailData = AssetDetailResponse;
 export type FundSearchData = FundSearchResponse;
 export type FundImportData = FundImportResponse;

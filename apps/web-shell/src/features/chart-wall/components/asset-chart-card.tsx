@@ -49,7 +49,9 @@ const getBreakoutLabel = (state: string): string => {
 
 export function AssetChartCard({ item, sort, onSelect, onPin, onCompare }: AssetChartCardProps): JSX.Element {
   const topEvent = item.events[0];
+  const primaryMetric = getPrimaryPerformanceMetric(item, sort);
   const sortMetric = getSortMetric(item, sort);
+  const shouldShowSortMetric = Boolean(sortMetric && !primaryMetric.isSortMetric);
 
   return (
     <ChartCardShell className={`${item.isPinned ? "asset-chart-card--pinned" : ""} ${item.isCompared ? "asset-chart-card--compared" : ""}`}>
@@ -63,10 +65,19 @@ export function AssetChartCard({ item, sort, onSelect, onPin, onCompare }: Asset
 
       <div className="asset-chart-card__price-row">
         <strong>{formatPrice(item.lastPrice, item.currency)}</strong>
+      </div>
+
+      <div className={`asset-chart-card__primary-metric asset-chart-card__primary-metric--${primaryMetric.tone}`}>
+        <span>{primaryMetric.isSortMetric ? `排序 ${primaryMetric.label}` : primaryMetric.label}</span>
+        <strong>{formatPercentWithSign(primaryMetric.value)}</strong>
+      </div>
+
+      <div className="asset-chart-card__range-return">
+        <span>区间涨幅</span>
         <PriceChange value={item.returnPct} />
       </div>
 
-      {sortMetric && (
+      {shouldShowSortMetric && sortMetric && (
         <div className={`asset-chart-card__sort-metric asset-chart-card__sort-metric--${sortMetric.tone}`}>
           <span>排序</span>
           <strong>{sortMetric.label} {sortMetric.value}</strong>
@@ -82,10 +93,10 @@ export function AssetChartCard({ item, sort, onSelect, onPin, onCompare }: Asset
       <TechnicalChart points={item.sparkline} indicators={item.indicators} />
 
       <div className="asset-chart-card__return-grid">
-        <ReturnCell label="1D" value={item.return1d} />
-        <ReturnCell label="1M" value={item.return1m} />
-        <ReturnCell label="3M" value={item.return3m} />
-        <ReturnCell label="6M" value={item.return6m} />
+        <ReturnCell label="1D" value={item.return1d} active={primaryMetric.key === "return_1d"} />
+        <ReturnCell label="1M" value={item.return1m} active={primaryMetric.key === "return_1m"} />
+        <ReturnCell label="3M" value={item.return3m} active={primaryMetric.key === "return_3m"} />
+        <ReturnCell label="6M" value={item.return6m} active={primaryMetric.key === "return_6m"} />
       </div>
 
       <div className="asset-chart-card__signal-row">
@@ -117,14 +128,59 @@ export function AssetChartCard({ item, sort, onSelect, onPin, onCompare }: Asset
   );
 }
 
-function ReturnCell({ label, value }: { label: string; value: number | null | undefined }): JSX.Element {
+type PerformanceMetricKey = "return" | "return_1d" | "return_1w" | "return_1m" | "return_3m" | "return_6m" | "return_1y";
+
+function ReturnCell({ label, value, active = false }: { label: string; value: number | null | undefined; active?: boolean }): JSX.Element {
   const tone = value === null || value === undefined ? "neutral" : value >= 0 ? "positive" : "negative";
   return (
-    <span className={`asset-chart-card__return-cell asset-chart-card__return-cell--${tone}`}>
+    <span className={`asset-chart-card__return-cell asset-chart-card__return-cell--${tone} ${active ? "asset-chart-card__return-cell--active" : ""}`}>
       <small>{label}</small>
       <strong>{formatPercent(value)}</strong>
     </span>
   );
+}
+
+function getPrimaryPerformanceMetric(
+  item: ChartWallItem,
+  sort: string | undefined
+): {
+  key: PerformanceMetricKey;
+  label: string;
+  value: number | null | undefined;
+  tone: "positive" | "negative" | "neutral";
+  isSortMetric: boolean;
+} {
+  const metric = getReturnMetric(item, sort);
+  const value = metric?.value ?? item.returnPct;
+
+  return {
+    key: metric?.key ?? "return",
+    label: metric?.label ?? "区间涨幅",
+    value,
+    tone: value === null || value === undefined ? "neutral" : value >= 0 ? "positive" : "negative",
+    isSortMetric: Boolean(metric)
+  };
+}
+
+function getReturnMetric(item: ChartWallItem, sort: string | undefined): { key: PerformanceMetricKey; label: string; value: number | null | undefined } | null {
+  switch (sort) {
+    case "return":
+      return { key: "return", label: "区间涨幅", value: item.returnPct };
+    case "return_1d":
+      return { key: "return_1d", label: "1D 涨幅", value: item.return1d };
+    case "return_1w":
+      return { key: "return_1w", label: "1W 涨幅", value: item.return1w };
+    case "return_1m":
+      return { key: "return_1m", label: "1M 涨幅", value: item.return1m };
+    case "return_3m":
+      return { key: "return_3m", label: "3M 涨幅", value: item.return3m };
+    case "return_6m":
+      return { key: "return_6m", label: "6M 涨幅", value: item.return6m };
+    case "return_1y":
+      return { key: "return_1y", label: "1Y 涨幅", value: item.return1y };
+    default:
+      return null;
+  }
 }
 
 function getSortMetric(item: ChartWallItem, sort: string | undefined): { label: string; value: string; tone: "positive" | "negative" | "neutral" } | null {
@@ -167,6 +223,10 @@ function percentSortMetric(label: string, value: number | null | undefined): { l
 
 function formatPercent(value: number | null | undefined): string {
   return value === null || value === undefined ? "暂无" : `${value.toFixed(2)}%`;
+}
+
+function formatPercentWithSign(value: number | null | undefined): string {
+  return value === null || value === undefined ? "暂无" : `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
 }
 
 function assetTypeLabel(assetType: string): string {
