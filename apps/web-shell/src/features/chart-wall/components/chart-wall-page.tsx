@@ -46,6 +46,7 @@ import { useFundDirectoryQuery } from "../hooks/use-fund-directory-query";
 import { useChartWallQuery } from "../hooks/use-chart-wall-query";
 import { useCompareSelection } from "../hooks/use-compare-selection";
 import { useFundDirectoryUrlState } from "../hooks/use-fund-directory-url-state";
+import { useTaskActions } from "../hooks/use-task-actions";
 import { useTaskCenterQuery } from "../hooks/use-task-center-query";
 
 type ActiveView = "chart-wall" | "fund-directory" | "universe" | "scanner" | "asset-detail" | "watchlist" | "tasks" | "data-health";
@@ -84,7 +85,6 @@ export function ChartWallPage(): JSX.Element {
   const scannerQuery = getSearchValue(searchParams, "scannerQ", "");
   const fundDirectory = useFundDirectoryUrlState(searchParams, setSearchParams);
   const compareSelection = useCompareSelection(range, timeframe);
-  const [isFundCatalogSyncing, setIsFundCatalogSyncing] = useState(false);
   const [importingFundCode, setImportingFundCode] = useState<string | null>(null);
   const [fundImportMessage, setFundImportMessage] = useState<string | null>(null);
   const [assetDetailData, setAssetDetailData] = useState<AssetDetailData | null>(null);
@@ -141,9 +141,17 @@ export function ChartWallPage(): JSX.Element {
     }),
     [assetType, level, market, order, range, signal, sort, tag, timeframe]
   );
-  const { data, error, isLoading, isRefreshing, refresh, reload } = useChartWallQuery(filters);
+  const { data, error, isLoading, reload } = useChartWallQuery(filters);
   const fundDirectoryQuery = useFundDirectoryQuery(fundDirectory.filters, activeView === "fund-directory");
   const taskCenterQuery = useTaskCenterQuery(true);
+  const taskActions = useTaskActions({
+    reloadChartWall: reload,
+    reloadFundDirectory: fundDirectoryQuery.reload,
+    reloadTaskCenter: taskCenterQuery.reload,
+    onFundMessage: setFundImportMessage
+  });
+  const isGlobalSyncing = taskActions.runningActionKey === "refresh-global-bars";
+  const isFundCatalogSyncing = taskActions.runningActionKey === "sync-fund-catalog";
   const chartItems = useMemo(() => (data?.chartWall.items ?? []).map((item) => ({ ...item, isCompared: compareSelection.comparedSet.has(item.id) })), [compareSelection.comparedSet, data]);
 
   const filteredItems = useMemo(() => {
@@ -201,8 +209,7 @@ export function ChartWallPage(): JSX.Element {
   }, [activeView, range, routeAssetId, timeframe]);
 
   const handleRefresh = async (): Promise<void> => {
-    await refresh();
-    await taskCenterQuery.reload();
+    await taskActions.startGlobalRefresh();
   };
 
   const handlePin = (assetId: string): void => {
@@ -215,18 +222,7 @@ export function ChartWallPage(): JSX.Element {
   };
 
   const handleFundCatalogSync = async (): Promise<void> => {
-    setIsFundCatalogSyncing(true);
-    setFundImportMessage(null);
-    try {
-      const response = await chartWallApiService.syncEastmoneyFundCatalog();
-      setFundImportMessage(`基金目录已同步，${response.summary.totalCount.toLocaleString("en-US")} 只；快照更新 ${response.metricSnapshotsUpdated.toLocaleString("en-US")} 只`);
-      await fundDirectoryQuery.reload();
-      await reload();
-    } catch (nextError) {
-      setFundImportMessage(nextError instanceof Error ? nextError.message : "基金目录同步失败");
-    } finally {
-      setIsFundCatalogSyncing(false);
-    }
+    await taskActions.syncFundCatalog();
   };
 
   const handleFundImport = async (code: string): Promise<void> => {
@@ -362,7 +358,7 @@ export function ChartWallPage(): JSX.Element {
               navigate(`/tasks${currentSearch}`);
             }}
           />
-          <IconButton label="刷新数据" onClick={handleRefresh} disabled={isRefreshing}>
+          <IconButton label="刷新数据" onClick={handleRefresh} disabled={isGlobalSyncing}>
             <RefreshCcw size={18} aria-hidden="true" />
           </IconButton>
         </div>
@@ -383,8 +379,8 @@ export function ChartWallPage(): JSX.Element {
         <section className="control-strip control-strip--detail" aria-label="详情图表控制">
           <RangePicker value={range} onChange={(value) => setQueryValue("range", value, defaultFilters.range)} />
           <TimeframePicker value={timeframe} onChange={(value) => setQueryValue("timeframe", value, defaultFilters.timeframe)} />
-          <Button variant="ghost" onClick={handleRefresh} disabled={isRefreshing}>
-            {isRefreshing ? "刷新中" : "重新采集"}
+          <Button variant="ghost" onClick={handleRefresh} disabled={isGlobalSyncing}>
+            {isGlobalSyncing ? "刷新中" : "重新采集"}
           </Button>
         </section>
       ) : activeView === "fund-directory" || activeView === "tasks" ? null : (
@@ -395,7 +391,7 @@ export function ChartWallPage(): JSX.Element {
             facets={data?.chartWall.facets}
             options={{ markets: marketFallbackOptions, assetTypes: assetTypeFallbackOptions, levels: levelFallbackOptions, tags: tagFallbackOptions, signals: signalFallbackOptions, sorts: sortOptions, orders: sortOrderOptions }}
             summary={{ visibleCount: filteredItems.length, apiCount: chartItems.length, sortLabel: sortDisplayLabel(sort), orderLabel: sortOrderLabel(order) }}
-            isRefreshing={isRefreshing}
+            isRefreshing={isGlobalSyncing}
             onQueryChange={setQueryValue}
             onSortChange={setSortQueryValue}
             onDefaultOrder={defaultOrderForSort}
@@ -550,9 +546,11 @@ export function ChartWallPage(): JSX.Element {
               isPolling={taskCenterQuery.isPolling}
               lastLoadedAt={taskCenterQuery.lastLoadedAt}
               pollIntervalMs={taskCenterQuery.pollIntervalMs}
-              isStartingSync={isRefreshing}
-              onStartSync={() => {
-                void handleRefresh();
+              isStartingSync={isGlobalSyncing}
+              runningActionKey={taskActions.runningActionKey}
+              actionMessage={taskActions.message}
+              onRunAction={(actionKey) => {
+                void taskActions.runAction(actionKey);
               }}
               onRefresh={() => {
                 void taskCenterQuery.reload();

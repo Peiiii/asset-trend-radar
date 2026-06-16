@@ -1,10 +1,11 @@
 import { AlertTriangle, CheckCircle2, Clock3, Loader2, RefreshCcw, XCircle } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Button, EmptyState, ErrorState, LoadingState, SegmentedControl, SignalBadge } from "@gold-insights/ui";
-import type { RuntimeTask, RuntimeTaskPipelineSummary, TaskCenterResponse } from "@gold-insights/market-domain";
+import type { RuntimeTask, RuntimeTaskActionKey, RuntimeTaskPipelineSummary, TaskCenterResponse } from "@gold-insights/market-domain";
 import { formatDateTime } from "@/shared/utils/format-number.utils";
 import { buildTaskActivitySummary, filterTasks, formatDuration, formatMetadata, formatPollInterval, getTaskFilterOptions, pipelineStatusLabel, pipelineTone, taskStatusLabel, taskStatusTone } from "./task-center.utils";
 import type { TaskFilter, TaskTone } from "./task-center.utils";
+import { TaskActionPanel } from "./task-action-panel";
 import "./task-activity-metrics.css";
 import "./task-center-section.css";
 import "./task-center-overview.css";
@@ -17,11 +18,13 @@ type TaskCenterSectionProps = {
   lastLoadedAt: string | null;
   pollIntervalMs: number;
   isStartingSync: boolean;
-  onStartSync(): void;
+  runningActionKey: RuntimeTaskActionKey | null;
+  actionMessage: string | null;
+  onRunAction(actionKey: RuntimeTaskActionKey): void;
   onRefresh(): void;
 };
 
-export function TaskCenterSection({ data, error, isLoading, isPolling, lastLoadedAt, pollIntervalMs, isStartingSync, onStartSync, onRefresh }: TaskCenterSectionProps): JSX.Element {
+export function TaskCenterSection({ data, error, isLoading, isPolling, lastLoadedAt, pollIntervalMs, isStartingSync, runningActionKey, actionMessage, onRunAction, onRefresh }: TaskCenterSectionProps): JSX.Element {
   const [taskFilter, setTaskFilter] = useState<TaskFilter>("all");
   const filteredTasks = useMemo(() => filterTasks(data?.tasks ?? [], taskFilter), [data, taskFilter]);
   const filterOptions = useMemo(() => getTaskFilterOptions(data), [data]);
@@ -34,7 +37,7 @@ export function TaskCenterSection({ data, error, isLoading, isPolling, lastLoade
           <p>后台同步、基金目录、基金导入和刷新任务都会记录在这里；运行中任务会自动刷新，失败任务保留错误信息。</p>
         </div>
         <div className="task-center-hero__actions">
-          <Button type="button" onClick={onStartSync} disabled={isStartingSync}>
+          <Button type="button" onClick={() => onRunAction("refresh-global-bars")} disabled={runningActionKey !== null}>
             <RefreshCcw size={15} aria-hidden="true" />
             {isStartingSync ? "同步中" : "启动同步"}
           </Button>
@@ -50,6 +53,7 @@ export function TaskCenterSection({ data, error, isLoading, isPolling, lastLoade
       {data && (
         <>
           <TaskActivityPanel data={data} isPolling={isPolling} lastLoadedAt={lastLoadedAt} pollIntervalMs={pollIntervalMs} />
+          <TaskActionPanel actions={data.actions ?? []} runningActionKey={runningActionKey} message={actionMessage} onRunAction={onRunAction} />
 
           <div className="task-summary-grid">
             <TaskSummaryCard label="运行中" value={data.runningCount} tone={data.runningCount > 0 ? "blue" : "neutral"} />

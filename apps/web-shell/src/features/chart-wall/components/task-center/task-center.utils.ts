@@ -1,5 +1,5 @@
 import type { ControlOption } from "@gold-insights/ui";
-import type { RuntimeTask, RuntimeTaskPipelineSummary, RuntimeTaskStatus, TaskCenterResponse } from "@gold-insights/market-domain";
+import type { RuntimeTask, RuntimeTaskAction, RuntimeTaskPipelineSummary, RuntimeTaskStatus, TaskCenterResponse } from "@gold-insights/market-domain";
 
 export type TaskFilter = "all" | RuntimeTaskStatus | "stale";
 export type TaskTone = "positive" | "negative" | "neutral" | "amber" | "blue";
@@ -113,6 +113,38 @@ export function pipelineTone(pipeline: RuntimeTaskPipelineSummary): TaskTone {
     return "negative";
   }
   return "positive";
+}
+
+export function taskActionStatusLabel(action: RuntimeTaskAction): string {
+  if (action.latestStatus === "idle") {
+    return "未运行";
+  }
+  if (action.latestStatus === "stale") {
+    return "疑似卡住";
+  }
+  if (action.latestStatus === "running") {
+    return "运行中";
+  }
+  if (action.latestStatus === "success") {
+    return "最近成功";
+  }
+  return "最近失败";
+}
+
+export function taskActionTone(action: RuntimeTaskAction): TaskTone {
+  if (action.latestStatus === "stale") {
+    return "amber";
+  }
+  if (action.latestStatus === "running") {
+    return "blue";
+  }
+  if (action.latestStatus === "failed") {
+    return "negative";
+  }
+  if (action.latestStatus === "success") {
+    return "positive";
+  }
+  return "neutral";
 }
 
 export function formatDuration(value: number | null): string {

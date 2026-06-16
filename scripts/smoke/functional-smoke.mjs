@@ -249,6 +249,8 @@ try {
   assert(tinyTaskCenter.successCount === taskCenter.successCount, "expected task center success count to ignore task list limit");
   assert(Array.isArray(taskCenter.activeTasks) && Array.isArray(taskCenter.recentFailures), "expected task center focus task collections");
   assert(Array.isArray(taskCenter.pipelineSummaries) && taskCenter.pipelineSummaries.length >= 2, "expected task center pipeline summaries");
+  assert(Array.isArray(taskCenter.actions) && taskCenter.actions.length >= 2, "expected task center runnable actions");
+  assert(tinyTaskCenter.actions.length === taskCenter.actions.length, "expected task center actions to ignore task list limit");
   assert(
     taskCenter.pipelineSummaries.some((pipeline) => pipeline.vendor === "multi-source" && pipeline.dataset === "global-bars-1d" && typeof pipeline.totalCount === "number"),
     "expected task center global ingestion pipeline summary"
@@ -259,6 +261,14 @@ try {
   );
   assert(taskCenter.tasks.some((task) => task.vendor === "multi-source" && task.dataset === "global-bars-1d"), "expected global ingestion task in task center");
   assert(taskCenter.tasks.some((task) => task.vendor === "eastmoney" && task.dataset.startsWith("fund-import")), "expected fund import task in task center");
+  assert(
+    taskCenter.actions.some((action) => action.key === "refresh-global-bars" && action.vendor === "multi-source" && action.dataset === "global-bars-1d" && action.latestStatus === "success"),
+    "expected global refresh action status in task center"
+  );
+  assert(
+    taskCenter.actions.some((action) => action.key === "sync-fund-catalog" && action.vendor === "eastmoney" && action.dataset === "fund-catalog"),
+    "expected fund catalog action in task center"
+  );
 
   console.log(
     JSON.stringify(
@@ -304,7 +314,12 @@ try {
           failedCount: taskCenter.failedCount,
           activeTasks: taskCenter.activeTasks.length,
           recentFailures: taskCenter.recentFailures.length,
-          pipelineSummaries: taskCenter.pipelineSummaries.length
+          pipelineSummaries: taskCenter.pipelineSummaries.length,
+          actions: taskCenter.actions.map((action) => ({
+            key: action.key,
+            status: action.latestStatus,
+            isRunning: action.isRunning
+          }))
         },
         latestBarAt: finalHealth.latestBarAt,
         lastIngestionAt: finalHealth.lastIngestionAt

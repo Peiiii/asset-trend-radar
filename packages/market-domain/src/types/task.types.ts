@@ -35,6 +35,26 @@ export type RuntimeTaskPipelineSummary = {
   latestErrorMessage: string | null;
 };
 
+export type RuntimeTaskActionKey = "refresh-global-bars" | "sync-fund-catalog";
+
+export type RuntimeTaskActionStatus = RuntimeTaskStatus | "stale" | "idle";
+
+export type RuntimeTaskAction = {
+  key: RuntimeTaskActionKey;
+  label: string;
+  description: string;
+  vendor: string;
+  dataset: string;
+  latestStatus: RuntimeTaskActionStatus;
+  latestTaskId: string | null;
+  latestStartedAt: string | null;
+  latestFinishedAt: string | null;
+  latestDurationMs: number | null;
+  latestErrorMessage: string | null;
+  isRunning: boolean;
+  isStale: boolean;
+};
+
 export type TaskCenterResponse = {
   generatedAt: string;
   totalCount: number;
@@ -46,6 +66,7 @@ export type TaskCenterResponse = {
   activeTasks: RuntimeTask[];
   recentFailures: RuntimeTask[];
   pipelineSummaries: RuntimeTaskPipelineSummary[];
+  actions: RuntimeTaskAction[];
   tasks: RuntimeTask[];
 };
 

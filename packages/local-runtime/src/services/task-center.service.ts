@@ -1,11 +1,36 @@
 import type { SqliteIngestionJobRepository } from "@gold-insights/data-storage";
 import type { IngestionJobSummary } from "@gold-insights/data-storage";
-import type { RuntimeTask, RuntimeTaskPipelineSummary, TaskCenterResponse } from "@gold-insights/market-domain";
+import type { RuntimeTask, RuntimeTaskAction, RuntimeTaskActionKey, RuntimeTaskPipelineSummary, TaskCenterResponse } from "@gold-insights/market-domain";
 import { toIsoDateTime } from "@gold-insights/market-domain";
 
 const staleRunningMs = 30 * 60 * 1000;
 
+type RuntimeTaskActionDefinition = {
+  key: RuntimeTaskActionKey;
+  label: string;
+  description: string;
+  vendor: string;
+  dataset: string;
+};
+
 export class TaskCenterService {
+  private readonly actionDefinitions: RuntimeTaskActionDefinition[] = [
+    {
+      key: "refresh-global-bars",
+      label: "全市场行情同步",
+      description: "拉取走势池内资产的最新 K 线、指标和机会事件。",
+      vendor: "multi-source",
+      dataset: "global-bars-1d"
+    },
+    {
+      key: "sync-fund-catalog",
+      label: "东方财富基金目录同步",
+      description: "更新基金目录、轻量涨跌幅快照和可导入基金范围。",
+      vendor: "eastmoney",
+      dataset: "fund-catalog"
+    }
+  ];
+
   public constructor(private readonly ingestionJobRepository: SqliteIngestionJobRepository) {}
 
   public getTaskCenter = (limit = 80): TaskCenterResponse => {
@@ -27,6 +52,7 @@ export class TaskCenterService {
       activeTasks,
       recentFailures,
       pipelineSummaries: this.buildPipelineSummaries(tasks),
+      actions: this.buildTaskActions(),
       tasks
     };
   };
@@ -95,6 +121,28 @@ export class TaskCenterService {
       latestErrorMessage: latestTask.errorMessage
     };
   };
+
+  private buildTaskActions = (): RuntimeTaskAction[] =>
+    this.actionDefinitions.map((definition) => {
+      const latestJob = this.ingestionJobRepository.getLatestJobForDataset(definition.vendor, definition.dataset);
+      const latestTask = latestJob ? this.toRuntimeTask(latestJob) : null;
+
+      return {
+        key: definition.key,
+        label: definition.label,
+        description: definition.description,
+        vendor: definition.vendor,
+        dataset: definition.dataset,
+        latestStatus: latestTask ? (latestTask.isStale ? "stale" : latestTask.status) : "idle",
+        latestTaskId: latestTask?.id ?? null,
+        latestStartedAt: latestTask?.startedAt ?? null,
+        latestFinishedAt: latestTask?.finishedAt ?? null,
+        latestDurationMs: latestTask?.durationMs ?? null,
+        latestErrorMessage: latestTask?.errorMessage ?? null,
+        isRunning: Boolean(latestTask?.isRunning),
+        isStale: Boolean(latestTask?.isStale)
+      };
+    });
 
   private getTaskLabel = (job: IngestionJobSummary): string => {
     if (job.vendor === "multi-source" && job.dataset === "global-bars-1d") {
