@@ -87,6 +87,11 @@ export class SqliteIngestionJobRepository {
     return rows.map(this.toSummary).filter((job): job is IngestionJobSummary => Boolean(job));
   };
 
+  public countJobs = (): number => {
+    const row = this.database.prepare("SELECT COUNT(*) AS count FROM ingestion_jobs").get() as { count?: number } | undefined;
+    return Number(row?.count ?? 0);
+  };
+
   private toSummary = (row: unknown): IngestionJobSummary | null => {
     if (!row) {
       return null;

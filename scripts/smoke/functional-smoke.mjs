@@ -228,6 +228,17 @@ try {
   assert(finalHealth.providers.some((provider) => provider.id === "eastmoney" && provider.assetCount >= 40), "expected Eastmoney provider health");
   assert(finalHealth.lastIngestionAt !== initialHealth.lastIngestionAt, "expected refresh endpoint to update ingestion time");
   assert(taskCenter.tasks.length >= 2 && typeof taskCenter.runningCount === "number", "expected task center endpoint with recent tasks");
+  assert(taskCenter.totalCount >= taskCenter.tasks.length, "expected task center total count to cover returned recent tasks");
+  assert(Array.isArray(taskCenter.activeTasks) && Array.isArray(taskCenter.recentFailures), "expected task center focus task collections");
+  assert(Array.isArray(taskCenter.pipelineSummaries) && taskCenter.pipelineSummaries.length >= 2, "expected task center pipeline summaries");
+  assert(
+    taskCenter.pipelineSummaries.some((pipeline) => pipeline.vendor === "multi-source" && pipeline.dataset === "global-bars-1d" && typeof pipeline.totalCount === "number"),
+    "expected task center global ingestion pipeline summary"
+  );
+  assert(
+    taskCenter.pipelineSummaries.some((pipeline) => pipeline.vendor === "eastmoney" && pipeline.dataset.startsWith("fund-import") && typeof pipeline.successCount === "number"),
+    "expected task center fund import pipeline summary"
+  );
   assert(taskCenter.tasks.some((task) => task.vendor === "multi-source" && task.dataset === "global-bars-1d"), "expected global ingestion task in task center");
   assert(taskCenter.tasks.some((task) => task.vendor === "eastmoney" && task.dataset.startsWith("fund-import")), "expected fund import task in task center");
 
@@ -266,8 +277,12 @@ try {
         watchlistAssets: watchlists.watchlists[0]?.assets.length ?? 0,
         taskCenter: {
           tasks: taskCenter.tasks.length,
+          totalCount: taskCenter.totalCount,
           runningCount: taskCenter.runningCount,
-          failedCount: taskCenter.failedCount
+          failedCount: taskCenter.failedCount,
+          activeTasks: taskCenter.activeTasks.length,
+          recentFailures: taskCenter.recentFailures.length,
+          pipelineSummaries: taskCenter.pipelineSummaries.length
         },
         latestBarAt: finalHealth.latestBarAt,
         lastIngestionAt: finalHealth.lastIngestionAt

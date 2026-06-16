@@ -14,6 +14,11 @@
   background: #ffffff;
 }
 
+.task-center-hero:hover {
+  border-color: #c3cedd;
+  box-shadow: 0 8px 20px rgba(23, 32, 51, 0.06);
+}
+
 .task-center-hero p {
   max-width: 740px;
   margin: 6px 0 0;
@@ -41,6 +46,14 @@
   border: 1px solid #d7dde7;
   border-radius: 8px;
   background: #ffffff;
+}
+
+.task-summary-card:hover,
+.task-focus-column:hover,
+.task-pipeline-card:hover,
+.task-card:hover {
+  border-color: #c3cedd;
+  box-shadow: 0 8px 20px rgba(23, 32, 51, 0.06);
 }
 
 .task-summary-card span {
@@ -75,6 +88,48 @@
 .task-summary-card--blue {
   border-color: #bdd6f3;
   background: #edf5ff;
+}
+
+.task-record-toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.task-record-toolbar p {
+  margin: 5px 0 0;
+  color: #657184;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.task-card dt {
+  color: #728096;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.task-card dd {
+  margin: 3px 0 0;
+  overflow: hidden;
+  color: #243044;
+  font-size: 12px;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-record-toolbar {
+  padding: 13px;
+  border: 1px solid #d7dde7;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.task-record-toolbar .gi-segmented-control {
+  flex: 0 0 auto;
 }
 
 .task-list {
@@ -151,22 +206,6 @@
   margin: 0;
 }
 
-.task-card dt {
-  color: #728096;
-  font-size: 11px;
-  font-weight: 850;
-}
-
-.task-card dd {
-  margin: 3px 0 0;
-  overflow: hidden;
-  color: #243044;
-  font-size: 12px;
-  font-weight: 850;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .task-card__error,
 .task-card__metadata {
   margin: 10px 0 0;
@@ -185,12 +224,21 @@
 
 @media (max-width: 760px) {
   .task-center-hero,
-  .task-card {
+  .task-card,
+  .task-record-toolbar {
     grid-template-columns: 1fr;
   }
 
   .task-center-hero {
     display: grid;
+  }
+
+  .task-record-toolbar {
+    display: grid;
+  }
+
+  .task-record-toolbar .gi-segmented-control {
+    overflow-x: auto;
   }
 
   .task-card dl {
