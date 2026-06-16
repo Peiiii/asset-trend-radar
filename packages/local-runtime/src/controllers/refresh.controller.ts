@@ -15,4 +15,8 @@ export class RefreshController {
       refreshedAt: new Date().toISOString()
     });
   };
+
+  public handleStartRefresh = (response: ServerResponse): void => {
+    this.jsonResponseProvider.writeJson(response, this.ingestionWorkerService.startInBackground(), 202);
+  };
 }

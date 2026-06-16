@@ -54,7 +54,7 @@ export function useChartWallQuery(filters: ChartWallFilters): ChartWallQueryStat
     setError(null);
 
     try {
-      await chartWallApiService.refresh();
+      await chartWallApiService.startRefresh();
       await load();
     } catch (nextError) {
       setError(nextError instanceof Error ? nextError.message : "刷新失败");

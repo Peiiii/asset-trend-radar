@@ -34,6 +34,6 @@ export type {
   FundSearchResponse,
   FundSearchResult
 } from "./types/fund-discovery.types";
-export type { RuntimeTask, RuntimeTaskPipelineSummary, RuntimeTaskStatus, TaskCenterResponse } from "./types/task.types";
+export type { RuntimeTask, RuntimeTaskPipelineSummary, RuntimeTaskStartResponse, RuntimeTaskStartStatus, RuntimeTaskStatus, TaskCenterResponse } from "./types/task.types";
 export type { ScannerEvent, ScannerEventType } from "./types/scanner-event.types";
 export { dayMs, filterByCalendarRange, getRangeCalendarDayEstimate, getRangeFetchLimit, getRangeMonthEstimate, getRangePointLimit, getRangeStartTimestamp, toIsoDateTime } from "./utils/timeframe.utils";

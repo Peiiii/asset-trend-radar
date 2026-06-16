@@ -1,4 +1,4 @@
-import type { AssetDetailResponse, ChartWallResponse, CompareResponse, DataHealthResponse, FundCatalogPageResponse, FundCatalogSummaryResponse, FundCatalogSyncResponse, FundImportResponse, FundSearchResponse, ScannerEventsResponse, TaskCenterResponse, UniverseTreeResponse, WatchlistsResponse } from "@gold-insights/market-domain";
+import type { AssetDetailResponse, ChartWallResponse, CompareResponse, DataHealthResponse, FundCatalogPageResponse, FundCatalogSummaryResponse, FundCatalogSyncResponse, FundImportResponse, FundSearchResponse, RuntimeTaskStartResponse, ScannerEventsResponse, TaskCenterResponse, UniverseTreeResponse, WatchlistsResponse } from "@gold-insights/market-domain";
 import type { ChartWallFilters, ChartWallPageData, FundCatalogPageFilters } from "@/shared/types/api.types";
 
 export class ChartWallApiService {
@@ -70,6 +70,11 @@ export class ChartWallApiService {
       throw new Error(`刷新失败: ${response.status}`);
     }
   };
+
+  public startRefresh = async (): Promise<RuntimeTaskStartResponse> =>
+    this.fetchJson<RuntimeTaskStartResponse>("/api/refresh/start", {
+      method: "POST"
+    });
 
   public addWatchlistAsset = async (assetId: string): Promise<WatchlistsResponse> =>
     this.fetchJson<WatchlistsResponse>("/api/watchlists/default/assets", {

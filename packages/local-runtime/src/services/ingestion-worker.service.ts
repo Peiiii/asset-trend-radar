@@ -1,6 +1,6 @@
 import { BinanceMarketDataProvider, EastmoneyFundDataProvider, YahooMarketDataProvider, type MarketDataProvider } from "@gold-insights/data-adapters";
 import { calculateIndicators } from "@gold-insights/indicator-engine";
-import type { AssetSummary, Timeframe } from "@gold-insights/market-domain";
+import type { AssetSummary, RuntimeTaskStartResponse, Timeframe } from "@gold-insights/market-domain";
 import type { LocalRawFileRepository, SqliteAssetRepository, SqliteIngestionJobRepository, SqliteMarketDataRepository, SqliteScannerEventRepository } from "@gold-insights/data-storage";
 import { ScannerEngineManager } from "@gold-insights/scanner-engine";
 
@@ -18,6 +18,7 @@ export class IngestionWorkerService {
   private readonly timeframes: Timeframe[] = ["1d", "15m", "1h", "4h"];
   private readonly assetConcurrency = 4;
   private currentRun: Promise<void> | null = null;
+  private currentRunTaskId: string | null = null;
 
   public constructor(
     private readonly assets: AssetSummary[],
@@ -36,17 +37,38 @@ export class IngestionWorkerService {
       return this.currentRun;
     }
 
-    this.currentRun = this.runIngestion();
+    await this.startRun(this.createGlobalJobId());
+  };
+
+  public startInBackground = (): RuntimeTaskStartResponse => {
+    if (this.currentRun && this.currentRunTaskId) {
+      return this.toTaskStartResponse(this.currentRunTaskId, "already_running");
+    }
+
+    const jobId = this.createGlobalJobId();
+    void this.startRun(jobId).catch((error) => {
+      console.error(error);
+    });
+
+    return this.toTaskStartResponse(jobId, "accepted");
+  };
+
+  private startRun = async (jobId: string): Promise<void> => {
+    const run = this.runIngestion(jobId);
+    this.currentRun = run;
+    this.currentRunTaskId = jobId;
 
     try {
-      await this.currentRun;
+      await run;
     } finally {
-      this.currentRun = null;
+      if (this.currentRun === run) {
+        this.currentRun = null;
+        this.currentRunTaskId = null;
+      }
     }
   };
 
-  private runIngestion = async (): Promise<void> => {
-    const jobId = `global-daily-${Date.now()}`;
+  private runIngestion = async (jobId: string): Promise<void> => {
     this.ingestionJobRepository.startJob(jobId, "multi-source", "global-bars-1d", {
       assetCount: this.assets.length,
       marketDataAssetCount: this.marketDataAssets.length,
@@ -137,4 +159,14 @@ export class IngestionWorkerService {
   };
 
   private getTimeframesForAsset = (asset: AssetSummary): Timeframe[] => (asset.dataSource === "eastmoney" ? ["1d"] : this.timeframes);
+
+  private createGlobalJobId = (): string => `global-daily-${Date.now()}`;
+
+  private toTaskStartResponse = (taskId: string, status: RuntimeTaskStartResponse["status"]): RuntimeTaskStartResponse => ({
+    generatedAt: new Date().toISOString(),
+    taskId,
+    status,
+    label: "全市场行情同步",
+    message: status === "accepted" ? "全市场行情同步已在后台启动" : "全市场行情同步已在后台运行"
+  });
 }

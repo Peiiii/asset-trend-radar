@@ -48,3 +48,13 @@ export type TaskCenterResponse = {
   pipelineSummaries: RuntimeTaskPipelineSummary[];
   tasks: RuntimeTask[];
 };
+
+export type RuntimeTaskStartStatus = "accepted" | "already_running";
+
+export type RuntimeTaskStartResponse = {
+  generatedAt: string;
+  taskId: string;
+  status: RuntimeTaskStartStatus;
+  label: string;
+  message: string;
+};
