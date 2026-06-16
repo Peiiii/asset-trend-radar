@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./apps/web-shell/src/*"],
+      "@gold-insights/data-adapters": ["./packages/data-adapters/src/index.ts"],
+      "@gold-insights/data-storage": ["./packages/data-storage/src/index.ts"],
+      "@gold-insights/indicator-engine": ["./packages/indicator-engine/src/index.ts"],
+      "@gold-insights/local-runtime": ["./packages/local-runtime/src/index.ts"],
+      "@gold-insights/market-domain": ["./packages/market-domain/src/index.ts"],
+      "@gold-insights/scanner-engine": ["./packages/scanner-engine/src/index.ts"],
+      "@gold-insights/ui": ["./packages/ui/src/index.ts"]
+    },
+    "types": ["vite/client", "node"]
+  },
+  "include": ["apps", "packages", "scripts", "vite.config.ts", "eslint.config.mjs"]
+}

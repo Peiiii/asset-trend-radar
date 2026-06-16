@@ -1,0 +1,16 @@
+{
+  "name": "@gold-insights/local-runtime",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@gold-insights/data-adapters": "workspace:*",
+    "@gold-insights/data-storage": "workspace:*",
+    "@gold-insights/indicator-engine": "workspace:*",
+    "@gold-insights/market-domain": "workspace:*",
+    "@gold-insights/scanner-engine": "workspace:*"
+  }
+}

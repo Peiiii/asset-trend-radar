@@ -1,0 +1,44 @@
+{
+  "name": "gold-insights",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.12.3",
+  "scripts": {
+    "dev:web": "vite --host 127.0.0.1 --port 5193 --strictPort",
+    "dev:runtime": "tsx apps/local-shell/src/main.ts",
+    "dev": "pnpm dev:web",
+    "build": "tsc -p tsconfig.json && vite build",
+    "lint": "eslint . --max-warnings=0",
+    "preview": "vite preview --host 127.0.0.1 --port 4193 --strictPort",
+    "smoke": "node scripts/smoke/functional-smoke.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@gold-insights/data-adapters": "workspace:*",
+    "@gold-insights/data-storage": "workspace:*",
+    "@gold-insights/indicator-engine": "workspace:*",
+    "@gold-insights/local-runtime": "workspace:*",
+    "@gold-insights/market-domain": "workspace:*",
+    "@gold-insights/scanner-engine": "workspace:*",
+    "@gold-insights/ui": "workspace:*",
+    "@vitejs/plugin-react": "^5.0.0",
+    "lucide-react": "^0.468.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.30.4",
+    "vite": "^5.4.11"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.15.0",
+    "@types/node": "^25.9.3",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "eslint": "^9.15.0",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "globals": "^15.12.0",
+    "tsx": "^4.22.4",
+    "typescript": "^5.6.3",
+    "typescript-eslint": "^8.15.0"
+  }
+}
