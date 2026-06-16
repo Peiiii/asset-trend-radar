@@ -17,8 +17,16 @@ export class FundDiscoveryController {
 
   public handleSearch = async (url: URL, response: ServerResponse): Promise<void> => {
     const keyword = getStringQueryParam(url, "keyword", "").trim();
-    const limit = Math.min(Math.max(Number(getStringQueryParam(url, "limit", "20")) || 20, 1), 50);
+    const limit = Math.min(Math.max(Number(getStringQueryParam(url, "limit", "20")) || 20, 1), 100);
     this.jsonResponseProvider.writeJson(response, await this.fundDiscoveryService.searchFunds(keyword, limit));
+  };
+
+  public handleCatalogSummary = (response: ServerResponse): void => {
+    this.jsonResponseProvider.writeJson(response, this.fundDiscoveryService.getCatalogSummary());
+  };
+
+  public handleCatalogSync = async (response: ServerResponse): Promise<void> => {
+    this.jsonResponseProvider.writeJson(response, await this.fundDiscoveryService.syncCatalog(), 201);
   };
 
   public handleImport = async (request: IncomingMessage, response: ServerResponse): Promise<void> => {

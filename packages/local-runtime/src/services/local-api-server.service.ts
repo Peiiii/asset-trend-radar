@@ -116,6 +116,16 @@ export class LocalApiServerService {
         return;
       }
 
+      if (request.method === "GET" && url.pathname === "/api/funds/eastmoney/catalog/summary") {
+        this.fundDiscoveryController.handleCatalogSummary(response);
+        return;
+      }
+
+      if (request.method === "POST" && url.pathname === "/api/funds/eastmoney/catalog/sync") {
+        await this.fundDiscoveryController.handleCatalogSync(response);
+        return;
+      }
+
       if (request.method === "POST" && url.pathname === "/api/funds/eastmoney/import") {
         await this.fundDiscoveryController.handleImport(request, response);
         return;

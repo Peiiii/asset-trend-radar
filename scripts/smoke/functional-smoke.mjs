@@ -18,7 +18,7 @@ const fetchJson = async (path, init) => {
   const response = await fetch(`${baseUrl}${path}`, init);
 
   if (!response.ok) {
-    throw new Error(`${path} returned ${response.status}`);
+    throw new Error(`${path} returned ${response.status}: ${await response.text()}`);
   }
 
   return response.json();
@@ -28,6 +28,9 @@ const isSortedDesc = (items, getValue) => {
   const values = items.map(getValue).filter((value) => typeof value === "number" && Number.isFinite(value));
   return values.every((value, index) => index === 0 || values[index - 1] >= value);
 };
+
+const numbersAlmostEqual = (left, right, tolerance = 0.000001) =>
+  typeof left === "number" && typeof right === "number" && Number.isFinite(left) && Number.isFinite(right) && Math.abs(left - right) <= tolerance;
 
 const waitForRuntime = async () => {
   const startedAt = Date.now();
@@ -94,6 +97,7 @@ try {
   const fundWall = await fetchJson("/api/chart-wall?range=6m&timeframe=1d&universe=global&level=all&market=all&assetType=fund&sort=return_1m");
   const commodityWall = await fetchJson("/api/chart-wall?range=6m&timeframe=1d&universe=global&level=all&market=%E5%95%86%E5%93%81&assetType=all&sort=volume_ratio");
   const sortedReturnWall = await fetchJson("/api/chart-wall?range=6m&timeframe=1d&universe=global&level=all&market=all&assetType=all&sort=return_1m");
+  const cryptoOneMonthWall = await fetchJson("/api/chart-wall?range=1m&timeframe=1d&universe=global&level=all&market=%E5%8A%A0%E5%AF%86&assetType=crypto&sort=return_1m&order=desc");
   const sortedVolumeWall = await fetchJson("/api/chart-wall?range=6m&timeframe=1d&universe=global&level=all&market=all&assetType=all&sort=volume_ratio");
   const weeklyWall = await fetchJson("/api/chart-wall?range=1y&timeframe=1w&universe=global&level=all&market=all&assetType=all&sort=trend_score");
   const monthlyWall = await fetchJson("/api/chart-wall?range=5y&timeframe=1mo&universe=global&level=all&market=all&assetType=all&sort=trend_score");
@@ -104,15 +108,16 @@ try {
   const assetBars = await fetchJson("/api/assets/us-nvda/bars?range=3m&timeframe=1d");
   const assetIndicators = await fetchJson("/api/assets/us-nvda/indicators?range=3m&timeframe=1d");
   const mutualFundBars = await fetchJson("/api/assets/fund-cn-005827/bars?range=1y&timeframe=1d");
-  const fundSearch = await fetchJson("/api/funds/eastmoney/search?keyword=000011&limit=5");
+  const fundCatalogSummary = await fetchJson("/api/funds/eastmoney/catalog/summary");
+  const fundSearch = await fetchJson("/api/funds/eastmoney/search?keyword=000001&limit=5");
   const importedFund = await fetchJson("/api/funds/eastmoney/import", {
     method: "POST",
     headers: {
       "content-type": "application/json"
     },
-    body: JSON.stringify({ code: "000011" })
+    body: JSON.stringify({ code: "000001" })
   });
-  const importedFundBars = await fetchJson("/api/assets/fund-cn-000011/bars?range=1y&timeframe=1d");
+  const importedFundBars = await fetchJson("/api/assets/fund-cn-000001/bars?range=1y&timeframe=1d");
   const importedFundWall = await fetchJson("/api/chart-wall?range=6m&timeframe=1d&universe=global&level=all&market=%E5%9F%BA%E9%87%91&assetType=fund&sort=return_1m");
   const scannerEvents = await fetchJson("/api/scanner/events?universe=global&eventType=all");
   const compare = await fetchJson("/api/compare?assetIds=us-nvda,cn-csi300,cmd-gold,btcusdt&range=6m&timeframe=1d");
@@ -161,6 +166,13 @@ try {
   assert(fundWall.items.some((item) => item.market === "基金" && item.source === "eastmoney"), "expected China mutual funds from Eastmoney");
   assert(commodityWall.items.length >= 6 && commodityWall.items.every((item) => item.market === "商品"), "expected commodity chart wall");
   assert(isSortedDesc(sortedReturnWall.items, (item) => item.return1m), "expected return_1m sorting");
+  assert(cryptoOneMonthWall.order === "desc" && isSortedDesc(cryptoOneMonthWall.items, (item) => item.return1m), "expected explicit sort order for crypto 1M return");
+  assert(
+    cryptoOneMonthWall.items.every((item) => numbersAlmostEqual(item.returnPct, item.return1m)),
+    "expected visible 1M chart return to align with fixed 1M return metric"
+  );
+  assert(cryptoOneMonthWall.facets.markets.every((facet) => typeof facet.count === "number"), "expected eager market facet counts");
+  assert(cryptoOneMonthWall.facets.assetTypes.every((facet) => typeof facet.count === "number"), "expected eager asset type facet counts");
   assert(isSortedDesc(sortedVolumeWall.items, (item) => item.volumeRatio), "expected volume_ratio sorting");
   assert(weeklyWall.items.length >= 45 && weeklyWall.items.every((item) => item.sparkline.length > 10), "expected weekly resampled chart wall");
   assert(monthlyWall.items.length >= 45 && monthlyWall.items.every((item) => item.sparkline.length >= 36), "expected 5Y monthly chart wall");
@@ -168,20 +180,22 @@ try {
   assert(oneHourWall.items.length >= 40 && oneHourWall.items.every((item) => item.sparkline.length >= 20), "expected 1h chart wall");
   assert(fourHourWall.items.length >= 40 && fourHourWall.items.every((item) => item.sparkline.length >= 20), "expected 4h chart wall");
   assert(
-    chartWall.items.every((item) => item.lastPrice !== null && item.sparkline.length >= 180 && item.indicators.length >= 180 && item.source && item.dataPointCount >= 180 && item.latestBarAt),
-    "expected every chart wall item to include price, sparkline, indicators, source, and data density"
+    chartWall.items.every((item) => item.lastPrice !== null && item.sparkline.length >= 90 && item.indicators.length >= 90 && item.source && item.dataPointCount >= 90 && item.latestBarAt),
+    "expected every chart wall item to include price, calendar-window sparkline, indicators, source, and data density"
   );
   assert(chartWall.items.some((item) => item.return1m !== null && item.return6m !== null && item.drawdownPct !== null), "expected fixed-window return and drawdown metrics");
   assert(assetDetail.asset.symbol === "NVDA", "expected asset detail response");
   assert(assetBars.bars.length >= 60, "expected 3M asset bars");
   assert(assetIndicators.indicators.length >= 60, "expected 3M indicators");
   assert(mutualFundBars.source === "eastmoney" && mutualFundBars.bars.length >= 180, "expected Eastmoney mutual fund daily NAV history");
-  assert(fundSearch.results.some((item) => item.code === "000011" && item.name.includes("华夏大盘")), "expected Eastmoney fund discovery search result");
-  assert(importedFund.asset?.id === "fund-cn-000011" && importedFund.barsImported >= 180, "expected dynamic Eastmoney fund import");
+  assert((fundCatalogSummary.summary.totalCount === 0 || fundCatalogSummary.summary.totalCount >= 20000), "expected Eastmoney fund catalog summary endpoint");
+  assert(fundSearch.catalog.totalCount >= 20000 && fundSearch.source === "local-catalog", "expected local Eastmoney fund catalog search");
+  assert(fundSearch.results.some((item) => item.code === "000001" && item.name.includes("华夏成长")), "expected Eastmoney fund catalog search result");
+  assert(importedFund.asset?.id === "fund-cn-000001" && importedFund.barsImported >= 180, "expected dynamic Eastmoney fund import");
   assert(importedFundBars.source === "eastmoney" && importedFundBars.bars.length >= 180, "expected imported fund bars endpoint");
-  assert(importedFundWall.items.some((item) => item.id === "fund-cn-000011" && item.source === "eastmoney"), "expected imported fund in chart wall");
+  assert(importedFundWall.items.some((item) => item.id === "fund-cn-000001" && item.source === "eastmoney"), "expected imported fund in chart wall");
   assert(Array.isArray(scannerEvents.events), "expected scanner events endpoint");
-  assert(compare.assets.length >= 4 && compare.assets.every((item) => item.bars.length >= 120), "expected compare data");
+  assert(compare.assets.length >= 4 && compare.assets.every((item) => item.bars.length >= 90), "expected compare data");
   assert(universeTree.nodes.length >= 6 && universeTree.nodes.every((node) => node.count > 0), "expected universe tree with asset-class nodes");
   assert(watchlists.watchlists.some((watchlist) => watchlist.assets.some((asset) => asset.id === "us-nvda")), "expected watchlist add asset");
   assert(pinnedWall.items.some((item) => item.id === "us-nvda" && item.isPinned), "expected pinned signal filter");
@@ -200,10 +214,11 @@ try {
         fundItems: fundWall.items.length,
         commodityItems: commodityWall.items.length,
         mutualFundBars: mutualFundBars.bars.length,
+        fundCatalogCount: fundSearch.catalog.totalCount,
         importedFund: {
           id: importedFund.asset.id,
           barsImported: importedFund.barsImported,
-          chartWallVisible: importedFundWall.items.some((item) => item.id === "fund-cn-000011")
+          chartWallVisible: importedFundWall.items.some((item) => item.id === "fund-cn-000001")
         },
         markets: [...markets],
         assetTypes: [...assetTypes],

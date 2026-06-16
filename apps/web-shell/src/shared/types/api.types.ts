@@ -1,4 +1,5 @@
-import type { ChartWallResponse, CompareResponse, DataHealthResponse, FundImportResponse, FundSearchResponse, ScannerEventsResponse, UniverseTreeResponse, WatchlistsResponse } from "@gold-insights/market-domain";
+import type { ChartWallResponse, CompareResponse, DataHealthResponse, FundCatalogSummaryResponse, FundImportResponse, FundSearchResponse, ScannerEventsResponse, UniverseTreeResponse, WatchlistsResponse } from "@gold-insights/market-domain";
+import type { ChartWallSortOrder } from "@gold-insights/market-domain";
 
 export type ChartWallPageData = {
   chartWall: ChartWallResponse;
@@ -6,6 +7,7 @@ export type ChartWallPageData = {
   universeTree: UniverseTreeResponse;
   scannerEvents: ScannerEventsResponse;
   watchlists: WatchlistsResponse;
+  fundCatalog: FundCatalogSummaryResponse;
 };
 
 export type ChartWallFilters = {
@@ -16,6 +18,7 @@ export type ChartWallFilters = {
   market: string;
   assetType: string;
   sort: string;
+  order: ChartWallSortOrder;
   signal: string;
 };
 

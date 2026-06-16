@@ -1,6 +1,7 @@
 export { ChartWallSnapshotRepository } from "./repositories/chart-wall-snapshot.repository";
 export { LocalRawFileRepository } from "./repositories/local-raw-file.repository";
 export { SqliteAssetRepository } from "./repositories/sqlite-asset.repository";
+export { SqliteFundCatalogRepository } from "./repositories/sqlite-fund-catalog.repository";
 export { SqliteIngestionJobRepository } from "./repositories/sqlite-ingestion-job.repository";
 export { SqliteMarketDataRepository } from "./repositories/sqlite-market-data.repository";
 export { SqliteScannerEventRepository } from "./repositories/sqlite-scanner-event.repository";

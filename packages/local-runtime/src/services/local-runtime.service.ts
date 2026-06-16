@@ -1,4 +1,4 @@
-import { LocalRawFileRepository, SqliteAssetRepository, SqliteDatabaseService, SqliteIngestionJobRepository, SqliteMarketDataRepository, SqliteScannerEventRepository, SqliteWatchlistRepository } from "@gold-insights/data-storage";
+import { LocalRawFileRepository, SqliteAssetRepository, SqliteDatabaseService, SqliteFundCatalogRepository, SqliteIngestionJobRepository, SqliteMarketDataRepository, SqliteScannerEventRepository, SqliteWatchlistRepository } from "@gold-insights/data-storage";
 import { AssetsController } from "../controllers/assets.controller";
 import { ChartWallController } from "../controllers/chart-wall.controller";
 import { CompareController } from "../controllers/compare.controller";
@@ -18,6 +18,7 @@ import { LocalApiServerService } from "./local-api-server.service";
 export class LocalRuntimeService {
   private readonly databaseService: SqliteDatabaseService;
   private readonly ingestionWorkerService: IngestionWorkerService;
+  private readonly fundDiscoveryService: FundDiscoveryService;
   private readonly apiServerService: LocalApiServerService;
 
   public constructor(private readonly options: LocalRuntimeOptions) {
@@ -28,6 +29,7 @@ export class LocalRuntimeService {
     const scannerEventRepository = new SqliteScannerEventRepository(connection);
     const ingestionJobRepository = new SqliteIngestionJobRepository(connection);
     const watchlistRepository = new SqliteWatchlistRepository(connection);
+    const fundCatalogRepository = new SqliteFundCatalogRepository(connection);
     const rawFileRepository = new LocalRawFileRepository(this.options.rawDataPath);
 
     this.ingestionWorkerService = new IngestionWorkerService(
@@ -49,11 +51,12 @@ export class LocalRuntimeService {
       ingestionJobRepository,
       watchlistRepository
     );
-    const fundDiscoveryService = new FundDiscoveryService(
+    this.fundDiscoveryService = new FundDiscoveryService(
       this.options.historyLimit,
       assetRepository,
       marketDataRepository,
       scannerEventRepository,
+      fundCatalogRepository,
       rawFileRepository
     );
 
@@ -66,7 +69,7 @@ export class LocalRuntimeService {
       new ScannerController(queryService),
       new CompareController(queryService),
       new WatchlistsController(queryService),
-      new FundDiscoveryController(fundDiscoveryService),
+      new FundDiscoveryController(this.fundDiscoveryService),
       new RefreshController(this.ingestionWorkerService)
     );
   }
@@ -79,6 +82,10 @@ export class LocalRuntimeService {
         console.error(error);
       });
     }
+
+    void this.fundDiscoveryService.syncCatalogIfEmpty().catch((error) => {
+      console.error(error);
+    });
 
     return {
       url,

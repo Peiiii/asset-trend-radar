@@ -101,6 +101,16 @@ export class SqliteDatabaseService {
         metadata_json TEXT NOT NULL DEFAULT '{}'
       );
 
+      CREATE TABLE IF NOT EXISTS fund_catalog (
+        code TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        fund_type TEXT,
+        pinyin TEXT,
+        full_pinyin TEXT,
+        source TEXT NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+
       CREATE TABLE IF NOT EXISTS watchlists (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
@@ -120,6 +130,8 @@ export class SqliteDatabaseService {
       CREATE INDEX IF NOT EXISTS idx_scan_events_lookup ON scan_events(timeframe, event_type, triggered_at DESC);
       CREATE INDEX IF NOT EXISTS idx_assets_parent ON assets(parent_id);
       CREATE INDEX IF NOT EXISTS idx_assets_universe ON assets(universe, level, market);
+      CREATE INDEX IF NOT EXISTS idx_fund_catalog_name ON fund_catalog(name);
+      CREATE INDEX IF NOT EXISTS idx_fund_catalog_type ON fund_catalog(fund_type);
     `);
     this.addColumnIfMissing("assets", "universe", "TEXT");
     this.addColumnIfMissing("assets", "level", "TEXT");

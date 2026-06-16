@@ -1,4 +1,4 @@
-import type { Timeframe } from "@gold-insights/market-domain";
+import type { ChartWallSortOrder, Timeframe } from "@gold-insights/market-domain";
 
 export const getRangeQueryParam = (url: URL): string => url.searchParams.get("range") ?? "6m";
 
@@ -12,6 +12,8 @@ export const getTimeframeQueryParam = (url: URL): Timeframe => {
 };
 
 export const getStringQueryParam = (url: URL, name: string, fallback: string): string => url.searchParams.get(name) ?? fallback;
+
+export const getSortOrderQueryParam = (url: URL): ChartWallSortOrder => (url.searchParams.get("order") === "asc" ? "asc" : "desc");
 
 export const getAssetIdsQueryParam = (url: URL): string[] =>
   (url.searchParams.get("assetIds") ?? "")

@@ -17,7 +17,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { NavLink, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { AppShell, Button, EmptyState, ErrorState, FilterChip, IconButton, LoadingState, RangePicker, Select, SparklineChart, TechnicalChart, TimeframePicker } from "@gold-insights/ui";
 import type { ControlOption } from "@gold-insights/ui";
-import type { ChartWallFacet, ChartWallItem, ChartWallSummary, FundSearchResult, ScannerEventsResponse, UniverseTreeNode, WatchlistSummary } from "@gold-insights/market-domain";
+import type { ChartWallFacet, ChartWallItem, ChartWallSortOrder, ChartWallSummary, FundCatalogSummary, FundSearchResult, ScannerEventsResponse, UniverseTreeNode, WatchlistSummary } from "@gold-insights/market-domain";
 import type { ChartWallFilters, ChartWallPageData, CompareData } from "@/shared/types/api.types";
 import { formatDateTime, formatPrice } from "@/shared/utils/format-number.utils";
 import { AssetChartCard } from "./asset-chart-card";
@@ -43,6 +43,7 @@ const defaultFilters = {
   assetType: "all",
   level: "all",
   sort: "trend_score",
+  order: "desc" as ChartWallSortOrder,
   signal: "all"
 };
 
@@ -75,7 +76,7 @@ const levelFallbackOptions: ControlOption[] = [
 ];
 const sortOptions: ControlOption[] = [
   { value: "trend_score", label: "趋势分", description: "趋势强度优先" },
-  { value: "return", label: "当前跨度收益", description: "跟随所选时间跨度" },
+  { value: "return", label: "区间涨幅", description: "跟随当前图表时间跨度" },
   { value: "return_1d", label: "1D 涨幅" },
   { value: "return_1w", label: "1W 涨幅" },
   { value: "return_1m", label: "1M 涨幅" },
@@ -89,6 +90,10 @@ const sortOptions: ControlOption[] = [
   { value: "market", label: "市场" },
   { value: "asset_type", label: "品种" },
   { value: "symbol", label: "代码" }
+];
+const sortOrderOptions: ControlOption[] = [
+  { value: "desc", label: "降序", description: "数值高的靠前" },
+  { value: "asc", label: "升序", description: "数值低的靠前" }
 ];
 const signalFallbackOptions: ControlOption[] = [
   { value: "strong", label: "强趋势" },
@@ -123,6 +128,7 @@ export function ChartWallPage(): JSX.Element {
   const assetType = getSearchValue(searchParams, "assetType", defaultFilters.assetType);
   const level = getSearchValue(searchParams, "level", defaultFilters.level);
   const sort = getSearchValue(searchParams, "sort", defaultFilters.sort);
+  const order = getSortOrder(getSearchValue(searchParams, "order", defaultFilters.order));
   const signal = getSearchValue(searchParams, "signal", defaultFilters.signal);
   const viewMode = getViewMode(getSearchValue(searchParams, "view", "grid"));
   const search = getSearchValue(searchParams, "q", "");
@@ -134,8 +140,10 @@ export function ChartWallPage(): JSX.Element {
   const [fundResults, setFundResults] = useState<FundSearchResult[]>([]);
   const [fundSearchError, setFundSearchError] = useState<string | null>(null);
   const [isFundSearching, setIsFundSearching] = useState(false);
+  const [isFundCatalogSyncing, setIsFundCatalogSyncing] = useState(false);
   const [importingFundCode, setImportingFundCode] = useState<string | null>(null);
   const [fundImportMessage, setFundImportMessage] = useState<string | null>(null);
+  const [fundCatalogSummary, setFundCatalogSummary] = useState<FundCatalogSummary | null>(null);
 
   const setQueryValue = useCallback((name: string, value: string, fallback = ""): void => {
     const next = new URLSearchParams(searchParams);
@@ -146,6 +154,25 @@ export function ChartWallPage(): JSX.Element {
     }
     setSearchParams(next);
   }, [searchParams, setSearchParams]);
+
+  const setSortQueryValue = useCallback((nextSort: string, nextOrder?: ChartWallSortOrder): void => {
+    const resolvedOrder = nextOrder ?? (nextSort === sort ? toggleSortOrder(order) : defaultOrderForSort(nextSort));
+    const next = new URLSearchParams(searchParams);
+
+    if (nextSort === defaultFilters.sort) {
+      next.delete("sort");
+    } else {
+      next.set("sort", nextSort);
+    }
+
+    if (resolvedOrder === defaultFilters.order) {
+      next.delete("order");
+    } else {
+      next.set("order", resolvedOrder);
+    }
+
+    setSearchParams(next);
+  }, [order, searchParams, setSearchParams, sort]);
 
   useEffect(() => {
     if ((timeframe === "15m" || timeframe === "1h" || timeframe === "4h") && (range === "1y" || range === "3y" || range === "5y")) {
@@ -162,11 +189,13 @@ export function ChartWallPage(): JSX.Element {
       market,
       assetType,
       sort,
+      order,
       signal
     }),
-    [assetType, level, market, range, signal, sort, timeframe]
+    [assetType, level, market, order, range, signal, sort, timeframe]
   );
   const { data, error, isLoading, isRefreshing, refresh, reload } = useChartWallQuery(filters);
+  const effectiveFundCatalogSummary = fundCatalogSummary ?? data?.fundCatalog.summary ?? null;
   const comparedSet = useMemo(() => new Set(compareAssetIds), [compareAssetIds]);
   const chartItems = useMemo(() => (data?.chartWall.items ?? []).map((item) => ({ ...item, isCompared: comparedSet.has(item.id) })), [comparedSet, data]);
   const knownFundCodes = useMemo(() => new Set(chartItems.filter((item) => item.dataSource === "eastmoney").map((item) => item.symbol)), [chartItems]);
@@ -223,11 +252,27 @@ export function ChartWallPage(): JSX.Element {
     setFundImportMessage(null);
     try {
       const response = await chartWallApiService.searchEastmoneyFunds(keyword);
+      setFundCatalogSummary(response.catalog);
       setFundResults(response.results);
     } catch (nextError) {
       setFundSearchError(nextError instanceof Error ? nextError.message : "基金搜索失败");
     } finally {
       setIsFundSearching(false);
+    }
+  };
+
+  const handleFundCatalogSync = async (): Promise<void> => {
+    setIsFundCatalogSyncing(true);
+    setFundSearchError(null);
+    setFundImportMessage(null);
+    try {
+      const response = await chartWallApiService.syncEastmoneyFundCatalog();
+      setFundCatalogSummary(response.summary);
+      setFundImportMessage(`基金目录已同步，${response.summary.totalCount.toLocaleString("en-US")} 只`);
+    } catch (nextError) {
+      setFundSearchError(nextError instanceof Error ? nextError.message : "基金目录同步失败");
+    } finally {
+      setIsFundCatalogSyncing(false);
     }
   };
 
@@ -322,7 +367,8 @@ export function ChartWallPage(): JSX.Element {
         <Select id="asset-type-filter" label="品种" value={assetType} onChange={(value) => setQueryValue("assetType", value, defaultFilters.assetType)} options={facetOptions("全部品种", data?.chartWall.facets?.assetTypes, assetTypeFallbackOptions)} />
         <Select id="level-filter" label="层级" value={level} onChange={(value) => setQueryValue("level", value, defaultFilters.level)} options={facetOptions("全部层级", data?.chartWall.facets?.levels, levelFallbackOptions)} />
         <Select id="signal-filter" label="信号" value={signal} onChange={(value) => setQueryValue("signal", value, defaultFilters.signal)} options={facetOptions("全部信号", data?.chartWall.facets?.signals, signalFallbackOptions)} />
-        <Select id="sort-filter" label="排序" value={sort} onChange={(value) => setQueryValue("sort", value, defaultFilters.sort)} options={sortOptions} />
+        <Select id="sort-filter" label="排序" value={sort} onChange={(value) => setSortQueryValue(value, defaultOrderForSort(value))} options={sortOptions} />
+        <Select id="sort-order-filter" label="方向" value={order} onChange={(value) => setSortQueryValue(sort, getSortOrder(value))} options={sortOrderOptions} />
         <RangePicker value={range} onChange={(value) => setQueryValue("range", value, defaultFilters.range)} />
         <TimeframePicker value={timeframe} onChange={(value) => setQueryValue("timeframe", value, defaultFilters.timeframe)} />
         <div className="view-mode-toggle" aria-label="图表墙视图">
@@ -341,18 +387,24 @@ export function ChartWallPage(): JSX.Element {
         </Button>
       </section>
 
-      <ActiveFilterChips filters={{ market, assetType, level, signal, sort, search }} onReset={resetFilters} />
+      <ActiveFilterChips filters={{ market, assetType, level, signal, sort, order, search }} onReset={resetFilters} />
       {data && assetType === "fund" && <FundScopeStrip data={data} market={market} />}
       {activeView === "chart-wall" && (
         <FundDiscoveryPanel
           keyword={fundKeyword}
           results={fundResults}
+          catalogSummary={effectiveFundCatalogSummary}
+          chartFundCount={data?.chartWall.fundScope?.eastmoneyFundCount ?? 0}
           knownFundCodes={knownFundCodes}
           error={fundSearchError}
           message={fundImportMessage}
           isSearching={isFundSearching}
+          isCatalogSyncing={isFundCatalogSyncing}
           importingCode={importingFundCode}
           onKeywordChange={setFundKeyword}
+          onSyncCatalog={() => {
+            void handleFundCatalogSync();
+          }}
           onSearch={() => {
             void handleFundSearch();
           }}
@@ -375,13 +427,13 @@ export function ChartWallPage(): JSX.Element {
               <section className="chart-wall-section">
                 <SectionHeader
                   title="走势总览"
-                  description={`${rangeLabel(data.chartWall.range)} / ${timeframeLabel(data.chartWall.timeframe)} / ${filteredItems.length} 个资产`}
+                  description={`${rangeLabel(data.chartWall.range)} / ${timeframeLabel(data.chartWall.timeframe)} / ${sortDisplayLabel(sort)} ${sortOrderLabel(order)} / ${filteredItems.length} 个资产`}
                   generatedAt={data.chartWall.generatedAt}
                 />
                 {viewMode === "grid" ? (
-                  <ChartGrid items={filteredItems} onSelect={selectAsset} onPin={handlePin} onCompare={handleCompare} />
+                  <ChartGrid items={filteredItems} sort={sort} onSelect={selectAsset} onPin={handlePin} onCompare={handleCompare} />
                 ) : (
-                  <ExchangeTable items={filteredItems} sort={sort} onSort={(value) => setQueryValue("sort", value, defaultFilters.sort)} onSelect={selectAsset} onPin={handlePin} onCompare={handleCompare} />
+                  <ExchangeTable items={filteredItems} sort={sort} order={order} onSort={setSortQueryValue} onSelect={selectAsset} onPin={handlePin} onCompare={handleCompare} />
                 )}
                 <ComparePanel compareData={compareData} compareAssetIds={compareAssetIds} allItems={chartItems} onRemove={handleCompare} onClear={() => setCompareAssetIds([])} />
               </section>
@@ -445,7 +497,7 @@ function SidebarButton({ active, title, label, children, to }: SidebarButtonProp
 }
 
 function ActiveFilterChips({ filters, onReset }: { filters: Record<string, string>; onReset(): void }): JSX.Element | null {
-  const activeEntries = Object.entries(filters).filter(([, value]) => value !== "all" && value !== "trend_score" && value.length > 0);
+  const activeEntries = Object.entries(filters).filter(([key, value]) => !isDefaultFilterValue(key, value));
 
   if (activeEntries.length === 0) {
     return null;
@@ -482,12 +534,16 @@ function FundScopeStrip({ data, market }: { data: ChartWallPageData; market: str
 type FundDiscoveryPanelProps = {
   keyword: string;
   results: FundSearchResult[];
+  catalogSummary: FundCatalogSummary | null;
+  chartFundCount: number;
   knownFundCodes: Set<string>;
   error: string | null;
   message: string | null;
   isSearching: boolean;
+  isCatalogSyncing: boolean;
   importingCode: string | null;
   onKeywordChange(value: string): void;
+  onSyncCatalog(): void;
   onSearch(): void;
   onImport(code: string): void;
 };
@@ -495,12 +551,16 @@ type FundDiscoveryPanelProps = {
 function FundDiscoveryPanel({
   keyword,
   results,
+  catalogSummary,
+  chartFundCount,
   knownFundCodes,
   error,
   message,
   isSearching,
+  isCatalogSyncing,
   importingCode,
   onKeywordChange,
+  onSyncCatalog,
   onSearch,
   onImport
 }: FundDiscoveryPanelProps): JSX.Element {
@@ -515,12 +575,20 @@ function FundDiscoveryPanel({
       >
         <div>
           <strong>基金发现</strong>
-          <span>东方财富基金库</span>
+          <span>本地目录 + 按需导入走势</span>
+        </div>
+        <div className="fund-discovery-panel__metrics" aria-label="基金目录状态">
+          <span>目录 {catalogSummary?.totalCount.toLocaleString("en-US") ?? "同步中"}</span>
+          <span>走势池 {chartFundCount.toLocaleString("en-US")}</span>
+          {catalogSummary?.syncedAt && <span>更新 {formatDateTime(catalogSummary.syncedAt)}</span>}
         </div>
         <label className="search-control" htmlFor="fund-discovery-search">
           <Search size={17} aria-hidden="true" />
-          <input id="fund-discovery-search" value={keyword} onChange={(event) => onKeywordChange(event.target.value)} placeholder="005827、白酒、半导体" />
+          <input id="fund-discovery-search" value={keyword} onChange={(event) => onKeywordChange(event.target.value)} placeholder="000001、白酒、半导体、债券、QDII" />
         </label>
+        <Button type="button" variant="ghost" disabled={isCatalogSyncing} onClick={onSyncCatalog}>
+          {isCatalogSyncing ? "同步中" : "同步目录"}
+        </Button>
         <Button type="submit" variant="secondary" disabled={isSearching}>
           {isSearching ? "搜索中" : "搜索"}
         </Button>
@@ -537,7 +605,7 @@ function FundDiscoveryPanel({
                   <strong>{result.name}</strong>
                   <span>{result.code}</span>
                 </div>
-                <small>{[result.fundType, result.company, ...result.themes.slice(0, 2)].filter(Boolean).join(" / ")}</small>
+                <small>{[result.fundType, result.company, ...result.themes.slice(0, 2)].filter(Boolean).join(" / ") || "目录基金"}</small>
                 <footer>
                   <span>{result.latestNav === null ? "净值暂无" : `${result.latestNav.toFixed(4)} / ${result.latestNavDate ?? "--"}`}</span>
                   <Button variant={isKnown ? "ghost" : "secondary"} disabled={isImporting} onClick={() => onImport(result.code)}>
@@ -620,7 +688,7 @@ function SectionHeader({ title, description, generatedAt }: { title: string; des
   );
 }
 
-function ChartGrid({ items, onSelect, onPin, onCompare }: { items: ChartWallItem[]; onSelect(assetId: string): void; onPin(assetId: string): void; onCompare(assetId: string): void }): JSX.Element {
+function ChartGrid({ items, sort, onSelect, onPin, onCompare }: { items: ChartWallItem[]; sort?: string; onSelect(assetId: string): void; onPin(assetId: string): void; onCompare(assetId: string): void }): JSX.Element {
   if (items.length === 0) {
     return <EmptyState title="没有匹配资产" description="当前筛选条件没有命中已采集的真实资产。" />;
   }
@@ -628,36 +696,40 @@ function ChartGrid({ items, onSelect, onPin, onCompare }: { items: ChartWallItem
   return (
     <div className="chart-wall-grid">
       {items.map((item) => (
-        <AssetChartCard key={item.id} item={item} onSelect={onSelect} onPin={onPin} onCompare={onCompare} />
+        <AssetChartCard key={item.id} item={item} sort={sort} onSelect={onSelect} onPin={onPin} onCompare={onCompare} />
       ))}
     </div>
   );
 }
 
-function ExchangeTable({ items, sort, onSort, onSelect, onPin, onCompare }: { items: ChartWallItem[]; sort: string; onSort(value: string): void; onSelect(assetId: string): void; onPin(assetId: string): void; onCompare(assetId: string): void }): JSX.Element {
+function ExchangeTable({ items, sort, order, onSort, onSelect, onPin, onCompare }: { items: ChartWallItem[]; sort: string; order: ChartWallSortOrder; onSort(value: string, order?: ChartWallSortOrder): void; onSelect(assetId: string): void; onPin(assetId: string): void; onCompare(assetId: string): void }): JSX.Element {
   if (items.length === 0) {
     return <EmptyState title="没有匹配资产" description="换一个市场、品种、信号或搜索词试试。" />;
   }
+
+  const handleSort = (value: string): void => {
+    onSort(value, value === sort ? toggleSortOrder(order) : defaultOrderForSort(value));
+  };
 
   return (
     <div className="asset-table-wrapper asset-table-wrapper--dense">
       <table>
         <thead>
           <tr>
-            <SortableHeader label="资产" sortValue="symbol" currentSort={sort} onSort={onSort} />
+            <SortableHeader label="资产" sortValue="symbol" currentSort={sort} order={order} onSort={handleSort} />
             <th>市场</th>
             <th>品种</th>
             <th>最新价</th>
-            <SortableHeader label="1D" sortValue="return_1d" currentSort={sort} onSort={onSort} />
-            <SortableHeader label="1M" sortValue="return_1m" currentSort={sort} onSort={onSort} />
-            <SortableHeader label="3M" sortValue="return_3m" currentSort={sort} onSort={onSort} />
-            <SortableHeader label="6M" sortValue="return_6m" currentSort={sort} onSort={onSort} />
-            <SortableHeader label="1Y" sortValue="return_1y" currentSort={sort} onSort={onSort} />
-            <SortableHeader label="量比" sortValue="volume_ratio" currentSort={sort} onSort={onSort} />
-            <SortableHeader label="回撤" sortValue="drawdown" currentSort={sort} onSort={onSort} />
-            <SortableHeader label="趋势" sortValue="trend_score" currentSort={sort} onSort={onSort} />
+            <SortableHeader label="1D" sortValue="return_1d" currentSort={sort} order={order} onSort={handleSort} />
+            <SortableHeader label="1M" sortValue="return_1m" currentSort={sort} order={order} onSort={handleSort} />
+            <SortableHeader label="3M" sortValue="return_3m" currentSort={sort} order={order} onSort={handleSort} />
+            <SortableHeader label="6M" sortValue="return_6m" currentSort={sort} order={order} onSort={handleSort} />
+            <SortableHeader label="1Y" sortValue="return_1y" currentSort={sort} order={order} onSort={handleSort} />
+            <SortableHeader label="量比" sortValue="volume_ratio" currentSort={sort} order={order} onSort={handleSort} />
+            <SortableHeader label="回撤" sortValue="drawdown" currentSort={sort} order={order} onSort={handleSort} />
+            <SortableHeader label="趋势" sortValue="trend_score" currentSort={sort} order={order} onSort={handleSort} />
             <th>MACD</th>
-            <SortableHeader label="事件" sortValue="event_count" currentSort={sort} onSort={onSort} />
+            <SortableHeader label="事件" sortValue="event_count" currentSort={sort} order={order} onSort={handleSort} />
             <th>操作</th>
           </tr>
         </thead>
@@ -697,11 +769,14 @@ function ExchangeTable({ items, sort, onSort, onSelect, onPin, onCompare }: { it
   );
 }
 
-function SortableHeader({ label, sortValue, currentSort, onSort }: { label: string; sortValue: string; currentSort: string; onSort(value: string): void }): JSX.Element {
+function SortableHeader({ label, sortValue, currentSort, order, onSort }: { label: string; sortValue: string; currentSort: string; order: ChartWallSortOrder; onSort(value: string): void }): JSX.Element {
+  const isActive = currentSort === sortValue;
+
   return (
     <th>
-      <button type="button" className={currentSort === sortValue ? "sortable-header sortable-header--active" : "sortable-header"} onClick={() => onSort(sortValue)}>
+      <button type="button" className={isActive ? "sortable-header sortable-header--active" : "sortable-header"} onClick={() => onSort(sortValue)}>
         {label}
+        {isActive && <span aria-hidden="true">{order === "desc" ? "↓" : "↑"}</span>}
       </button>
     </th>
   );
@@ -1048,7 +1123,7 @@ function DataHealthSection({ data }: { data: ChartWallPageData }): JSX.Element {
         <MiniCountTable title="按周期" rows={barsByTimeframe.map((row) => ({ label: timeframeLabel(row.timeframe), count: row.count }))} />
         <MiniCountTable title="按来源" rows={barsBySource.map((row) => ({ label: row.source, count: row.count }))} />
       </div>
-      <ExchangeTable items={data.chartWall.items} sort={data.chartWall.sort} onSort={() => undefined} onSelect={() => undefined} onPin={() => undefined} onCompare={() => undefined} />
+      <ExchangeTable items={data.chartWall.items} sort={data.chartWall.sort} order={data.chartWall.order} onSort={() => undefined} onSelect={() => undefined} onPin={() => undefined} onCompare={() => undefined} />
     </section>
   );
 }
@@ -1155,7 +1230,28 @@ function getViewMode(value: string): ViewMode {
   return value === "table" ? "table" : "grid";
 }
 
+function getSortOrder(value: string): ChartWallSortOrder {
+  return value === "asc" ? "asc" : "desc";
+}
+
+function toggleSortOrder(value: ChartWallSortOrder): ChartWallSortOrder {
+  return value === "desc" ? "asc" : "desc";
+}
+
+function defaultOrderForSort(sort: string): ChartWallSortOrder {
+  return sort === "symbol" || sort === "market" || sort === "asset_type" ? "asc" : "desc";
+}
+
+function sortDisplayLabel(sort: string): string {
+  return optionLabel(sortOptions, sort);
+}
+
+function sortOrderLabel(order: ChartWallSortOrder): string {
+  return optionLabel(sortOrderOptions, order);
+}
+
 function facetOptions(allLabel: string, facets: ChartWallFacet[] | undefined, fallback: ControlOption[]): ControlOption[] {
+  const hasFacetCounts = Boolean(facets);
   const countByValue = new Map((facets ?? []).map((facet) => [facet.value, facet.count]));
   const labelByValue = new Map((facets ?? []).map((facet) => [facet.value, facet.label]));
   const fallbackValues = new Set(fallback.map((option) => option.value));
@@ -1166,13 +1262,13 @@ function facetOptions(allLabel: string, facets: ChartWallFacet[] | undefined, fa
   const totalCount = allFacetCount ?? (facets ?? []).filter((facet) => facet.value !== "all").reduce((sum, facet) => sum + facet.count, 0);
 
   return [
-    { value: "all", label: allLabel, count: totalCount > 0 ? totalCount : undefined },
+    { value: "all", label: allLabel, count: hasFacetCounts ? totalCount : undefined },
     ...fallback.map((option) => {
       const count = countByValue.get(option.value);
       return {
         ...option,
         label: labelByValue.get(option.value) ?? option.label,
-        count: typeof count === "number" && count > 0 ? count : undefined
+        count: typeof count === "number" ? count : hasFacetCounts ? 0 : undefined
       };
     }),
     ...facetExtras
@@ -1186,9 +1282,14 @@ function filterLabel(key: string): string {
     level: "层级",
     signal: "信号",
     sort: "排序",
+    order: "方向",
     search: "搜索"
   };
   return labels[key] ?? key;
+}
+
+function isDefaultFilterValue(key: string, value: string): boolean {
+  return value.length === 0 || value === "all" || (key === "sort" && value === defaultFilters.sort) || (key === "order" && value === defaultFilters.order);
 }
 
 function activeFilterValueLabel(key: string, value: string): string {
@@ -1206,6 +1307,10 @@ function activeFilterValueLabel(key: string, value: string): string {
 
   if (key === "sort") {
     return optionLabel(sortOptions, value);
+  }
+
+  if (key === "order") {
+    return optionLabel(sortOrderOptions, value);
   }
 
   return value;

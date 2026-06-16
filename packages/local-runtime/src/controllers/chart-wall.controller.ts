@@ -1,6 +1,6 @@
 import type { ServerResponse } from "node:http";
 import { JsonResponseProvider } from "../providers/json-response.provider";
-import { getRangeQueryParam, getStringQueryParam, getTimeframeQueryParam } from "../utils/query-param.utils";
+import { getRangeQueryParam, getSortOrderQueryParam, getStringQueryParam, getTimeframeQueryParam } from "../utils/query-param.utils";
 import type { ChartWallQueryService } from "../services/chart-wall-query.service";
 
 export class ChartWallController {
@@ -20,6 +20,7 @@ export class ChartWallController {
         market: getStringQueryParam(url, "market", "all"),
         assetType: getStringQueryParam(url, "assetType", "all"),
         sort: getStringQueryParam(url, "sort", "trend_score"),
+        order: getSortOrderQueryParam(url),
         signal: getStringQueryParam(url, "signal", "all")
       })
     );

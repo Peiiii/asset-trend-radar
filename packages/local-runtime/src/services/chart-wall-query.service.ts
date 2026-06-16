@@ -4,11 +4,13 @@ import type { SqliteAssetRepository, SqliteIngestionJobRepository, SqliteMarketD
 import { calculateIndicators } from "@gold-insights/indicator-engine";
 import type {
   AssetBarsResponse,
+  ChartWallFacet,
   AssetSummary,
   ChartWallFacets,
   ChartWallFundScope,
   ChartWallItem,
   ChartWallResponse,
+  ChartWallSortOrder,
   ChartWallSummary,
   CompareResponse,
   DataHealthResponse,
@@ -51,7 +53,7 @@ export class ChartWallQueryService {
       .map((asset) => this.getChartWallItem(asset, query, watchlistAssetIds, comparedAssetIds))
       .filter((item) => item.lastPrice !== null);
     const signalFilteredItems = this.applySignalFilter(matchedItems, query.signal);
-    const items = this.sortItems(signalFilteredItems, query.sort);
+    const items = this.sortItems(signalFilteredItems, query.sort, query.order);
 
     return {
       universe: query.universe,
@@ -59,11 +61,12 @@ export class ChartWallQueryService {
       timeframe: query.timeframe,
       range: query.range,
       sort: query.sort,
+      order: query.order,
       signal: query.signal,
       generatedAt: new Date().toISOString(),
       sources: [...new Set(items.map((item) => item.source))],
       summary: this.getChartWallSummary(items, marketDataAssets.length),
-      facets: this.getChartWallFacets(matchedItems),
+      facets: this.getChartWallFacets(query, marketDataAssets, matchedItems),
       fundScope: this.getFundScope(query, items, marketDataAssets),
       items
     };
@@ -207,11 +210,11 @@ export class ChartWallQueryService {
       lastPrice: latest?.close ?? null,
       returnPct: this.getVisibleRangeReturnPct(bars),
       return1d: getReturnPct(dailyBars, 1),
-      return1w: getReturnPct(dailyBars, 5),
-      return1m: getReturnPct(dailyBars, 21),
-      return3m: getReturnPct(dailyBars, 63),
-      return6m: getReturnPct(dailyBars, 126),
-      return1y: getReturnPct(dailyBars, 252),
+      return1w: this.getCalendarRangeReturnPct(dailyBars, "1w"),
+      return1m: this.getCalendarRangeReturnPct(dailyBars, "1m"),
+      return3m: this.getCalendarRangeReturnPct(dailyBars, "3m"),
+      return6m: this.getCalendarRangeReturnPct(dailyBars, "6m"),
+      return1y: this.getCalendarRangeReturnPct(dailyBars, "1y"),
       trendScore,
       trendLabel: this.getTrendLabel(trendScore),
       macdState: getMacdState(indicators),
@@ -291,6 +294,8 @@ export class ChartWallQueryService {
     return ((latest.close - first.close) / first.close) * 100;
   };
 
+  private getCalendarRangeReturnPct = (bars: OhlcvBar[], range: string): number | null => this.getVisibleRangeReturnPct(filterByCalendarRange(bars, range));
+
   private getChartWallSummary = (items: ChartWallItem[], totalUniverseAssets: number): ChartWallSummary => {
     const latestTs = Math.max(
       ...items
@@ -315,10 +320,21 @@ export class ChartWallQueryService {
     };
   };
 
-  private getChartWallFacets = (items: ChartWallItem[]): ChartWallFacets => ({
-    markets: this.toFacetCounts(items, (item) => item.market),
-    assetTypes: this.toFacetCounts(items, (item) => item.assetType, (value) => this.getAssetTypeLabel(value)),
-    levels: this.toFacetCounts(items, (item) => item.level ?? "instrument", (value) => this.getLevelLabel(value)),
+  private getChartWallFacets = (query: ChartWallQuery, assets: AssetSummary[], items: ChartWallItem[]): ChartWallFacets => ({
+    markets: this.toFacetCounts(
+      assets.filter((asset) => this.matchesChartWallFacetQuery(asset, query, "market")),
+      (asset) => asset.market
+    ),
+    assetTypes: this.toFacetCounts(
+      assets.filter((asset) => this.matchesChartWallFacetQuery(asset, query, "assetType")),
+      (asset) => asset.assetType,
+      (value) => this.getAssetTypeLabel(value)
+    ),
+    levels: this.toFacetCounts(
+      assets.filter((asset) => this.matchesChartWallFacetQuery(asset, query, "level")),
+      (asset) => asset.level ?? "instrument",
+      (value) => this.getLevelLabel(value)
+    ),
     sources: this.toFacetCounts(items, (item) => item.source),
     signals: [
       { value: "all", label: "全部信号", count: items.length },
@@ -351,7 +367,7 @@ export class ChartWallQueryService {
     };
   };
 
-  private toFacetCounts = (items: ChartWallItem[], getValue: (item: ChartWallItem) => string, getLabel: (value: string) => string = (value) => value): ChartWallFacets["markets"] => {
+  private toFacetCounts = <TItem,>(items: TItem[], getValue: (item: TItem) => string, getLabel: (value: string) => string = (value) => value): ChartWallFacet[] => {
     const counts = new Map<string, number>();
 
     for (const item of items) {
@@ -366,6 +382,26 @@ export class ChartWallQueryService {
         count
       }))
       .sort((left, right) => right.count - left.count || left.label.localeCompare(right.label, "zh-Hans-CN"));
+  };
+
+  private matchesChartWallFacetQuery = (asset: AssetSummary, query: ChartWallQuery, facet: "market" | "assetType" | "level"): boolean => {
+    if (query.universe !== "global" && asset.market !== query.universe && asset.parentId !== query.universe) {
+      return false;
+    }
+
+    if (facet !== "level" && query.level !== "all" && asset.level !== query.level) {
+      return false;
+    }
+
+    if (facet !== "market" && query.market !== "all" && asset.market !== query.market) {
+      return false;
+    }
+
+    if (facet !== "assetType" && query.assetType !== "all" && asset.assetType !== query.assetType) {
+      return false;
+    }
+
+    return true;
   };
 
   private applySignalFilter = (items: ChartWallItem[], signal: string): ChartWallItem[] => {
@@ -549,44 +585,68 @@ export class ChartWallQueryService {
     return true;
   };
 
-  private sortItems = (items: ChartWallItem[], sort: string): ChartWallItem[] => {
+  private sortItems = (items: ChartWallItem[], sort: string, order: ChartWallSortOrder): ChartWallItem[] => {
     switch (sort) {
       case "return_1d":
-        return this.sortByNullableNumber(items, (item) => item.return1d);
+        return this.sortByNullableNumber(items, (item) => item.return1d, order);
       case "return_1w":
-        return this.sortByNullableNumber(items, (item) => item.return1w);
+        return this.sortByNullableNumber(items, (item) => item.return1w, order);
       case "return_1m":
-        return this.sortByNullableNumber(items, (item) => item.return1m);
+        return this.sortByNullableNumber(items, (item) => item.return1m, order);
       case "return_3m":
-        return this.sortByNullableNumber(items, (item) => item.return3m);
+        return this.sortByNullableNumber(items, (item) => item.return3m, order);
       case "return_6m":
-        return this.sortByNullableNumber(items, (item) => item.return6m);
+        return this.sortByNullableNumber(items, (item) => item.return6m, order);
       case "return_1y":
-        return this.sortByNullableNumber(items, (item) => item.return1y);
+        return this.sortByNullableNumber(items, (item) => item.return1y, order);
       case "return":
-        return this.sortByNullableNumber(items, (item) => item.returnPct);
+        return this.sortByNullableNumber(items, (item) => item.returnPct, order);
       case "volume_ratio":
-        return this.sortByNullableNumber(items, (item) => item.volumeRatio);
+        return this.sortByNullableNumber(items, (item) => item.volumeRatio, order);
       case "drawdown":
-        return this.sortByNullableNumber(items, (item) => item.drawdownPct);
+        return this.sortByNullableNumber(items, (item) => item.drawdownPct, order);
       case "event_count":
-        return [...items].sort((left, right) => right.events.length - left.events.length || right.trendScore - left.trendScore);
+        return this.sortByNullableNumber(items, (item) => item.events.length, order);
       case "market":
-        return [...items].sort((left, right) => left.market.localeCompare(right.market, "zh-Hans-CN") || right.trendScore - left.trendScore);
+        return this.sortByText(items, (item) => item.market, order);
       case "asset_type":
-        return [...items].sort((left, right) => left.assetType.localeCompare(right.assetType) || right.trendScore - left.trendScore);
+        return this.sortByText(items, (item) => item.assetType, order);
       case "macd":
-        return [...items].sort((left, right) => right.events.length - left.events.length || right.trendScore - left.trendScore);
+        return this.sortByNullableNumber(items, (item) => item.events.length, order);
       case "symbol":
-        return [...items].sort((left, right) => left.symbol.localeCompare(right.symbol));
+        return this.sortByText(items, (item) => item.symbol, order);
       case "trend_score":
       default:
-        return [...items].sort((left, right) => right.trendScore - left.trendScore);
+        return this.sortByNullableNumber(items, (item) => item.trendScore, order);
     }
   };
 
-  private sortByNullableNumber = (items: ChartWallItem[], getValue: (item: ChartWallItem) => number | null): ChartWallItem[] =>
-    [...items].sort((left, right) => (getValue(right) ?? -Infinity) - (getValue(left) ?? -Infinity) || right.trendScore - left.trendScore);
+  private sortByNullableNumber = (items: ChartWallItem[], getValue: (item: ChartWallItem) => number | null, order: ChartWallSortOrder): ChartWallItem[] =>
+    [...items].sort((left, right) => {
+      const leftValue = getValue(left);
+      const rightValue = getValue(right);
+
+      if (leftValue === null && rightValue === null) {
+        return right.trendScore - left.trendScore;
+      }
+
+      if (leftValue === null) {
+        return 1;
+      }
+
+      if (rightValue === null) {
+        return -1;
+      }
+
+      const primary = order === "asc" ? leftValue - rightValue : rightValue - leftValue;
+      return primary || right.trendScore - left.trendScore;
+    });
+
+  private sortByText = (items: ChartWallItem[], getValue: (item: ChartWallItem) => string, order: ChartWallSortOrder): ChartWallItem[] =>
+    [...items].sort((left, right) => {
+      const primary = getValue(left).localeCompare(getValue(right), "zh-Hans-CN");
+      return (order === "asc" ? primary : -primary) || right.trendScore - left.trendScore;
+    });
 
   private toUniverseTreeNode = (asset: AssetSummary, allAssets: AssetSummary[]): UniverseTreeNode => {
     const childrenAssets = allAssets.filter((candidate) => candidate.parentId === asset.id);

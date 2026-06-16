@@ -39,6 +39,8 @@ export type ChartWallItem = AssetSummary & {
   isCompared?: boolean;
 };
 
+export type ChartWallSortOrder = "asc" | "desc";
+
 export type ChartWallFacet = {
   value: string;
   label: string;
@@ -83,6 +85,7 @@ export type ChartWallResponse = {
   timeframe: string;
   range: string;
   sort: string;
+  order: ChartWallSortOrder;
   signal: string;
   generatedAt: string;
   sources: string[];

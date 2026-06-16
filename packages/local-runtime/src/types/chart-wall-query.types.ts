@@ -1,4 +1,4 @@
-import type { Timeframe } from "@gold-insights/market-domain";
+import type { ChartWallSortOrder, Timeframe } from "@gold-insights/market-domain";
 
 export type ChartWallQuery = {
   range: string;
@@ -8,6 +8,7 @@ export type ChartWallQuery = {
   market: string;
   assetType: string;
   sort: string;
+  order: ChartWallSortOrder;
   signal: string;
 };
 

@@ -5,6 +5,7 @@ import { formatPrice } from "@/shared/utils/format-number.utils";
 
 type AssetChartCardProps = {
   item: ChartWallItem;
+  sort?: string;
   onSelect?(assetId: string): void;
   onPin?(assetId: string): void;
   onCompare?(assetId: string): void;
@@ -46,8 +47,9 @@ const getBreakoutLabel = (state: string): string => {
   return "区间内";
 };
 
-export function AssetChartCard({ item, onSelect, onPin, onCompare }: AssetChartCardProps): JSX.Element {
+export function AssetChartCard({ item, sort, onSelect, onPin, onCompare }: AssetChartCardProps): JSX.Element {
   const topEvent = item.events[0];
+  const sortMetric = getSortMetric(item, sort);
 
   return (
     <ChartCardShell className={`${item.isPinned ? "asset-chart-card--pinned" : ""} ${item.isCompared ? "asset-chart-card--compared" : ""}`}>
@@ -64,6 +66,13 @@ export function AssetChartCard({ item, onSelect, onPin, onCompare }: AssetChartC
         <PriceChange value={item.returnPct} />
       </div>
 
+      {sortMetric && (
+        <div className={`asset-chart-card__sort-metric asset-chart-card__sort-metric--${sortMetric.tone}`}>
+          <span>排序</span>
+          <strong>{sortMetric.label} {sortMetric.value}</strong>
+        </div>
+      )}
+
       <div className="asset-chart-card__meta-row">
         <span>{item.market}</span>
         <span>{assetTypeLabel(item.assetType)}</span>
@@ -75,6 +84,7 @@ export function AssetChartCard({ item, onSelect, onPin, onCompare }: AssetChartC
       <div className="asset-chart-card__return-grid">
         <ReturnCell label="1D" value={item.return1d} />
         <ReturnCell label="1M" value={item.return1m} />
+        <ReturnCell label="3M" value={item.return3m} />
         <ReturnCell label="6M" value={item.return6m} />
       </div>
 
@@ -115,6 +125,44 @@ function ReturnCell({ label, value }: { label: string; value: number | null | un
       <strong>{formatPercent(value)}</strong>
     </span>
   );
+}
+
+function getSortMetric(item: ChartWallItem, sort: string | undefined): { label: string; value: string; tone: "positive" | "negative" | "neutral" } | null {
+  switch (sort) {
+    case "return":
+      return percentSortMetric("区间涨幅", item.returnPct);
+    case "return_1d":
+      return percentSortMetric("1D 涨幅", item.return1d);
+    case "return_1w":
+      return percentSortMetric("1W 涨幅", item.return1w);
+    case "return_1m":
+      return percentSortMetric("1M 涨幅", item.return1m);
+    case "return_3m":
+      return percentSortMetric("3M 涨幅", item.return3m);
+    case "return_6m":
+      return percentSortMetric("6M 涨幅", item.return6m);
+    case "return_1y":
+      return percentSortMetric("1Y 涨幅", item.return1y);
+    case "volume_ratio":
+      return { label: "量比", value: item.volumeRatio === null ? "暂无" : `${item.volumeRatio.toFixed(2)}x`, tone: "neutral" };
+    case "drawdown":
+      return percentSortMetric("回撤", item.drawdownPct);
+    case "event_count":
+    case "macd":
+      return { label: "事件", value: String(item.events.length), tone: "neutral" };
+    case "trend_score":
+      return { label: "趋势分", value: String(item.trendScore), tone: item.trendScore > 0 ? "positive" : item.trendScore < 0 ? "negative" : "neutral" };
+    default:
+      return null;
+  }
+}
+
+function percentSortMetric(label: string, value: number | null | undefined): { label: string; value: string; tone: "positive" | "negative" | "neutral" } {
+  return {
+    label,
+    value: formatPercent(value),
+    tone: value === null || value === undefined ? "neutral" : value >= 0 ? "positive" : "negative"
+  };
 }
 
 function formatPercent(value: number | null | undefined): string {
