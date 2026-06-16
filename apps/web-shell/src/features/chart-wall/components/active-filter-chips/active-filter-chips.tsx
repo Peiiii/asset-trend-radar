@@ -2,13 +2,14 @@ import { FilterChip } from "@gold-insights/ui";
 import type { ControlOption } from "@gold-insights/ui";
 import type { ChartWallSortOrder } from "@gold-insights/market-domain";
 
-type ActiveFilterKey = "market" | "assetType" | "level" | "signal" | "sort" | "order" | "search";
+type ActiveFilterKey = "market" | "assetType" | "level" | "tag" | "signal" | "sort" | "order" | "search";
 
 type ActiveFilterValues = Record<ActiveFilterKey, string>;
 
 type ActiveFilterChipOptions = {
   assetTypes: ControlOption[];
   levels: ControlOption[];
+  tags: ControlOption[];
   signals: ControlOption[];
   sorts: ControlOption[];
   orders: ControlOption[];
@@ -53,6 +54,7 @@ function filterLabel(key: ActiveFilterKey): string {
     market: "市场",
     assetType: "品种",
     level: "层级",
+    tag: "主题",
     signal: "信号",
     sort: "排序",
     order: "方向",
@@ -76,6 +78,10 @@ function activeFilterValueLabel(key: ActiveFilterKey, value: string, options: Ac
 
   if (key === "signal") {
     return optionLabel(options.signals, value);
+  }
+
+  if (key === "tag") {
+    return optionLabel(options.tags, value);
   }
 
   if (key === "sort") {

@@ -75,6 +75,7 @@ export type ChartWallFacets = {
   markets: ChartWallFacet[];
   assetTypes: ChartWallFacet[];
   levels: ChartWallFacet[];
+  tags: ChartWallFacet[];
   sources: ChartWallFacet[];
   signals: ChartWallFacet[];
 };
@@ -87,6 +88,7 @@ export type ChartWallResponse = {
   sort: string;
   order: ChartWallSortOrder;
   signal: string;
+  tag: string;
   generatedAt: string;
   sources: string[];
   summary: ChartWallSummary;

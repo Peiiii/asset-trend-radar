@@ -96,6 +96,8 @@ try {
   const aShareWall = await fetchJson("/api/chart-wall?range=6m&timeframe=1d&universe=global&level=all&market=A%20%E8%82%A1&assetType=all&sort=trend_score");
   const fundWall = await fetchJson("/api/chart-wall?range=6m&timeframe=1d&universe=global&level=all&market=all&assetType=fund&sort=return_1m");
   const commodityWall = await fetchJson("/api/chart-wall?range=6m&timeframe=1d&universe=global&level=all&market=%E5%95%86%E5%93%81&assetType=all&sort=volume_ratio");
+  const preciousMetalsWall = await fetchJson("/api/chart-wall?range=6m&timeframe=1d&universe=global&level=all&market=%E5%95%86%E5%93%81&assetType=all&tag=%E8%B4%B5%E9%87%91%E5%B1%9E&sort=return_1m");
+  const agricultureWall = await fetchJson("/api/chart-wall?range=6m&timeframe=1d&universe=global&level=all&market=%E5%95%86%E5%93%81&assetType=all&tag=%E5%86%9C%E4%BA%A7%E5%93%81&sort=return_1m");
   const sortedReturnWall = await fetchJson("/api/chart-wall?range=6m&timeframe=1d&universe=global&level=all&market=all&assetType=all&sort=return_1m");
   const cryptoOneMonthWall = await fetchJson("/api/chart-wall?range=1m&timeframe=1d&universe=global&level=all&market=%E5%8A%A0%E5%AF%86&assetType=crypto&sort=return_1m&order=desc");
   const sortedVolumeWall = await fetchJson("/api/chart-wall?range=6m&timeframe=1d&universe=global&level=all&market=all&assetType=all&sort=volume_ratio");
@@ -169,6 +171,10 @@ try {
   assert(fundWall.items.length >= 60 && fundWall.items.every((item) => item.assetType === "fund"), "expected expanded real fund/ETF chart wall");
   assert(fundWall.items.some((item) => item.market === "基金" && item.source === "eastmoney"), "expected China mutual funds from Eastmoney");
   assert(commodityWall.items.length >= 30 && commodityWall.items.every((item) => item.market === "商品"), "expected expanded commodity chart wall");
+  assert(commodityWall.facets.tags.some((facet) => facet.value === "贵金属" && facet.count >= 8), "expected tag facets for precious metals");
+  assert(commodityWall.facets.tags.some((facet) => facet.value === "农产品" && facet.count >= 6), "expected tag facets for agriculture");
+  assert(preciousMetalsWall.tag === "贵金属" && preciousMetalsWall.items.length >= 8 && preciousMetalsWall.items.every((item) => item.tags.includes("贵金属")), "expected precious metals tag-filtered commodity chart wall");
+  assert(agricultureWall.tag === "农产品" && agricultureWall.items.length >= 6 && agricultureWall.items.every((item) => item.tags.includes("农产品")), "expected agriculture tag-filtered commodity chart wall");
   assert(isSortedDesc(sortedReturnWall.items, (item) => item.return1m), "expected return_1m sorting");
   assert(cryptoOneMonthWall.order === "desc" && isSortedDesc(cryptoOneMonthWall.items, (item) => item.return1m), "expected explicit sort order for crypto 1M return");
   assert(
@@ -252,6 +258,8 @@ try {
         chartWallItems: chartWall.items.length,
         fundItems: fundWall.items.length,
         commodityItems: commodityWall.items.length,
+        preciousMetalsItems: preciousMetalsWall.items.length,
+        agricultureItems: agricultureWall.items.length,
         mutualFundBars: mutualFundBars.bars.length,
         fundCatalogCount: fundSearch.catalog.totalCount,
         sortedFundCatalogTopReturn1m: sortedFundCatalogPage.items[0]?.return1m ?? null,

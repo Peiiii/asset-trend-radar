@@ -65,6 +65,7 @@ const defaultFilters = {
   market: "all",
   assetType: "all",
   level: "all",
+  tag: "all",
   sort: "trend_score",
   order: "desc" as ChartWallSortOrder,
   signal: "all"
@@ -96,6 +97,19 @@ const levelFallbackOptions: ControlOption[] = [
   { value: "company", label: "公司" },
   { value: "instrument", label: "工具/合约" },
   { value: "macro-indicator", label: "宏观" }
+];
+const tagFallbackOptions: ControlOption[] = [
+  { value: "贵金属", label: "贵金属" },
+  { value: "能源", label: "能源" },
+  { value: "农产品", label: "农产品" },
+  { value: "工业金属", label: "工业金属" },
+  { value: "半导体", label: "半导体" },
+  { value: "科技", label: "科技" },
+  { value: "消费", label: "消费" },
+  { value: "医疗", label: "医疗" },
+  { value: "新能源", label: "新能源" },
+  { value: "ETF", label: "ETF" },
+  { value: "支付宝常见", label: "支付宝常见" }
 ];
 const sortOptions: ControlOption[] = [
   { value: "trend_score", label: "趋势分", description: "趋势强度优先" },
@@ -141,6 +155,7 @@ export function ChartWallPage(): JSX.Element {
   const market = getSearchValue(searchParams, "market", defaultFilters.market);
   const assetType = getSearchValue(searchParams, "assetType", defaultFilters.assetType);
   const level = getSearchValue(searchParams, "level", defaultFilters.level);
+  const tag = getSearchValue(searchParams, "tag", defaultFilters.tag);
   const sort = getSearchValue(searchParams, "sort", defaultFilters.sort);
   const order = getSortOrder(getSearchValue(searchParams, "order", defaultFilters.order));
   const signal = getSearchValue(searchParams, "signal", defaultFilters.signal);
@@ -203,11 +218,12 @@ export function ChartWallPage(): JSX.Element {
       level,
       market,
       assetType,
+      tag,
       sort,
       order,
       signal
     }),
-    [assetType, level, market, order, range, signal, sort, timeframe]
+    [assetType, level, market, order, range, signal, sort, tag, timeframe]
   );
   const { data, error, isLoading, isRefreshing, refresh, reload } = useChartWallQuery(filters);
   const fundDirectoryQuery = useFundDirectoryQuery(fundDirectory.filters, activeView === "fund-directory");
@@ -459,6 +475,7 @@ export function ChartWallPage(): JSX.Element {
             <Select id="market-filter" label="市场" value={market} onChange={(value) => setQueryValue("market", value, defaultFilters.market)} options={facetOptions("全部市场", data?.chartWall.facets?.markets, marketFallbackOptions)} />
             <Select id="asset-type-filter" label="品种" value={assetType} onChange={(value) => setQueryValue("assetType", value, defaultFilters.assetType)} options={facetOptions("全部品种", data?.chartWall.facets?.assetTypes, assetTypeFallbackOptions)} />
             <Select id="level-filter" label="层级" value={level} onChange={(value) => setQueryValue("level", value, defaultFilters.level)} options={facetOptions("全部层级", data?.chartWall.facets?.levels, levelFallbackOptions)} />
+            <Select id="tag-filter" label="主题" value={tag} onChange={(value) => setQueryValue("tag", value, defaultFilters.tag)} options={facetOptions("全部主题", data?.chartWall.facets?.tags, tagFallbackOptions)} />
             <Select id="signal-filter" label="信号" value={signal} onChange={(value) => setQueryValue("signal", value, defaultFilters.signal)} options={facetOptions("全部信号", data?.chartWall.facets?.signals, signalFallbackOptions)} />
             <Select id="sort-filter" label="排序" value={sort} onChange={(value) => setSortQueryValue(value, defaultOrderForSort(value))} options={sortOptions} />
             <Select id="sort-order-filter" label="方向" value={order} onChange={(value) => setSortQueryValue(sort, getSortOrder(value))} options={sortOrderOptions} />
@@ -485,9 +502,9 @@ export function ChartWallPage(): JSX.Element {
           )}
 
           <ActiveFilterChips
-            filters={{ market, assetType, level, signal, sort, order, search }}
+            filters={{ market, assetType, level, tag, signal, sort, order, search }}
             defaults={{ sort: defaultFilters.sort, order: defaultFilters.order }}
-            options={{ assetTypes: assetTypeFallbackOptions, levels: levelFallbackOptions, signals: signalFallbackOptions, sorts: sortOptions, orders: sortOrderOptions }}
+            options={{ assetTypes: assetTypeFallbackOptions, levels: levelFallbackOptions, tags: tagFallbackOptions, signals: signalFallbackOptions, sorts: sortOptions, orders: sortOrderOptions }}
             onRemove={removeFilterChip}
             onReset={resetFilters}
           />

@@ -21,7 +21,8 @@ export class ChartWallController {
         assetType: getStringQueryParam(url, "assetType", "all"),
         sort: getStringQueryParam(url, "sort", "trend_score"),
         order: getSortOrderQueryParam(url),
-        signal: getStringQueryParam(url, "signal", "all")
+        signal: getStringQueryParam(url, "signal", "all"),
+        tag: getStringQueryParam(url, "tag", "all")
       })
     );
   };

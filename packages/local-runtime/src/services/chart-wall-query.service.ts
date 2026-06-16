@@ -5,9 +5,7 @@ import { calculateIndicators } from "@gold-insights/indicator-engine";
 import type {
   AssetBarsResponse,
   AssetDetailResponse,
-  ChartWallFacet,
   AssetSummary,
-  ChartWallFacets,
   ChartWallFundScope,
   ChartWallItem,
   ChartWallResponse,
@@ -27,6 +25,7 @@ import { filterByCalendarRange, getRangeFetchLimit, toIsoDateTime } from "@gold-
 import { getBreakoutState, getMacdState, getReturnPct, getTrendScore } from "@gold-insights/scanner-engine";
 import type { AssetBarsQuery, ChartWallQuery, CompareQuery, ScannerEventsQuery } from "../types/chart-wall-query.types";
 import type { LocalRuntimeOptions } from "../types/local-runtime-options.types";
+import { ChartWallFacetBuilderService } from "./chart-wall-facet-builder.service";
 import { ChartWallItemSorter } from "./chart-wall-item-sorter.service";
 
 type RangedSeries = {
@@ -37,6 +36,7 @@ type RangedSeries = {
 
 export class ChartWallQueryService {
   private readonly itemSorter = new ChartWallItemSorter();
+  private readonly facetBuilder = new ChartWallFacetBuilderService();
 
   public constructor(
     private readonly options: LocalRuntimeOptions,
@@ -59,7 +59,7 @@ export class ChartWallQueryService {
     const facetItems = this.canReuseMatchedItemsForFacets(query)
       ? matchedItems
       : facetAssets.map((asset) => this.getChartWallItem(asset, query, watchlistAssetIds, comparedAssetIds)).filter((item) => item.lastPrice !== null);
-    const signalFilteredItems = this.applySignalFilter(matchedItems, query.signal);
+    const signalFilteredItems = this.facetBuilder.applySignalFilter(matchedItems, query.signal);
     const items = this.itemSorter.sort(signalFilteredItems, query.sort, query.order);
 
     return {
@@ -70,10 +70,11 @@ export class ChartWallQueryService {
       sort: query.sort,
       order: query.order,
       signal: query.signal,
+      tag: query.tag,
       generatedAt: new Date().toISOString(),
       sources: [...new Set(items.map((item) => item.source))],
       summary: this.getChartWallSummary(items, marketDataAssets.length),
-      facets: this.getChartWallFacets(facetAssets, facetItems),
+      facets: this.facetBuilder.buildFacets(facetAssets, facetItems),
       fundScope: this.getFundScope(query, items, marketDataAssets),
       items
     };
@@ -113,7 +114,7 @@ export class ChartWallQueryService {
       generatedAt: new Date().toISOString(),
       timeframe: query.timeframe,
       range: query.range,
-      item: this.getChartWallItem(asset, { range: query.range, timeframe: query.timeframe, universe: "global", level: "all", market: "all", assetType: "all", sort: "trend_score", order: "desc", signal: "all" }, pinnedIds, new Set())
+      item: this.getChartWallItem(asset, { range: query.range, timeframe: query.timeframe, universe: "global", level: "all", market: "all", assetType: "all", sort: "trend_score", order: "desc", signal: "all", tag: "all" }, pinnedIds, new Set())
     };
   };
 
@@ -344,26 +345,6 @@ export class ChartWallQueryService {
     };
   };
 
-  private getChartWallFacets = (assets: AssetSummary[], items: ChartWallItem[]): ChartWallFacets => ({
-    markets: this.toFacetCounts(assets, (asset) => asset.market),
-    assetTypes: this.toFacetCounts(assets, (asset) => asset.assetType, (value) => this.getAssetTypeLabel(value)),
-    levels: this.toFacetCounts(assets, (asset) => asset.level ?? "instrument", (value) => this.getLevelLabel(value)),
-    sources: this.toFacetCounts(assets, (asset) => asset.dataSource ?? "unknown"),
-    signals: [
-      { value: "all", label: "全部信号", count: items.length },
-      { value: "strong", label: "强趋势", count: this.applySignalFilter(items, "strong").length },
-      { value: "weak", label: "偏弱", count: this.applySignalFilter(items, "weak").length },
-      { value: "positive", label: "区间上涨", count: this.applySignalFilter(items, "positive").length },
-      { value: "negative", label: "区间下跌", count: this.applySignalFilter(items, "negative").length },
-      { value: "macd_golden_cross", label: "MACD 金叉", count: this.applySignalFilter(items, "macd_golden_cross").length },
-      { value: "macd_dead_cross", label: "MACD 死叉", count: this.applySignalFilter(items, "macd_dead_cross").length },
-      { value: "breakout", label: "价格突破", count: this.applySignalFilter(items, "breakout").length },
-      { value: "volume_breakout", label: "量能放大", count: this.applySignalFilter(items, "volume_breakout").length },
-      { value: "eventful", label: "有扫描事件", count: this.applySignalFilter(items, "eventful").length },
-      { value: "pinned", label: "已自选", count: this.applySignalFilter(items, "pinned").length }
-    ]
-  });
-
   private getFundScope = (query: ChartWallQuery, items: ChartWallItem[], marketDataAssets: AssetSummary[]): ChartWallFundScope | null => {
     if (query.assetType !== "fund") {
       return null;
@@ -380,92 +361,9 @@ export class ChartWallQueryService {
     };
   };
 
-  private toFacetCounts = <TItem,>(items: TItem[], getValue: (item: TItem) => string, getLabel: (value: string) => string = (value) => value): ChartWallFacet[] => {
-    const counts = new Map<string, number>();
-
-    for (const item of items) {
-      const value = getValue(item);
-      counts.set(value, (counts.get(value) ?? 0) + 1);
-    }
-
-    return [...counts.entries()]
-      .map(([value, count]) => ({
-        value,
-        label: getLabel(value),
-        count
-      }))
-      .sort((left, right) => right.count - left.count || left.label.localeCompare(right.label, "zh-Hans-CN"));
-  };
-
-  private applySignalFilter = (items: ChartWallItem[], signal: string): ChartWallItem[] => {
-    switch (signal) {
-      case "strong":
-        return items.filter((item) => item.trendScore >= 30);
-      case "weak":
-        return items.filter((item) => item.trendScore <= -10);
-      case "positive":
-        return items.filter((item) => (item.returnPct ?? 0) > 0);
-      case "negative":
-        return items.filter((item) => (item.returnPct ?? 0) < 0);
-      case "macd_golden_cross":
-        return items.filter((item) => item.macdState === "bullish-cross");
-      case "macd_dead_cross":
-        return items.filter((item) => item.macdState === "bearish-cross");
-      case "breakout":
-        return items.filter((item) => item.breakoutState.startsWith("breakout"));
-      case "volume_breakout":
-        return items.filter((item) => (item.volumeRatio ?? 0) >= 1.5);
-      case "eventful":
-        return items.filter((item) => item.events.length > 0);
-      case "pinned":
-        return items.filter((item) => item.isPinned);
-      case "all":
-      default:
-        return items;
-    }
-  };
-
   private average = (values: Array<number | null | undefined>): number | null => {
     const finiteValues = values.filter((value): value is number => typeof value === "number" && Number.isFinite(value));
     return finiteValues.length > 0 ? finiteValues.reduce((sum, value) => sum + value, 0) / finiteValues.length : null;
-  };
-
-  private getAssetTypeLabel = (assetType: string): string => {
-    switch (assetType) {
-      case "index":
-        return "指数";
-      case "fund":
-        return "基金/ETF";
-      case "equity":
-        return "公司";
-      case "commodity":
-        return "商品";
-      case "macro":
-        return "宏观/外汇/债券";
-      case "crypto":
-        return "加密";
-      default:
-        return assetType;
-    }
-  };
-
-  private getLevelLabel = (level: string): string => {
-    switch (level) {
-      case "broad-index":
-        return "宽基";
-      case "sector-index":
-        return "行业";
-      case "theme-basket":
-        return "主题";
-      case "company":
-        return "公司";
-      case "instrument":
-        return "工具/合约";
-      case "macro-indicator":
-        return "宏观";
-      default:
-        return level;
-    }
   };
 
   private getTrendLabel = (trendScore: number): string => {
@@ -558,7 +456,7 @@ export class ChartWallQueryService {
 
   private isMarketDataAsset = (asset: AssetSummary): boolean => asset.level !== "asset-class" && asset.level !== "market";
 
-  private canReuseMatchedItemsForFacets = (query: ChartWallQuery): boolean => query.market === "all" && query.assetType === "all" && query.level === "all";
+  private canReuseMatchedItemsForFacets = (query: ChartWallQuery): boolean => query.market === "all" && query.assetType === "all" && query.level === "all" && query.tag === "all";
 
   private matchesChartWallUniverseQuery = (asset: AssetSummary, query: ChartWallQuery): boolean =>
     query.universe === "global" || asset.market === query.universe || asset.parentId === query.universe;
@@ -577,6 +475,10 @@ export class ChartWallQueryService {
     }
 
     if (query.assetType !== "all" && asset.assetType !== query.assetType) {
+      return false;
+    }
+
+    if (query.tag !== "all" && !(asset.tags ?? []).includes(query.tag)) {
       return false;
     }
 

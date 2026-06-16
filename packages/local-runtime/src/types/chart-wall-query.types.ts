@@ -10,6 +10,7 @@ export type ChartWallQuery = {
   sort: string;
   order: ChartWallSortOrder;
   signal: string;
+  tag: string;
 };
 
 export type AssetBarsQuery = {

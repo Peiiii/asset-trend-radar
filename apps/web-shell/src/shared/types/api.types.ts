@@ -20,6 +20,7 @@ export type ChartWallFilters = {
   sort: string;
   order: ChartWallSortOrder;
   signal: string;
+  tag: string;
 };
 
 export type CompareData = CompareResponse;
