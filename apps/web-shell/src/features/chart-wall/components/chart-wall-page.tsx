@@ -327,6 +327,18 @@ export function ChartWallPage(): JSX.Element {
     setSearchParams(new URLSearchParams());
   };
 
+  const removeFilterChip = (key: string): void => {
+    const next = new URLSearchParams(searchParams);
+    const queryKey = key === "search" ? "q" : key;
+
+    next.delete(queryKey);
+    if (key === "sort") {
+      next.delete("order");
+    }
+
+    setSearchParams(next);
+  };
+
   const currentSearch = getSearchWithout(searchParams, ["from"]);
   const assetDetailReturnPath = getAssetDetailReturnPath(searchParams);
   const assetDetailReturnLabel = getAssetDetailReturnLabel(assetDetailReturnPath);
@@ -449,7 +461,7 @@ export function ChartWallPage(): JSX.Element {
             </Button>
           </section>
 
-          <ActiveFilterChips filters={{ market, assetType, level, signal, sort, order, search }} onReset={resetFilters} />
+          <ActiveFilterChips filters={{ market, assetType, level, signal, sort, order, search }} onRemove={removeFilterChip} onReset={resetFilters} />
         </>
       )}
       {data && activeView === "chart-wall" && assetType === "fund" && <FundScopeStrip data={data} market={market} />}
@@ -624,7 +636,7 @@ function SidebarButton({ active, title, label, children, to }: SidebarButtonProp
   );
 }
 
-function ActiveFilterChips({ filters, onReset }: { filters: Record<string, string>; onReset(): void }): JSX.Element | null {
+function ActiveFilterChips({ filters, onRemove, onReset }: { filters: Record<string, string>; onRemove(key: string): void; onReset(): void }): JSX.Element | null {
   const activeEntries = Object.entries(filters).filter(([key, value]) => !isDefaultFilterValue(key, value));
 
   if (activeEntries.length === 0) {
@@ -633,9 +645,12 @@ function ActiveFilterChips({ filters, onReset }: { filters: Record<string, strin
 
   return (
     <section className="active-filter-strip" aria-label="当前筛选">
-      {activeEntries.map(([key, value]) => (
-        <FilterChip key={key} label={`${filterLabel(key)}: ${activeFilterValueLabel(key, value)}`} />
-      ))}
+      {activeEntries.map(([key, value]) => {
+        const label = `${filterLabel(key)}: ${activeFilterValueLabel(key, value)}`;
+        return (
+          <FilterChip key={key} label={label} onClick={() => onRemove(key)} title={`移除${label}`} aria-label={`移除${label}`} />
+        );
+      })}
       <FilterChip label="清空筛选" onClick={onReset} />
     </section>
   );
