@@ -349,6 +349,7 @@ export function ChartWallPage(): JSX.Element {
     const next = new URLSearchParams(searchParams);
     next.delete("q");
     next.delete("level");
+    next.delete("tag");
 
     for (const [key, value] of Object.entries(preset)) {
       const fallback = defaultFilters[key as keyof typeof defaultFilters] ?? "";
@@ -498,7 +499,7 @@ export function ChartWallPage(): JSX.Element {
           </section>
 
           {activeView === "chart-wall" && (
-            <StrategyPresetStrip currentFilters={{ market, assetType, signal, sort, order, range, timeframe }} onApply={applyStrategyPreset} />
+            <StrategyPresetStrip currentFilters={{ market, assetType, tag, signal, sort, order, range, timeframe }} onApply={applyStrategyPreset} />
           )}
 
           <ActiveFilterChips

@@ -4,6 +4,7 @@ import "./strategy-preset-strip.css";
 export type StrategyPresetFilters = {
   market?: string;
   assetType?: string;
+  tag?: string;
   signal?: string;
   sort?: string;
   order?: string;
@@ -57,8 +58,29 @@ const strategyPresets: StrategyPreset[] = [
     id: "commodity-volume",
     label: "商品异动",
     description: "商品量能",
-    filters: { market: "商品", assetType: "commodity", signal: "all", sort: "volume_ratio", order: "desc", range: "6m", timeframe: "1d" },
+    filters: { market: "商品", assetType: "all", tag: "all", signal: "all", sort: "volume_ratio", order: "desc", range: "6m", timeframe: "1d" },
     icon: <Gem size={15} aria-hidden="true" />
+  },
+  {
+    id: "precious-metals",
+    label: "贵金属",
+    description: "黄金白银铂钯",
+    filters: { market: "商品", assetType: "all", tag: "贵金属", signal: "all", sort: "return_1m", order: "desc", range: "6m", timeframe: "1d" },
+    icon: <Gem size={15} aria-hidden="true" />
+  },
+  {
+    id: "energy-chain",
+    label: "能源链",
+    description: "原油天然气",
+    filters: { market: "商品", assetType: "all", tag: "能源", signal: "all", sort: "volume_ratio", order: "desc", range: "6m", timeframe: "1d" },
+    icon: <Zap size={15} aria-hidden="true" />
+  },
+  {
+    id: "agriculture-chain",
+    label: "农产品",
+    description: "谷物软商品",
+    filters: { market: "商品", assetType: "all", tag: "农产品", signal: "all", sort: "return_1m", order: "desc", range: "6m", timeframe: "1d" },
+    icon: <Coins size={15} aria-hidden="true" />
   },
   {
     id: "crypto-momentum",
