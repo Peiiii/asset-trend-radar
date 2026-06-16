@@ -17,12 +17,13 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { NavLink, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { AppShell, Button, EmptyState, ErrorState, FilterChip, IconButton, LoadingState, RangePicker, Select, SparklineChart, TechnicalChart, TimeframePicker } from "@gold-insights/ui";
+import { AppShell, Button, EmptyState, ErrorState, FilterChip, IconButton, LoadingState, RangePicker, Select, TechnicalChart, TimeframePicker } from "@gold-insights/ui";
 import type { ControlOption } from "@gold-insights/ui";
 import type { ChartWallFacet, ChartWallItem, ChartWallSortOrder, ScannerEventsResponse, UniverseTreeNode, WatchlistSummary } from "@gold-insights/market-domain";
 import type { AssetDetailData, ChartWallFilters, ChartWallPageData, CompareData } from "@/shared/types/api.types";
 import { formatDateTime, formatPrice } from "@/shared/utils/format-number.utils";
 import { AssetChartCard } from "./asset-chart-card";
+import { ComparePanel } from "./compare-panel/compare-panel";
 import { BreadthStrip, SummaryStrip } from "./dashboard-strips";
 import { DataHealthSection } from "./data-health-section";
 import { ExchangeTable } from "./exchange-table/exchange-table";
@@ -871,55 +872,6 @@ function WatchlistSection({
             ))}
           </div>
         </>
-      )}
-    </section>
-  );
-}
-
-function ComparePanel({
-  compareData,
-  compareAssetIds,
-  allItems,
-  onRemove,
-  onClear
-}: {
-  compareData: CompareData | null;
-  compareAssetIds: string[];
-  allItems: ChartWallItem[];
-  onRemove(assetId: string): void;
-  onClear(): void;
-}): JSX.Element | null {
-  if (compareAssetIds.length < 2) {
-    return null;
-  }
-
-  return (
-    <section className="compare-panel">
-      <SectionHeader title="多资产对比" description={`${compareAssetIds.length} 个资产`} />
-      <div className="compare-token-row">
-        {compareAssetIds.map((assetId) => {
-          const item = allItems.find((candidate) => candidate.id === assetId);
-          return (
-            <button key={assetId} type="button" onClick={() => onRemove(assetId)}>
-              {item?.name ?? item?.symbol ?? assetId}
-              <X size={13} aria-hidden="true" />
-            </button>
-          );
-        })}
-        <button type="button" onClick={onClear}>清空</button>
-      </div>
-      {!compareData ? (
-        <LoadingState />
-      ) : (
-        <div className="compare-grid">
-          {compareData.assets.map(({ asset, bars }) => (
-            <article key={asset.id}>
-              <strong>{asset.name}</strong>
-              <span className="compare-symbol">{asset.symbol}</span>
-              <SparklineChart points={bars.map((bar) => ({ t: bar.ts, o: bar.open, h: bar.high, l: bar.low, c: bar.close, v: bar.volume }))} />
-            </article>
-          ))}
-        </div>
       )}
     </section>
   );
