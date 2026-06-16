@@ -15,7 +15,8 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { NavLink, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { AppShell, Button, EmptyState, ErrorState, IconButton, LoadingState, RangePicker, Select, SparklineChart, TechnicalChart, TimeframePicker } from "@gold-insights/ui";
+import { AppShell, Button, EmptyState, ErrorState, FilterChip, IconButton, LoadingState, RangePicker, Select, SparklineChart, TechnicalChart, TimeframePicker } from "@gold-insights/ui";
+import type { ControlOption } from "@gold-insights/ui";
 import type { ChartWallFacet, ChartWallItem, ChartWallSummary, FundSearchResult, ScannerEventsResponse, UniverseTreeNode, WatchlistSummary } from "@gold-insights/market-domain";
 import type { ChartWallFilters, ChartWallPageData, CompareData } from "@/shared/types/api.types";
 import { formatDateTime, formatPrice } from "@/shared/utils/format-number.utils";
@@ -45,16 +46,26 @@ const defaultFilters = {
   signal: "all"
 };
 
-const marketFallbackOptions = ["A 股", "美股", "港股", "商品", "外汇", "债券", "宏观", "加密"];
-const assetTypeFallbackOptions = [
-  { value: "index", label: "指数" },
-  { value: "fund", label: "基金/ETF" },
-  { value: "equity", label: "公司" },
-  { value: "commodity", label: "商品" },
-  { value: "macro", label: "宏观/外汇/债券" },
-  { value: "crypto", label: "加密" }
+const marketFallbackOptions: ControlOption[] = [
+  { value: "A 股", label: "A 股", description: "指数、ETF、重点公司" },
+  { value: "基金", label: "基金", description: "Eastmoney 场外基金" },
+  { value: "美股", label: "美股", description: "指数、ETF、重点公司" },
+  { value: "港股", label: "港股", description: "指数、ETF、重点公司" },
+  { value: "商品", label: "商品", description: "期货与商品 ETF" },
+  { value: "外汇", label: "外汇", description: "汇率代理指标" },
+  { value: "债券", label: "债券", description: "利率与债券 ETF" },
+  { value: "宏观", label: "宏观", description: "宏观代理指标" },
+  { value: "加密", label: "加密", description: "数字资产" }
 ];
-const levelFallbackOptions = [
+const assetTypeFallbackOptions: ControlOption[] = [
+  { value: "index", label: "指数", description: "宽基、行业与主题指数" },
+  { value: "fund", label: "基金/ETF", description: "场外基金、ETF、商品基金" },
+  { value: "equity", label: "公司", description: "重点公司走势" },
+  { value: "commodity", label: "商品", description: "贵金属、能源、工业品" },
+  { value: "macro", label: "宏观/外汇/债券", description: "宏观与利率代理指标" },
+  { value: "crypto", label: "加密", description: "主流数字资产" }
+];
+const levelFallbackOptions: ControlOption[] = [
   { value: "broad-index", label: "宽基" },
   { value: "sector-index", label: "行业" },
   { value: "theme-basket", label: "主题" },
@@ -62,24 +73,36 @@ const levelFallbackOptions = [
   { value: "instrument", label: "工具/合约" },
   { value: "macro-indicator", label: "宏观" }
 ];
-const sortOptions = [
-  { value: "trend_score", label: "趋势分" },
-  { value: "return", label: "当前跨度收益" },
+const sortOptions: ControlOption[] = [
+  { value: "trend_score", label: "趋势分", description: "趋势强度优先" },
+  { value: "return", label: "当前跨度收益", description: "跟随所选时间跨度" },
   { value: "return_1d", label: "1D 涨幅" },
   { value: "return_1w", label: "1W 涨幅" },
   { value: "return_1m", label: "1M 涨幅" },
   { value: "return_3m", label: "3M 涨幅" },
   { value: "return_6m", label: "6M 涨幅" },
   { value: "return_1y", label: "1Y 涨幅" },
-  { value: "volume_ratio", label: "量能放大" },
-  { value: "drawdown", label: "回撤较小" },
-  { value: "event_count", label: "事件数" },
-  { value: "macd", label: "事件/MACD" },
+  { value: "volume_ratio", label: "量能放大", description: "最近成交相对 20 日均值" },
+  { value: "drawdown", label: "回撤较小", description: "距离区间高点更近" },
+  { value: "event_count", label: "事件数", description: "扫描事件多的靠前" },
+  { value: "macd", label: "事件/MACD", description: "事件与 MACD 状态优先" },
   { value: "market", label: "市场" },
   { value: "asset_type", label: "品种" },
   { value: "symbol", label: "代码" }
 ];
-const scannerEventOptions = [
+const signalFallbackOptions: ControlOption[] = [
+  { value: "strong", label: "强趋势" },
+  { value: "weak", label: "偏弱" },
+  { value: "positive", label: "区间上涨" },
+  { value: "negative", label: "区间下跌" },
+  { value: "macd_golden_cross", label: "MACD 金叉" },
+  { value: "macd_dead_cross", label: "MACD 死叉" },
+  { value: "breakout", label: "价格突破" },
+  { value: "volume_breakout", label: "量能放大" },
+  { value: "eventful", label: "有扫描事件" },
+  { value: "pinned", label: "已自选" }
+];
+const scannerEventOptions: ControlOption[] = [
   { value: "all", label: "全部事件" },
   { value: "macd_golden_cross", label: "MACD 金叉" },
   { value: "macd_dead_cross", label: "MACD 死叉" },
@@ -295,10 +318,10 @@ export function ChartWallPage(): JSX.Element {
       </header>
 
       <section className="control-strip" aria-label="图表控制">
-        <Select id="market-filter" label="市场" value={market} onChange={(value) => setQueryValue("market", value, defaultFilters.market)} options={facetOptions("全部市场", data?.chartWall.facets?.markets, marketFallbackOptions.map((value) => ({ value, label: value })))} />
+        <Select id="market-filter" label="市场" value={market} onChange={(value) => setQueryValue("market", value, defaultFilters.market)} options={facetOptions("全部市场", data?.chartWall.facets?.markets, marketFallbackOptions)} />
         <Select id="asset-type-filter" label="品种" value={assetType} onChange={(value) => setQueryValue("assetType", value, defaultFilters.assetType)} options={facetOptions("全部品种", data?.chartWall.facets?.assetTypes, assetTypeFallbackOptions)} />
         <Select id="level-filter" label="层级" value={level} onChange={(value) => setQueryValue("level", value, defaultFilters.level)} options={facetOptions("全部层级", data?.chartWall.facets?.levels, levelFallbackOptions)} />
-        <Select id="signal-filter" label="信号" value={signal} onChange={(value) => setQueryValue("signal", value, defaultFilters.signal)} options={facetOptions("全部信号", data?.chartWall.facets?.signals, [{ value: "strong", label: "强趋势" }, { value: "breakout", label: "价格突破" }])} />
+        <Select id="signal-filter" label="信号" value={signal} onChange={(value) => setQueryValue("signal", value, defaultFilters.signal)} options={facetOptions("全部信号", data?.chartWall.facets?.signals, signalFallbackOptions)} />
         <Select id="sort-filter" label="排序" value={sort} onChange={(value) => setQueryValue("sort", value, defaultFilters.sort)} options={sortOptions} />
         <RangePicker value={range} onChange={(value) => setQueryValue("range", value, defaultFilters.range)} />
         <TimeframePicker value={timeframe} onChange={(value) => setQueryValue("timeframe", value, defaultFilters.timeframe)} />
@@ -319,6 +342,7 @@ export function ChartWallPage(): JSX.Element {
       </section>
 
       <ActiveFilterChips filters={{ market, assetType, level, signal, sort, search }} onReset={resetFilters} />
+      {data && assetType === "fund" && <FundScopeStrip data={data} market={market} />}
       {activeView === "chart-wall" && (
         <FundDiscoveryPanel
           keyword={fundKeyword}
@@ -430,9 +454,27 @@ function ActiveFilterChips({ filters, onReset }: { filters: Record<string, strin
   return (
     <section className="active-filter-strip" aria-label="当前筛选">
       {activeEntries.map(([key, value]) => (
-        <span key={key}>{filterLabel(key)}: {value}</span>
+        <FilterChip key={key} label={`${filterLabel(key)}: ${activeFilterValueLabel(key, value)}`} />
       ))}
-      <button type="button" onClick={onReset}>清空筛选</button>
+      <FilterChip label="清空筛选" onClick={onReset} />
+    </section>
+  );
+}
+
+function FundScopeStrip({ data, market }: { data: ChartWallPageData; market: string }): JSX.Element | null {
+  const fundScope = data.chartWall.fundScope;
+
+  if (!fundScope) {
+    return null;
+  }
+
+  return (
+    <section className="data-scope-strip" aria-label="基金数据口径">
+      <span>基金口径</span>
+      <strong>{market === "基金" || fundScope.isMutualFundMarket ? "场外基金" : "当前筛选"} {fundScope.currentCount.toLocaleString("en-US")}</strong>
+      <span>全部基金/ETF {fundScope.allFundCount.toLocaleString("en-US")}</span>
+      <span>Eastmoney 场外 {fundScope.eastmoneyFundCount.toLocaleString("en-US")}</span>
+      {fundScope.seedAndImportedOnly && <span>当前展示已入库种子与已导入基金</span>}
     </section>
   );
 }
@@ -1113,15 +1155,27 @@ function getViewMode(value: string): ViewMode {
   return value === "table" ? "table" : "grid";
 }
 
-function facetOptions(allLabel: string, facets: ChartWallFacet[] | undefined, fallback: Array<{ value: string; label: string }>): Array<{ value: string; label: string }> {
-  const source = (facets && facets.length > 0 ? facets : fallback.map((option) => ({ ...option, count: 0 }))).filter((facet) => facet.value !== "all");
+function facetOptions(allLabel: string, facets: ChartWallFacet[] | undefined, fallback: ControlOption[]): ControlOption[] {
+  const countByValue = new Map((facets ?? []).map((facet) => [facet.value, facet.count]));
+  const labelByValue = new Map((facets ?? []).map((facet) => [facet.value, facet.label]));
+  const fallbackValues = new Set(fallback.map((option) => option.value));
+  const allFacetCount = facets?.find((facet) => facet.value === "all")?.count;
+  const facetExtras = (facets ?? [])
+    .filter((facet) => facet.value !== "all" && !fallbackValues.has(facet.value))
+    .map((facet) => ({ value: facet.value, label: facet.label, count: facet.count }));
+  const totalCount = allFacetCount ?? (facets ?? []).filter((facet) => facet.value !== "all").reduce((sum, facet) => sum + facet.count, 0);
 
   return [
-    { value: "all", label: allLabel },
-    ...source.map((facet) => ({
-      value: facet.value,
-      label: "count" in facet && facet.count > 0 ? `${facet.label} (${facet.count})` : facet.label
-    }))
+    { value: "all", label: allLabel, count: totalCount > 0 ? totalCount : undefined },
+    ...fallback.map((option) => {
+      const count = countByValue.get(option.value);
+      return {
+        ...option,
+        label: labelByValue.get(option.value) ?? option.label,
+        count: typeof count === "number" && count > 0 ? count : undefined
+      };
+    }),
+    ...facetExtras
   ];
 }
 
@@ -1135,6 +1189,30 @@ function filterLabel(key: string): string {
     search: "搜索"
   };
   return labels[key] ?? key;
+}
+
+function activeFilterValueLabel(key: string, value: string): string {
+  if (key === "assetType") {
+    return optionLabel(assetTypeFallbackOptions, value);
+  }
+
+  if (key === "level") {
+    return optionLabel(levelFallbackOptions, value);
+  }
+
+  if (key === "signal") {
+    return optionLabel(signalFallbackOptions, value);
+  }
+
+  if (key === "sort") {
+    return optionLabel(sortOptions, value);
+  }
+
+  return value;
+}
+
+function optionLabel(options: ControlOption[], value: string): string {
+  return options.find((option) => option.value === value)?.label ?? value;
 }
 
 function assetTypeLabel(assetType: string): string {

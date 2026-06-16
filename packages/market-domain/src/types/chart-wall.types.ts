@@ -61,6 +61,14 @@ export type ChartWallSummary = {
   latestBarAt: string | null;
 };
 
+export type ChartWallFundScope = {
+  currentCount: number;
+  allFundCount: number;
+  eastmoneyFundCount: number;
+  isMutualFundMarket: boolean;
+  seedAndImportedOnly: boolean;
+};
+
 export type ChartWallFacets = {
   markets: ChartWallFacet[];
   assetTypes: ChartWallFacet[];
@@ -80,6 +88,7 @@ export type ChartWallResponse = {
   sources: string[];
   summary: ChartWallSummary;
   facets: ChartWallFacets;
+  fundScope: ChartWallFundScope | null;
   items: ChartWallItem[];
 };
 

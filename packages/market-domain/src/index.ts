@@ -4,6 +4,7 @@ export type {
   AssetBarsResponse,
   ChartWallFacet,
   ChartWallFacets,
+  ChartWallFundScope,
   ChartWallItem,
   ChartWallResponse,
   ChartWallSummary,
@@ -18,4 +19,4 @@ export type {
 export type { IndicatorPoint, MacdState, TrendSnapshot } from "./types/indicator.types";
 export type { FundImportResponse, FundSearchResponse, FundSearchResult } from "./types/fund-discovery.types";
 export type { ScannerEvent, ScannerEventType } from "./types/scanner-event.types";
-export { dayMs, getRangePointLimit, toIsoDateTime } from "./utils/timeframe.utils";
+export { dayMs, filterByCalendarRange, getRangeCalendarDayEstimate, getRangeFetchLimit, getRangeMonthEstimate, getRangePointLimit, getRangeStartTimestamp, toIsoDateTime } from "./utils/timeframe.utils";

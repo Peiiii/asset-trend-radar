@@ -6,11 +6,13 @@ import type {
   AssetBarsResponse,
   AssetSummary,
   ChartWallFacets,
+  ChartWallFundScope,
   ChartWallItem,
   ChartWallResponse,
   ChartWallSummary,
   CompareResponse,
   DataHealthResponse,
+  IndicatorPoint,
   OhlcvBar,
   ScannerEventsResponse,
   SparklinePoint,
@@ -19,10 +21,16 @@ import type {
   UniverseTreeResponse,
   WatchlistsResponse
 } from "@gold-insights/market-domain";
-import { getRangePointLimit, toIsoDateTime } from "@gold-insights/market-domain";
+import { filterByCalendarRange, getRangeFetchLimit, toIsoDateTime } from "@gold-insights/market-domain";
 import { getBreakoutState, getMacdState, getReturnPct, getTrendScore } from "@gold-insights/scanner-engine";
 import type { AssetBarsQuery, ChartWallQuery, CompareQuery, ScannerEventsQuery } from "../types/chart-wall-query.types";
 import type { LocalRuntimeOptions } from "../types/local-runtime-options.types";
+
+type RangedSeries = {
+  bars: OhlcvBar[];
+  indicators: IndicatorPoint[];
+  workingBars: OhlcvBar[];
+};
 
 export class ChartWallQueryService {
   public constructor(
@@ -35,13 +43,12 @@ export class ChartWallQueryService {
   ) {}
 
   public getChartWall = (query: ChartWallQuery): ChartWallResponse => {
-    const limit = getRangePointLimit(query.range);
     const marketDataAssets = this.assetRepository.listAssets().filter((asset) => this.isMarketDataAsset(asset));
     const watchlistAssetIds = new Set(this.watchlistRepository.listWatchlists().flatMap((watchlist) => watchlist.assets.map((asset) => asset.id)));
     const comparedAssetIds = new Set<string>();
     const matchedItems = marketDataAssets
       .filter((asset) => this.matchesChartWallQuery(asset, query))
-      .map((asset) => this.getChartWallItem(asset, query, limit, watchlistAssetIds, comparedAssetIds))
+      .map((asset) => this.getChartWallItem(asset, query, watchlistAssetIds, comparedAssetIds))
       .filter((item) => item.lastPrice !== null);
     const signalFilteredItems = this.applySignalFilter(matchedItems, query.signal);
     const items = this.sortItems(signalFilteredItems, query.sort);
@@ -57,6 +64,7 @@ export class ChartWallQueryService {
       sources: [...new Set(items.map((item) => item.source))],
       summary: this.getChartWallSummary(items, marketDataAssets.length),
       facets: this.getChartWallFacets(matchedItems),
+      fundScope: this.getFundScope(query, items, marketDataAssets),
       items
     };
   };
@@ -68,9 +76,7 @@ export class ChartWallQueryService {
       return null;
     }
 
-    const limit = getRangePointLimit(query.range);
-    const bars = this.listBarsForTimeframe(asset.id, query.timeframe, limit);
-    const indicators = query.timeframe === "1d" ? this.marketDataRepository.listIndicators(asset.id, query.timeframe, limit) : calculateIndicators(bars);
+    const series = this.getRangedSeries(asset.id, query.timeframe, query.range);
 
     return {
       asset,
@@ -78,8 +84,8 @@ export class ChartWallQueryService {
       range: query.range,
       generatedAt: new Date().toISOString(),
       source: asset.dataSource ?? "unknown",
-      bars,
-      indicators,
+      bars: series.bars,
+      indicators: series.indicators,
       events: this.scannerEventRepository.listEventsForAsset(asset.id)
     };
   };
@@ -145,16 +151,15 @@ export class ChartWallQueryService {
   };
 
   public getCompare = (query: CompareQuery): CompareResponse => {
-    const limit = getRangePointLimit(query.range);
     const assets = query.assetIds
       .map((assetId) => this.assetRepository.getAsset(assetId))
       .filter((asset): asset is AssetSummary => Boolean(asset))
       .map((asset) => {
-        const bars = this.listBarsForTimeframe(asset.id, query.timeframe, limit);
+        const series = this.getRangedSeries(asset.id, query.timeframe, query.range);
         return {
           asset,
-          bars,
-          indicators: query.timeframe === "1d" ? this.marketDataRepository.listIndicators(asset.id, query.timeframe, limit) : calculateIndicators(bars)
+          bars: series.bars,
+          indicators: series.indicators
         };
       });
 
@@ -186,20 +191,21 @@ export class ChartWallQueryService {
     return this.getWatchlists();
   };
 
-  private getChartWallItem = (asset: AssetSummary, query: ChartWallQuery, limit: number, pinnedIds: Set<string>, comparedIds: Set<string>): ChartWallItem => {
-    const bars = this.listBarsForTimeframe(asset.id, query.timeframe, limit);
-    const indicators = query.timeframe === "1d" ? this.marketDataRepository.listIndicators(asset.id, query.timeframe, limit) : calculateIndicators(bars);
-    const dailyBars = query.timeframe === "1d" ? bars : this.marketDataRepository.listBars(asset.id, "1d", 1300);
+  private getChartWallItem = (asset: AssetSummary, query: ChartWallQuery, pinnedIds: Set<string>, comparedIds: Set<string>): ChartWallItem => {
+    const series = this.getRangedSeries(asset.id, query.timeframe, query.range);
+    const bars = series.bars;
+    const indicators = series.indicators;
+    const dailyBars = this.marketDataRepository.listBars(asset.id, "1d", 1300);
+    const signalBars = dailyBars.length > 0 ? dailyBars : series.workingBars;
     const latest = bars.at(-1);
     const latestIndicator = indicators.at(-1);
-    const lookback = Math.max(Math.min(limit - 1, bars.length - 1), 1);
-    const trendScore = getTrendScore(bars);
-    const volumeStats = this.getVolumeStats(bars);
+    const trendScore = getTrendScore(signalBars);
+    const volumeStats = this.getVolumeStats(signalBars);
 
     return {
       ...asset,
       lastPrice: latest?.close ?? null,
-      returnPct: getReturnPct(bars, lookback),
+      returnPct: this.getVisibleRangeReturnPct(bars),
       return1d: getReturnPct(dailyBars, 1),
       return1w: getReturnPct(dailyBars, 5),
       return1m: getReturnPct(dailyBars, 21),
@@ -209,7 +215,7 @@ export class ChartWallQueryService {
       trendScore,
       trendLabel: this.getTrendLabel(trendScore),
       macdState: getMacdState(indicators),
-      breakoutState: getBreakoutState(bars),
+      breakoutState: getBreakoutState(signalBars),
       source: latest?.source ?? asset.dataSource ?? "unknown",
       latestVolume: volumeStats.latestVolume,
       averageVolume20: volumeStats.averageVolume20,
@@ -274,6 +280,17 @@ export class ChartWallQueryService {
     return ((latest.close - highestHigh) / highestHigh) * 100;
   };
 
+  private getVisibleRangeReturnPct = (bars: OhlcvBar[]): number | null => {
+    const first = bars[0];
+    const latest = bars.at(-1);
+
+    if (!first || !latest || first.close === 0 || first.ts === latest.ts) {
+      return null;
+    }
+
+    return ((latest.close - first.close) / first.close) * 100;
+  };
+
   private getChartWallSummary = (items: ChartWallItem[], totalUniverseAssets: number): ChartWallSummary => {
     const latestTs = Math.max(
       ...items
@@ -317,6 +334,22 @@ export class ChartWallQueryService {
       { value: "pinned", label: "已自选", count: this.applySignalFilter(items, "pinned").length }
     ]
   });
+
+  private getFundScope = (query: ChartWallQuery, items: ChartWallItem[], marketDataAssets: AssetSummary[]): ChartWallFundScope | null => {
+    if (query.assetType !== "fund") {
+      return null;
+    }
+
+    const allFundAssets = marketDataAssets.filter((asset) => asset.assetType === "fund");
+
+    return {
+      currentCount: items.filter((item) => item.assetType === "fund").length,
+      allFundCount: allFundAssets.length,
+      eastmoneyFundCount: allFundAssets.filter((asset) => asset.dataSource === "eastmoney").length,
+      isMutualFundMarket: query.market === "基金",
+      seedAndImportedOnly: true
+    };
+  };
 
   private toFacetCounts = (items: ChartWallItem[], getValue: (item: ChartWallItem) => string, getLabel: (value: string) => string = (value) => value): ChartWallFacets["markets"] => {
     const counts = new Map<string, number>();
@@ -426,7 +459,25 @@ export class ChartWallQueryService {
     return "震荡";
   };
 
-  private listBarsForTimeframe = (assetId: string, timeframe: Timeframe, limit: number): OhlcvBar[] => {
+  private getRangedSeries = (assetId: string, timeframe: Timeframe, range: string): RangedSeries => {
+    const workingBars = this.listWorkingBarsForTimeframe(assetId, timeframe, range);
+    const bars = filterByCalendarRange(workingBars, range);
+    const visibleTimestamps = new Set(bars.map((bar) => bar.ts));
+    const indicators =
+      timeframe === "1d"
+        ? this.marketDataRepository.listIndicators(assetId, timeframe, getRangeFetchLimit(range, timeframe)).filter((indicator) => visibleTimestamps.has(indicator.ts))
+        : calculateIndicators(workingBars).filter((indicator) => visibleTimestamps.has(indicator.ts));
+
+    return {
+      bars,
+      indicators,
+      workingBars
+    };
+  };
+
+  private listWorkingBarsForTimeframe = (assetId: string, timeframe: Timeframe, range: string): OhlcvBar[] => {
+    const limit = getRangeFetchLimit(range, timeframe);
+
     if (timeframe === "1d") {
       return this.marketDataRepository.listBars(assetId, "1d", limit);
     }
@@ -439,14 +490,14 @@ export class ChartWallQueryService {
         const date = new Date(bar.ts);
         const firstDay = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
         return `${date.getUTCFullYear()}-${Math.floor((bar.ts - firstDay.getTime()) / (7 * 24 * 60 * 60 * 1000))}`;
-      }).slice(-limit);
+      });
     }
 
     if (timeframe === "1mo") {
       return this.resampleBars(dailyBars, "1mo", (bar) => {
         const date = new Date(bar.ts);
         return `${date.getUTCFullYear()}-${date.getUTCMonth()}`;
-      }).slice(-limit);
+      });
     }
 
     return this.marketDataRepository.listBars(assetId, timeframe, limit);

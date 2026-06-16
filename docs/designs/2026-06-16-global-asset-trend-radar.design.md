@@ -610,6 +610,30 @@ Thin Local Entry
 
 后端实现主体必须在 package 内。真正的入口只是一层薄壳，负责读取环境变量、确定数据目录、注入端口和 token，然后调用 runtime package 的公共入口。入口不拥有 API 路由、采集逻辑、指标计算、数据库连接细节或扫描规则。
 
+### Package 与 App 职责边界
+
+`packages` 是产品能力的 owner，`apps` 是运行形态和页面组合的 owner。判断规则是：只要逻辑需要被多个入口、页面、接口或未来 server 复用，就不能放在 app 里。
+
+| Owner | 应该放什么 | 不应该放什么 |
+| --- | --- | --- |
+| `packages/market-domain` | 领域类型、API response contract、时间范围语义、纯领域工具 | React 组件、fetch、SQLite、供应商 API |
+| `packages/ui` | Button、Select、FilterChip、AppShell、图表展示组件、视觉 token | 业务 API 调用、MACD/收益计算、资产筛选规则、页面路由 |
+| `packages/local-runtime` | 本地 API、查询服务、采集任务、基金口径统计、图表墙聚合响应 | React 状态、URL query、页面文案、浏览器交互 |
+| `packages/data-storage` | SQLite schema、repository、索引、迁移 | 趋势评分、页面筛选、供应商请求 |
+| `packages/data-adapters` | 供应商请求、raw/canonical 映射、分页限流 | UI 展示、扫描规则、数据库表结构决策 |
+| `packages/indicator-engine` | MA、EMA、MACD、RSI 等可复算指标 | API 路由、图表组件、供应商接入 |
+| `packages/scanner-engine` | 突破、相对强弱、MACD 事件、趋势评分 | UI 排版、网络请求、SQLite 连接 |
+| `apps/web-shell` | React Router、URL query、页面布局、feature 组合、展示文案 | 指标计算、时间范围裁剪、基金总数统计、通用控件实现 |
+| `apps/local-shell` | 读取 env/CLI、确定本地数据目录、启动 runtime | API controller、worker、repository、业务 service |
+
+当前实现遵循以下硬规则：
+
+1. 时间范围的真实语义在 `market-domain`，例如 `3m` 是按最新 K 线向前裁剪三个自然月；前端只传 `range=3m` 并展示返回结果。
+2. 图表墙、详情、对比接口都必须使用同一套 range/timeframe 裁剪工具，不能在不同页面各自解释。
+3. 基金 `45/70` 这类口径统计由 `local-runtime` 放进 API response；前端不遍历资产树自行计算。
+4. 筛选下拉、chip、按钮等可复用交互组件放在 `packages/ui`，页面不能临时写第二套样式相似但行为不同的控件。
+5. app 里的 feature 组件可以做“把 query param 转成 label”这种展示适配，但不能拥有领域判断，例如“哪些基金算场外基金”“3 个月从哪天开始”。
+
 ### API
 
 ```txt

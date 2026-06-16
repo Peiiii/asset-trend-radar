@@ -3,6 +3,7 @@ export { Button } from "./components/button";
 export { ChartCardShell } from "./components/chart-card-shell";
 export { EmptyState } from "./components/empty-state";
 export { ErrorState } from "./components/error-state";
+export { FilterChip } from "./components/filter-chip";
 export { IconButton } from "./components/icon-button";
 export { LoadingState } from "./components/loading-state";
 export { MacdMiniPanel } from "./components/macd-mini-panel";
