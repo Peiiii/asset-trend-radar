@@ -1,0 +1,17 @@
+.exchange-table td.exchange-table__cell--active-sort {
+  background: #f3f8f6;
+  box-shadow: inset 0 0 0 1px rgba(31, 111, 95, 0.12);
+}
+
+.exchange-table tbody tr:hover td.exchange-table__cell--active-sort,
+.exchange-table tbody tr:focus-within td.exchange-table__cell--active-sort {
+  background: #eaf5f1;
+}
+
+.exchange-table__asset-cell.exchange-table__cell--active-sort {
+  box-shadow: inset 0 0 0 1px rgba(31, 111, 95, 0.12), 1px 0 0 #e5eaf1;
+}
+
+.exchange-table-wrapper--left-shadow .exchange-table__asset-cell.exchange-table__cell--active-sort {
+  box-shadow: inset 0 0 0 1px rgba(31, 111, 95, 0.12), 1px 0 0 #e5eaf1, 12px 0 18px -18px rgba(15, 23, 42, 0.58);
+}

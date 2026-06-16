@@ -2,6 +2,7 @@ import { ArrowDown, ArrowUp, Eye, GitCompare, Star } from "lucide-react";
 import { EmptyState, PriceChange, SignalBadge, TrendBadge, useTableScrollShadows } from "@gold-insights/ui";
 import type { ChartWallItem, ChartWallSortOrder } from "@gold-insights/market-domain";
 import { formatDateTime, formatPrice } from "@/shared/utils/format-number.utils";
+import "./exchange-table-active-sort.css";
 import "./exchange-table.css";
 
 type ExchangeTableProps = {
@@ -104,7 +105,7 @@ export function ExchangeTable({ items, sort, order, onSort, onSelect, onPin, onC
           </thead>
           <tbody>
             {items.map((item, index) => (
-              <ExchangeTableRow key={item.id} rank={index + 1} item={item} onSelect={onSelect} onPin={onPin} onCompare={onCompare} />
+              <ExchangeTableRow key={item.id} rank={index + 1} item={item} sort={sort} onSelect={onSelect} onPin={onPin} onCompare={onCompare} />
             ))}
           </tbody>
         </table>
@@ -113,29 +114,29 @@ export function ExchangeTable({ items, sort, order, onSort, onSelect, onPin, onC
   );
 }
 
-function ExchangeTableRow({ rank, item, onSelect, onPin, onCompare }: { rank: number; item: ChartWallItem; onSelect(assetId: string): void; onPin(assetId: string): void; onCompare(assetId: string): void }): JSX.Element {
+function ExchangeTableRow({ rank, item, sort, onSelect, onPin, onCompare }: { rank: number; item: ChartWallItem; sort: string; onSelect(assetId: string): void; onPin(assetId: string): void; onCompare(assetId: string): void }): JSX.Element {
   return (
     <tr onDoubleClick={() => onSelect(item.id)}>
       <td className="exchange-table__rank">{rank}</td>
-      <td className="exchange-table__asset-cell">
+      <td className={activeSortCellClassName(sort === "symbol", "exchange-table__asset-cell")}>
         <button type="button" className="exchange-table__identity" onClick={() => onSelect(item.id)}>
           <strong>{item.name}</strong>
           <span>{item.symbol}</span>
         </button>
       </td>
-      <td><SignalBadge label={item.market} tone={marketTone(item.market)} /></td>
-      <td><SignalBadge label={assetTypeLabel(item.assetType)} tone="blue" /></td>
+      <td className={activeSortCellClassName(sort === "market")}><SignalBadge label={item.market} tone={marketTone(item.market)} /></td>
+      <td className={activeSortCellClassName(sort === "asset_type")}><SignalBadge label={assetTypeLabel(item.assetType)} tone="blue" /></td>
       <td className="exchange-table__price">{formatPrice(item.lastPrice, item.currency)}</td>
-      <MetricCell><PriceChange value={item.return1d} /></MetricCell>
-      <MetricCell><PriceChange value={item.return1m} /></MetricCell>
-      <MetricCell><PriceChange value={item.return3m} /></MetricCell>
-      <MetricCell><PriceChange value={item.return6m} /></MetricCell>
-      <MetricCell><PriceChange value={item.return1y} /></MetricCell>
-      <td><SignalBadge label={formatVolumeRatio(item.volumeRatio)} tone={volumeRatioTone(item.volumeRatio)} /></td>
-      <MetricCell><PriceChange value={item.drawdownPct} /></MetricCell>
-      <td><TrendBadge label={`${item.trendScore}`} score={item.trendScore} /></td>
+      <MetricCell active={sort === "return_1d"}><PriceChange value={item.return1d} /></MetricCell>
+      <MetricCell active={sort === "return_1m"}><PriceChange value={item.return1m} /></MetricCell>
+      <MetricCell active={sort === "return_3m"}><PriceChange value={item.return3m} /></MetricCell>
+      <MetricCell active={sort === "return_6m"}><PriceChange value={item.return6m} /></MetricCell>
+      <MetricCell active={sort === "return_1y"}><PriceChange value={item.return1y} /></MetricCell>
+      <td className={activeSortCellClassName(sort === "volume_ratio")}><SignalBadge label={formatVolumeRatio(item.volumeRatio)} tone={volumeRatioTone(item.volumeRatio)} /></td>
+      <MetricCell active={sort === "drawdown"}><PriceChange value={item.drawdownPct} /></MetricCell>
+      <td className={activeSortCellClassName(sort === "trend_score")}><TrendBadge label={`${item.trendScore}`} score={item.trendScore} /></td>
       <td><SignalBadge label={macdLabel(item.macdState)} tone={macdTone(item.macdState)} /></td>
-      <td><SignalBadge label={`${item.events.length}`} tone={item.events.length > 0 ? "amber" : "neutral"} /></td>
+      <td className={activeSortCellClassName(sort === "event_count")}><SignalBadge label={`${item.events.length}`} tone={item.events.length > 0 ? "amber" : "neutral"} /></td>
       <td>
         <span className="exchange-table__data-density">
           <strong>{item.dataPointCount.toLocaleString("en-US")}</strong>
@@ -194,8 +195,12 @@ function buildTableSummary(items: ChartWallItem[], sort: string, order: ChartWal
   };
 }
 
-function MetricCell({ children }: { children: JSX.Element }): JSX.Element {
-  return <td className="exchange-table__metric">{children}</td>;
+function MetricCell({ children, active = false }: { children: JSX.Element; active?: boolean }): JSX.Element {
+  return <td className={activeSortCellClassName(active, "exchange-table__metric")}>{children}</td>;
+}
+
+function activeSortCellClassName(active: boolean, baseClassName?: string): string | undefined {
+  return [baseClassName, active ? "exchange-table__cell--active-sort" : ""].filter(Boolean).join(" ") || undefined;
 }
 
 function assetTypeLabel(assetType: string): string {
