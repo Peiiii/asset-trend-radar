@@ -110,6 +110,7 @@ try {
   const assetIndicators = await fetchJson("/api/assets/us-nvda/indicators?range=3m&timeframe=1d");
   const mutualFundBars = await fetchJson("/api/assets/fund-cn-005827/bars?range=1y&timeframe=1d");
   const fundCatalogSummary = await fetchJson("/api/funds/eastmoney/catalog/summary");
+  const fundCatalogPage = await fetchJson("/api/funds/eastmoney/catalog?keyword=%E5%8D%8E%E5%A4%8F&fundType=all&status=all&limit=20&offset=0");
   const fundSearch = await fetchJson("/api/funds/eastmoney/search?keyword=000001&limit=5");
   const importedFund = await fetchJson("/api/funds/eastmoney/import", {
     method: "POST",
@@ -194,6 +195,14 @@ try {
   assert(assetIndicators.indicators.length >= 60, "expected 3M indicators");
   assert(mutualFundBars.source === "eastmoney" && mutualFundBars.bars.length >= 180, "expected Eastmoney mutual fund daily NAV history");
   assert((fundCatalogSummary.summary.totalCount === 0 || fundCatalogSummary.summary.totalCount >= 20000), "expected Eastmoney fund catalog summary endpoint");
+  assert(fundCatalogPage.catalog.totalCount >= 20000 && fundCatalogPage.totalCount > 0 && fundCatalogPage.items.length > 0, "expected paginated Eastmoney fund catalog endpoint");
+  assert(fundCatalogPage.fundTypes.every((facet) => typeof facet.count === "number") && fundCatalogPage.statusFacets.every((facet) => typeof facet.count === "number"), "expected eager fund catalog facet counts");
+  assert(fundCatalogPage.items.every((item) => typeof item.isImported === "boolean" && typeof item.dataPointCount === "number"), "expected fund catalog import status and lightweight metrics");
+  assert(fundCatalogPage.catalog.metricSyncedAt, "expected fund catalog lightweight rank snapshot sync time");
+  assert(
+    fundCatalogPage.items.some((item) => !item.isImported && item.metricSource === "catalog_snapshot" && item.latestNav !== null && item.return1m !== null),
+    "expected not-imported funds to include lightweight catalog snapshot returns"
+  );
   assert(fundSearch.catalog.totalCount >= 20000 && fundSearch.source === "local-catalog", "expected local Eastmoney fund catalog search");
   assert(fundSearch.results.some((item) => item.code === "000001" && item.name.includes("华夏成长")), "expected Eastmoney fund catalog search result");
   assert(importedFund.asset?.id === "fund-cn-000001" && importedFund.barsImported >= 180, "expected dynamic Eastmoney fund import");

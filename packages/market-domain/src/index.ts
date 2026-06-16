@@ -19,6 +19,18 @@ export type {
   WatchlistsResponse
 } from "./types/chart-wall.types";
 export type { IndicatorPoint, MacdState, TrendSnapshot } from "./types/indicator.types";
-export type { FundCatalogEntry, FundCatalogSummary, FundCatalogSummaryResponse, FundCatalogSyncResponse, FundImportResponse, FundSearchResponse, FundSearchResult } from "./types/fund-discovery.types";
+export type {
+  FundCatalogEntry,
+  FundCatalogImportStatus,
+  FundCatalogMetricSnapshot,
+  FundCatalogPageItem,
+  FundCatalogPageResponse,
+  FundCatalogSummary,
+  FundCatalogSummaryResponse,
+  FundCatalogSyncResponse,
+  FundImportResponse,
+  FundSearchResponse,
+  FundSearchResult
+} from "./types/fund-discovery.types";
 export type { ScannerEvent, ScannerEventType } from "./types/scanner-event.types";
 export { dayMs, filterByCalendarRange, getRangeCalendarDayEstimate, getRangeFetchLimit, getRangeMonthEstimate, getRangePointLimit, getRangeStartTimestamp, toIsoDateTime } from "./utils/timeframe.utils";

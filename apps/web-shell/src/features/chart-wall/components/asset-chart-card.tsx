@@ -2,6 +2,7 @@ import { GitCompare, Pin } from "lucide-react";
 import { ChartCardShell, IconButton, PriceChange, SignalBadge, TechnicalChart, TrendBadge } from "@gold-insights/ui";
 import type { ChartWallItem, MacdState } from "@gold-insights/market-domain";
 import { formatPrice } from "@/shared/utils/format-number.utils";
+import "./asset-chart-card.css";
 
 type AssetChartCardProps = {
   item: ChartWallItem;

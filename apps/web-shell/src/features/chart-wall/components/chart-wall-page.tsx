@@ -2,10 +2,10 @@ import {
   Activity,
   ArrowLeft,
   BarChart3,
+  BookOpen,
   Database,
   Grid3X3,
   LineChart,
-  ListChecks,
   Network,
   RefreshCcw,
   Search,
@@ -18,18 +18,24 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { NavLink, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { AppShell, Button, EmptyState, ErrorState, FilterChip, IconButton, LoadingState, RangePicker, Select, SparklineChart, TechnicalChart, TimeframePicker } from "@gold-insights/ui";
 import type { ControlOption } from "@gold-insights/ui";
-import type { ChartWallFacet, ChartWallItem, ChartWallSortOrder, ChartWallSummary, FundCatalogSummary, FundSearchResult, ScannerEventsResponse, UniverseTreeNode, WatchlistSummary } from "@gold-insights/market-domain";
+import type { ChartWallFacet, ChartWallItem, ChartWallSortOrder, FundCatalogImportStatus, ScannerEventsResponse, UniverseTreeNode, WatchlistSummary } from "@gold-insights/market-domain";
 import type { AssetDetailData, ChartWallFilters, ChartWallPageData, CompareData } from "@/shared/types/api.types";
 import { formatDateTime, formatPrice } from "@/shared/utils/format-number.utils";
 import { AssetChartCard } from "./asset-chart-card";
+import { BreadthStrip, SummaryStrip } from "./dashboard-strips";
+import { DataHealthSection } from "./data-health-section";
+import { FundDirectorySection } from "./fund-directory-section";
+import "./market-chart-primitives.css";
 import { chartWallApiService } from "../services/chart-wall-api.service";
+import { useFundDirectoryQuery } from "../hooks/use-fund-directory-query";
 import { useChartWallQuery } from "../hooks/use-chart-wall-query";
 
-type ActiveView = "chart-wall" | "universe" | "scanner" | "asset-detail" | "watchlist" | "data-health";
+type ActiveView = "chart-wall" | "fund-directory" | "universe" | "scanner" | "asset-detail" | "watchlist" | "data-health";
 type ViewMode = "grid" | "table";
 
 const viewTitles: Record<ActiveView, string> = {
   "chart-wall": "全市场图表墙",
+  "fund-directory": "基金目录",
   universe: "资产宇宙",
   scanner: "机会扫描",
   "asset-detail": "资产详情",
@@ -135,16 +141,16 @@ export function ChartWallPage(): JSX.Element {
   const search = getSearchValue(searchParams, "q", "");
   const scannerEventType = getSearchValue(searchParams, "eventType", "all");
   const scannerMinSeverity = getSearchValue(searchParams, "severity", "0");
+  const fundDirectoryKeyword = getSearchValue(searchParams, "fundKeyword", "");
+  const fundDirectoryType = getSearchValue(searchParams, "fundType", "all");
+  const fundDirectoryStatus = getFundCatalogImportStatus(getSearchValue(searchParams, "fundStatus", "all"));
+  const fundDirectoryPage = getPositiveIntegerSearchValue(searchParams, "fundPage", 1);
+  const fundDirectoryLimit = 50;
   const [compareAssetIds, setCompareAssetIds] = useState<string[]>([]);
   const [compareData, setCompareData] = useState<CompareData | null>(null);
-  const [fundKeyword, setFundKeyword] = useState("");
-  const [fundResults, setFundResults] = useState<FundSearchResult[]>([]);
-  const [fundSearchError, setFundSearchError] = useState<string | null>(null);
-  const [isFundSearching, setIsFundSearching] = useState(false);
   const [isFundCatalogSyncing, setIsFundCatalogSyncing] = useState(false);
   const [importingFundCode, setImportingFundCode] = useState<string | null>(null);
   const [fundImportMessage, setFundImportMessage] = useState<string | null>(null);
-  const [fundCatalogSummary, setFundCatalogSummary] = useState<FundCatalogSummary | null>(null);
   const [assetDetailData, setAssetDetailData] = useState<AssetDetailData | null>(null);
   const [assetDetailError, setAssetDetailError] = useState<string | null>(null);
   const [isAssetDetailLoading, setIsAssetDetailLoading] = useState(false);
@@ -199,10 +205,19 @@ export function ChartWallPage(): JSX.Element {
     [assetType, level, market, order, range, signal, sort, timeframe]
   );
   const { data, error, isLoading, isRefreshing, refresh, reload } = useChartWallQuery(filters);
-  const effectiveFundCatalogSummary = fundCatalogSummary ?? data?.fundCatalog.summary ?? null;
+  const fundDirectoryFilters = useMemo(
+    () => ({
+      keyword: fundDirectoryKeyword,
+      fundType: fundDirectoryType,
+      status: fundDirectoryStatus,
+      limit: fundDirectoryLimit,
+      offset: (fundDirectoryPage - 1) * fundDirectoryLimit
+    }),
+    [fundDirectoryKeyword, fundDirectoryPage, fundDirectoryStatus, fundDirectoryType]
+  );
+  const fundDirectoryQuery = useFundDirectoryQuery(fundDirectoryFilters, activeView === "fund-directory");
   const comparedSet = useMemo(() => new Set(compareAssetIds), [compareAssetIds]);
   const chartItems = useMemo(() => (data?.chartWall.items ?? []).map((item) => ({ ...item, isCompared: comparedSet.has(item.id) })), [comparedSet, data]);
-  const knownFundCodes = useMemo(() => new Set(chartItems.filter((item) => item.dataSource === "eastmoney").map((item) => item.symbol)), [chartItems]);
 
   const filteredItems = useMemo(() => {
     const keyword = search.trim().toLowerCase();
@@ -284,39 +299,32 @@ export function ChartWallPage(): JSX.Element {
     setCompareAssetIds((current) => (current.includes(assetId) ? current.filter((id) => id !== assetId) : [...current, assetId].slice(-6)));
   };
 
-  const handleFundSearch = async (): Promise<void> => {
-    const keyword = fundKeyword.trim();
+  const setFundDirectoryQueryValue = useCallback((name: string, value: string, fallback: string): void => {
+    const next = new URLSearchParams(searchParams);
 
-    if (keyword.length === 0) {
-      setFundResults([]);
-      setFundSearchError(null);
-      return;
+    if (value === fallback || value.length === 0) {
+      next.delete(name);
+    } else {
+      next.set(name, value);
     }
 
-    setIsFundSearching(true);
-    setFundSearchError(null);
-    setFundImportMessage(null);
-    try {
-      const response = await chartWallApiService.searchEastmoneyFunds(keyword);
-      setFundCatalogSummary(response.catalog);
-      setFundResults(response.results);
-    } catch (nextError) {
-      setFundSearchError(nextError instanceof Error ? nextError.message : "基金搜索失败");
-    } finally {
-      setIsFundSearching(false);
+    if (name !== "fundPage") {
+      next.delete("fundPage");
     }
-  };
+
+    setSearchParams(next);
+  }, [searchParams, setSearchParams]);
 
   const handleFundCatalogSync = async (): Promise<void> => {
     setIsFundCatalogSyncing(true);
-    setFundSearchError(null);
     setFundImportMessage(null);
     try {
       const response = await chartWallApiService.syncEastmoneyFundCatalog();
-      setFundCatalogSummary(response.summary);
-      setFundImportMessage(`基金目录已同步，${response.summary.totalCount.toLocaleString("en-US")} 只`);
+      setFundImportMessage(`基金目录已同步，${response.summary.totalCount.toLocaleString("en-US")} 只；快照更新 ${response.metricSnapshotsUpdated.toLocaleString("en-US")} 只`);
+      await fundDirectoryQuery.reload();
+      await reload();
     } catch (nextError) {
-      setFundSearchError(nextError instanceof Error ? nextError.message : "基金目录同步失败");
+      setFundImportMessage(nextError instanceof Error ? nextError.message : "基金目录同步失败");
     } finally {
       setIsFundCatalogSyncing(false);
     }
@@ -324,19 +332,14 @@ export function ChartWallPage(): JSX.Element {
 
   const handleFundImport = async (code: string): Promise<void> => {
     setImportingFundCode(code);
-    setFundSearchError(null);
     setFundImportMessage(null);
     try {
       const response = await chartWallApiService.importEastmoneyFund(code);
-      const next = new URLSearchParams(searchParams);
-      next.set("market", "基金");
-      next.set("assetType", "fund");
-      next.set("timeframe", "1d");
-      setSearchParams(next);
       setFundImportMessage(`${response.asset.name} 已导入，${response.barsImported.toLocaleString("en-US")} 条净值`);
+      await fundDirectoryQuery.reload();
       await reload();
     } catch (nextError) {
-      setFundSearchError(nextError instanceof Error ? nextError.message : "基金导入失败");
+      setFundImportMessage(nextError instanceof Error ? nextError.message : "基金导入失败");
     } finally {
       setImportingFundCode(null);
     }
@@ -374,6 +377,9 @@ export function ChartWallPage(): JSX.Element {
           <nav className="sidebar-nav" aria-label="主导航">
             <SidebarButton active={activeView === "chart-wall"} label="图表墙" title="全市场图表墙" to={`/chart-wall${currentSearch}`}>
               <BarChart3 size={18} aria-hidden="true" />
+            </SidebarButton>
+            <SidebarButton active={activeView === "fund-directory"} label="基金目录" title="基金目录" to={`/funds${currentSearch}`}>
+              <BookOpen size={18} aria-hidden="true" />
             </SidebarButton>
             <SidebarButton active={activeView === "universe"} label="资产宇宙" title="资产宇宙" to={`/universe${currentSearch}`}>
               <Network size={18} aria-hidden="true" />
@@ -427,7 +433,7 @@ export function ChartWallPage(): JSX.Element {
             {isRefreshing ? "刷新中" : "重新采集"}
           </Button>
         </section>
-      ) : (
+      ) : activeView === "fund-directory" ? null : (
         <>
           <section className="control-strip" aria-label="图表控制">
             <Select id="market-filter" label="市场" value={market} onChange={(value) => setQueryValue("market", value, defaultFilters.market)} options={facetOptions("全部市场", data?.chartWall.facets?.markets, marketFallbackOptions)} />
@@ -457,38 +463,14 @@ export function ChartWallPage(): JSX.Element {
           <ActiveFilterChips filters={{ market, assetType, level, signal, sort, order, search }} onReset={resetFilters} />
         </>
       )}
-      {data && activeView !== "asset-detail" && assetType === "fund" && <FundScopeStrip data={data} market={market} />}
-      {activeView === "chart-wall" && (
-        <FundDiscoveryPanel
-          keyword={fundKeyword}
-          results={fundResults}
-          catalogSummary={effectiveFundCatalogSummary}
-          chartFundCount={data?.chartWall.fundScope?.eastmoneyFundCount ?? 0}
-          knownFundCodes={knownFundCodes}
-          error={fundSearchError}
-          message={fundImportMessage}
-          isSearching={isFundSearching}
-          isCatalogSyncing={isFundCatalogSyncing}
-          importingCode={importingFundCode}
-          onKeywordChange={setFundKeyword}
-          onSyncCatalog={() => {
-            void handleFundCatalogSync();
-          }}
-          onSearch={() => {
-            void handleFundSearch();
-          }}
-          onImport={(code) => {
-            void handleFundImport(code);
-          }}
-        />
-      )}
+      {data && activeView === "chart-wall" && assetType === "fund" && <FundScopeStrip data={data} market={market} />}
 
       {isLoading && <LoadingState />}
       {!isLoading && error && <ErrorState title="行情加载失败" message={error} />}
 
       {!isLoading && !error && data && (
         <>
-          {activeView !== "asset-detail" && (
+          {activeView !== "asset-detail" && activeView !== "fund-directory" && (
             <>
               <SummaryStrip data={data} visibleSearchCount={filteredItems.length} />
               <BreadthStrip data={data} />
@@ -514,6 +496,33 @@ export function ChartWallPage(): JSX.Element {
                 <EventListSection events={data.scannerEvents.events.slice(0, 8)} />
               </aside>
             </section>
+          )}
+
+          {activeView === "fund-directory" && (
+            <FundDirectorySection
+              data={fundDirectoryQuery.data}
+              error={fundDirectoryQuery.error}
+              isLoading={fundDirectoryQuery.isLoading}
+              keyword={fundDirectoryKeyword}
+              fundType={fundDirectoryType}
+              status={fundDirectoryStatus}
+              page={fundDirectoryPage}
+              limit={fundDirectoryLimit}
+              message={fundImportMessage}
+              importingCode={importingFundCode}
+              isCatalogSyncing={isFundCatalogSyncing}
+              onKeywordChange={(value) => setFundDirectoryQueryValue("fundKeyword", value, "")}
+              onFundTypeChange={(value) => setFundDirectoryQueryValue("fundType", value, "all")}
+              onStatusChange={(value) => setFundDirectoryQueryValue("fundStatus", value, "all")}
+              onPageChange={(value) => setFundDirectoryQueryValue("fundPage", String(value), "1")}
+              onImport={(code) => {
+                void handleFundImport(code);
+              }}
+              onSyncCatalog={() => {
+                void handleFundCatalogSync();
+              }}
+              onSelectAsset={selectAsset}
+            />
           )}
 
           {activeView === "universe" && <UniverseSection nodes={data.universeTree.nodes} onSelectAsset={selectAsset} />}
@@ -557,7 +566,22 @@ export function ChartWallPage(): JSX.Element {
             />
           )}
 
-          {activeView === "data-health" && <DataHealthSection data={data} />}
+          {activeView === "data-health" && (
+            <DataHealthSection
+              data={data}
+              assetTable={
+                <ExchangeTable
+                  items={data.chartWall.items}
+                  sort={data.chartWall.sort}
+                  order={data.chartWall.order}
+                  onSort={setSortQueryValue}
+                  onSelect={selectAsset}
+                  onPin={handlePin}
+                  onCompare={handleCompare}
+                />
+              }
+            />
+          )}
         </>
       )}
     </AppShell>
@@ -613,146 +637,6 @@ function FundScopeStrip({ data, market }: { data: ChartWallPageData; market: str
       <span>Eastmoney 场外 {fundScope.eastmoneyFundCount.toLocaleString("en-US")}</span>
       {fundScope.seedAndImportedOnly && <span>当前展示已入库种子与已导入基金</span>}
     </section>
-  );
-}
-
-type FundDiscoveryPanelProps = {
-  keyword: string;
-  results: FundSearchResult[];
-  catalogSummary: FundCatalogSummary | null;
-  chartFundCount: number;
-  knownFundCodes: Set<string>;
-  error: string | null;
-  message: string | null;
-  isSearching: boolean;
-  isCatalogSyncing: boolean;
-  importingCode: string | null;
-  onKeywordChange(value: string): void;
-  onSyncCatalog(): void;
-  onSearch(): void;
-  onImport(code: string): void;
-};
-
-function FundDiscoveryPanel({
-  keyword,
-  results,
-  catalogSummary,
-  chartFundCount,
-  knownFundCodes,
-  error,
-  message,
-  isSearching,
-  isCatalogSyncing,
-  importingCode,
-  onKeywordChange,
-  onSyncCatalog,
-  onSearch,
-  onImport
-}: FundDiscoveryPanelProps): JSX.Element {
-  return (
-    <section className="fund-discovery-panel" aria-label="基金发现">
-      <form
-        className="fund-discovery-panel__search"
-        onSubmit={(event) => {
-          event.preventDefault();
-          onSearch();
-        }}
-      >
-        <div>
-          <strong>基金发现</strong>
-          <span>本地目录 + 按需导入走势</span>
-        </div>
-        <div className="fund-discovery-panel__metrics" aria-label="基金目录状态">
-          <span>目录 {catalogSummary?.totalCount.toLocaleString("en-US") ?? "同步中"}</span>
-          <span>走势池 {chartFundCount.toLocaleString("en-US")}</span>
-          {catalogSummary?.syncedAt && <span>更新 {formatDateTime(catalogSummary.syncedAt)}</span>}
-        </div>
-        <label className="search-control" htmlFor="fund-discovery-search">
-          <Search size={17} aria-hidden="true" />
-          <input id="fund-discovery-search" value={keyword} onChange={(event) => onKeywordChange(event.target.value)} placeholder="000001、白酒、半导体、债券、QDII" />
-        </label>
-        <Button type="button" variant="ghost" disabled={isCatalogSyncing} onClick={onSyncCatalog}>
-          {isCatalogSyncing ? "同步中" : "同步目录"}
-        </Button>
-        <Button type="submit" variant="secondary" disabled={isSearching}>
-          {isSearching ? "搜索中" : "搜索"}
-        </Button>
-      </form>
-      {(error || message) && <p className={error ? "fund-discovery-panel__status fund-discovery-panel__status--error" : "fund-discovery-panel__status"}>{error ?? message}</p>}
-      {results.length > 0 && (
-        <div className="fund-result-strip">
-          {results.map((result) => {
-            const isKnown = knownFundCodes.has(result.code);
-            const isImporting = importingCode === result.code;
-            return (
-              <article key={result.code} className="fund-result-card">
-                <div>
-                  <strong>{result.name}</strong>
-                  <span>{result.code}</span>
-                </div>
-                <small>{[result.fundType, result.company, ...result.themes.slice(0, 2)].filter(Boolean).join(" / ") || "目录基金"}</small>
-                <footer>
-                  <span>{result.latestNav === null ? "净值暂无" : `${result.latestNav.toFixed(4)} / ${result.latestNavDate ?? "--"}`}</span>
-                  <Button variant={isKnown ? "ghost" : "secondary"} disabled={isImporting} onClick={() => onImport(result.code)}>
-                    {isImporting ? "导入中" : isKnown ? "更新" : "导入"}
-                  </Button>
-                </footer>
-              </article>
-            );
-          })}
-        </div>
-      )}
-    </section>
-  );
-}
-
-function SummaryStrip({ data, visibleSearchCount }: { data: ChartWallPageData; visibleSearchCount: number }): JSX.Element {
-  const summary = getSummary(data);
-  const rawFileCount = data.dataHealth.rawFileCount ?? 0;
-
-  return (
-    <section className="summary-strip" aria-label="数据状态">
-      <SummaryCard label="可交易资产" value={`${summary.visibleItems}/${summary.totalUniverseAssets}`} />
-      <SummaryCard label="搜索可见" value={visibleSearchCount.toString()} />
-      <SummaryCard label="K 线记录" value={data.dataHealth.barCount.toLocaleString("en-US")} />
-      <SummaryCard label="Raw 文件" value={rawFileCount.toLocaleString("en-US")} />
-      <SummaryCard label="最新 K 线" value={formatDateTime(data.dataHealth.latestBarAt)} />
-      <SummaryCard label="最近采集" value={formatDateTime(data.dataHealth.lastIngestionAt)} />
-    </section>
-  );
-}
-
-function SummaryCard({ label, value }: { label: string; value: string }): JSX.Element {
-  return (
-    <article>
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </article>
-  );
-}
-
-function BreadthStrip({ data }: { data: ChartWallPageData }): JSX.Element {
-  const summary = getSummary(data);
-
-  return (
-    <section className="breadth-strip" aria-label="市场宽度">
-      <MetricPill label="上涨" value={summary.positiveItems} tone="positive" />
-      <MetricPill label="下跌" value={summary.negativeItems} tone="negative" />
-      <MetricPill label="强趋势" value={summary.strongTrendItems} tone="positive" />
-      <MetricPill label="偏弱" value={summary.weakTrendItems} tone="negative" />
-      <MetricPill label="有事件" value={summary.eventfulItems} tone="blue" />
-      <MetricPill label="平均收益" value={formatPercent(summary.averageReturnPct)} tone={(summary.averageReturnPct ?? 0) >= 0 ? "positive" : "negative"} />
-      <MetricPill label="平均量比" value={summary.averageVolumeRatio === null ? "暂无" : `${summary.averageVolumeRatio.toFixed(2)}x`} tone="neutral" />
-    </section>
-  );
-}
-
-function MetricPill({ label, value, tone }: { label: string; value: number | string; tone: "positive" | "negative" | "blue" | "neutral" }): JSX.Element {
-  return (
-    <article className={`metric-pill metric-pill--${tone}`}>
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </article>
   );
 }
 
@@ -1195,120 +1079,10 @@ function ComparePanel({
   );
 }
 
-function DataHealthSection({ data }: { data: ChartWallPageData }): JSX.Element {
-  const latestJob = data.dataHealth.latestJob ?? null;
-  const latestJobTime = latestJob?.finishedAt ?? latestJob?.startedAt ?? null;
-  const rawFileCount = data.dataHealth.rawFileCount ?? 0;
-  const databaseSizeBytes = data.dataHealth.databaseSizeBytes ?? 0;
-  const barsByTimeframe = data.dataHealth.barsByTimeframe ?? [];
-  const barsBySource = data.dataHealth.barsBySource ?? [];
-
-  return (
-    <section className="single-view-section">
-      <SectionHeader title="本地数据链路" description="SQLite / Raw JSONL / 多供应商真实数据" />
-      <div className="data-health-grid">
-        <DataHealthCard label="SQLite" value={data.dataHealth.databasePath} />
-        <DataHealthCard label="Raw" value={data.dataHealth.rawDataPath} />
-        <DataHealthCard label="数据库大小" value={formatBytes(databaseSizeBytes)} />
-        <DataHealthCard label="Raw 文件数" value={rawFileCount.toLocaleString("en-US")} />
-        <DataHealthCard label="同步任务" value={latestJob ? `${jobStatusLabel(latestJob.status)} / ${formatDateTime(latestJobTime)}` : "暂无"} />
-        <DataHealthCard label="任务错误" value={latestJob?.errorMessage ?? "无"} />
-      </div>
-      <div className="provider-grid">
-        {data.dataHealth.providers.map((provider) => (
-          <article key={provider.id}>
-            <ListChecks size={18} aria-hidden="true" />
-            <strong>{provider.label}</strong>
-            <span>{provider.status}</span>
-            <small>{provider.assetCount} 个资产</small>
-          </article>
-        ))}
-      </div>
-      <div className="data-health-split">
-        <MiniCountTable title="按周期" rows={barsByTimeframe.map((row) => ({ label: timeframeLabel(row.timeframe), count: row.count }))} />
-        <MiniCountTable title="按来源" rows={barsBySource.map((row) => ({ label: row.source, count: row.count }))} />
-      </div>
-      <ExchangeTable items={data.chartWall.items} sort={data.chartWall.sort} order={data.chartWall.order} onSort={() => undefined} onSelect={() => undefined} onPin={() => undefined} onCompare={() => undefined} />
-    </section>
-  );
-}
-
-function jobStatusLabel(status: string): string {
-  if (status === "running") {
-    return "同步中";
-  }
-
-  if (status === "success") {
-    return "成功";
-  }
-
-  if (status === "failed") {
-    return "失败";
-  }
-
-  return status;
-}
-
-function DataHealthCard({ label, value }: { label: string; value: string }): JSX.Element {
-  return (
-    <article>
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </article>
-  );
-}
-
-function MiniCountTable({ title, rows }: { title: string; rows: Array<{ label: string; count: number }> }): JSX.Element {
-  return (
-    <article className="mini-count-table">
-      <h3>{title}</h3>
-      {rows.map((row) => (
-        <div key={row.label}>
-          <span>{row.label}</span>
-          <strong>{row.count.toLocaleString("en-US")}</strong>
-        </div>
-      ))}
-    </article>
-  );
-}
-
-function getSummary(data: ChartWallPageData): ChartWallSummary {
-  const runtimeSummary = data.chartWall.summary as ChartWallSummary | undefined;
-
-  if (runtimeSummary) {
-    return runtimeSummary;
-  }
-
-  const items = data.chartWall.items;
-  const latestTimestamp = Math.max(
-    ...items
-      .map((item) => (item.latestBarAt ? new Date(item.latestBarAt).getTime() : NaN))
-      .filter((timestamp) => Number.isFinite(timestamp))
-  );
-
-  return {
-    totalUniverseAssets: items.length,
-    visibleItems: items.length,
-    positiveItems: items.filter((item) => (item.returnPct ?? 0) > 0).length,
-    negativeItems: items.filter((item) => (item.returnPct ?? 0) < 0).length,
-    strongTrendItems: items.filter((item) => item.trendScore >= 30).length,
-    weakTrendItems: items.filter((item) => item.trendScore <= -10).length,
-    eventfulItems: items.filter((item) => item.events.length > 0).length,
-    pinnedItems: items.filter((item) => item.isPinned).length,
-    comparedItems: items.filter((item) => item.isCompared).length,
-    averageReturnPct: average(items.map((item) => item.returnPct)),
-    averageTrendScore: average(items.map((item) => item.trendScore)),
-    averageVolumeRatio: average(items.map((item) => item.volumeRatio)),
-    latestBarAt: Number.isFinite(latestTimestamp) ? new Date(latestTimestamp).toISOString() : null
-  };
-}
-
-function average(values: Array<number | null | undefined>): number | null {
-  const finiteValues = values.filter((value): value is number => typeof value === "number" && Number.isFinite(value));
-  return finiteValues.length > 0 ? finiteValues.reduce((sum, value) => sum + value, 0) / finiteValues.length : null;
-}
-
 function getActiveView(pathname: string): ActiveView {
+  if (pathname.startsWith("/funds")) {
+    return "fund-directory";
+  }
   if (pathname.startsWith("/universe")) {
     return "universe";
   }
@@ -1338,6 +1112,10 @@ function getAssetDetailReturnPath(searchParams: URLSearchParams): string {
 }
 
 function getAssetDetailReturnLabel(path: string): string {
+  if (path.startsWith("/funds")) {
+    return "基金目录";
+  }
+
   if (path.startsWith("/universe")) {
     return "资产宇宙";
   }
@@ -1378,11 +1156,20 @@ function isSafeWorkspacePath(path: string): boolean {
     return false;
   }
 
-  return ["/chart-wall", "/universe", "/scanner", "/watchlist", "/data-health"].some((prefix) => path === prefix || path.startsWith(`${prefix}?`));
+  return ["/chart-wall", "/funds", "/universe", "/scanner", "/watchlist", "/data-health"].some((prefix) => path === prefix || path.startsWith(`${prefix}?`));
 }
 
 function getSearchValue(searchParams: URLSearchParams, name: string, fallback: string): string {
   return searchParams.get(name) ?? fallback;
+}
+
+function getPositiveIntegerSearchValue(searchParams: URLSearchParams, name: string, fallback: number): number {
+  const value = Number(searchParams.get(name));
+  return Number.isInteger(value) && value > 0 ? value : fallback;
+}
+
+function getFundCatalogImportStatus(value: string): FundCatalogImportStatus {
+  return value === "imported" || value === "not_imported" ? value : "all";
 }
 
 function getViewMode(value: string): ViewMode {
@@ -1513,16 +1300,6 @@ function formatPercent(value: number | null | undefined): string {
 
 function formatNumber(value: number | null | undefined): string {
   return value === null || value === undefined ? "暂无" : value.toFixed(2);
-}
-
-function formatBytes(value: number): string {
-  if (value >= 1024 * 1024) {
-    return `${(value / 1024 / 1024).toFixed(1)} MB`;
-  }
-  if (value >= 1024) {
-    return `${(value / 1024).toFixed(1)} KB`;
-  }
-  return `${value} B`;
 }
 
 function rangeLabel(value: string): string {

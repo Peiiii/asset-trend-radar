@@ -1,11 +1,15 @@
-import { EastmoneyFundCatalogProvider, EastmoneyFundDataProvider, EastmoneyFundSearchProvider } from "@gold-insights/data-adapters";
-import type { LocalRawFileRepository, SqliteAssetRepository, SqliteFundCatalogRepository, SqliteMarketDataRepository, SqliteScannerEventRepository } from "@gold-insights/data-storage";
+import { EastmoneyFundCatalogProvider, EastmoneyFundDataProvider, EastmoneyFundRankProvider, EastmoneyFundSearchProvider } from "@gold-insights/data-adapters";
+import type { FundCatalogPageRecord, LocalRawFileRepository, SqliteAssetRepository, SqliteFundCatalogRepository, SqliteMarketDataRepository, SqliteScannerEventRepository } from "@gold-insights/data-storage";
 import { calculateIndicators } from "@gold-insights/indicator-engine";
-import type { AssetSummary, FundCatalogEntry, FundCatalogSummaryResponse, FundCatalogSyncResponse, FundImportResponse, FundSearchResponse, FundSearchResult } from "@gold-insights/market-domain";
-import { toIsoDateTime } from "@gold-insights/market-domain";
+import type { AssetSummary, FundCatalogEntry, FundCatalogImportStatus, FundCatalogPageItem, FundCatalogPageResponse, FundCatalogSummaryResponse, FundCatalogSyncResponse, FundImportResponse, FundSearchResponse, FundSearchResult, OhlcvBar } from "@gold-insights/market-domain";
+import { dayMs, toIsoDateTime } from "@gold-insights/market-domain";
 import { ScannerEngineManager } from "@gold-insights/scanner-engine";
 
+type ImportedFundCatalogMetrics = Omit<FundCatalogPageItem, keyof FundCatalogEntry | "assetId" | "isImported" | "metricSource">;
+
 export class FundDiscoveryService {
+  private metricSyncPromise: Promise<number> | null = null;
+
   public constructor(
     private readonly historyLimit: number,
     private readonly assetRepository: SqliteAssetRepository,
@@ -14,6 +18,7 @@ export class FundDiscoveryService {
     private readonly fundCatalogRepository: SqliteFundCatalogRepository,
     private readonly rawFileRepository: LocalRawFileRepository,
     private readonly catalogProvider = new EastmoneyFundCatalogProvider(),
+    private readonly rankProvider = new EastmoneyFundRankProvider(),
     private readonly searchProvider = new EastmoneyFundSearchProvider(),
     private readonly dataProvider = new EastmoneyFundDataProvider(),
     private readonly scannerEngine = new ScannerEngineManager()
@@ -68,14 +73,57 @@ export class FundDiscoveryService {
     summary: this.fundCatalogRepository.getSummary()
   });
 
+  public listCatalogPage = async ({
+    keyword,
+    fundType,
+    status,
+    limit,
+    offset
+  }: {
+    keyword: string;
+    fundType: string;
+    status: FundCatalogImportStatus;
+    limit: number;
+    offset: number;
+  }): Promise<FundCatalogPageResponse> => {
+    await this.syncCatalogIfEmpty();
+    await this.syncCatalogMetricsIfStale();
+
+    const page = this.fundCatalogRepository.listPage({
+      keyword,
+      fundType,
+      status,
+      limit,
+      offset
+    });
+    const metricsByAssetId = this.getImportedMetrics(page.items.filter((item) => item.assetId).map((item) => String(item.assetId)));
+
+    return {
+      generatedAt: new Date().toISOString(),
+      catalog: this.fundCatalogRepository.getSummary(),
+      keyword,
+      fundType,
+      status,
+      limit,
+      offset,
+      totalCount: page.totalCount,
+      importedTotalCount: page.importedTotalCount,
+      items: page.items.map((item) => this.toCatalogPageItem(item, metricsByAssetId.get(item.assetId ?? ""))),
+      fundTypes: this.fundCatalogRepository.listFundTypeFacets(keyword, status),
+      statusFacets: this.fundCatalogRepository.listStatusFacets(keyword, fundType)
+    };
+  };
+
   public syncCatalog = async (): Promise<FundCatalogSyncResponse> => {
     const entries = await this.catalogProvider.fetchCatalog();
     const insertedOrUpdated = this.fundCatalogRepository.upsertEntries(entries);
+    const metricSnapshotsUpdated = await this.syncCatalogMetrics();
 
     return {
       generatedAt: new Date().toISOString(),
       summary: this.fundCatalogRepository.getSummary(),
-      insertedOrUpdated
+      insertedOrUpdated,
+      metricSnapshotsUpdated
     };
   };
 
@@ -85,6 +133,35 @@ export class FundDiscoveryService {
     }
 
     await this.syncCatalog();
+  };
+
+  private syncCatalogMetricsIfStale = async (): Promise<void> => {
+    const metricSyncedAt = this.fundCatalogRepository.getSummary().metricSyncedAt;
+
+    if (metricSyncedAt && Date.now() - Date.parse(metricSyncedAt) < 6 * 60 * 60 * 1000) {
+      return;
+    }
+
+    try {
+      await this.syncCatalogMetrics();
+    } catch {
+      // Keep the directory usable when the lightweight rank snapshot is temporarily unavailable.
+    }
+  };
+
+  private syncCatalogMetrics = async (): Promise<number> => {
+    if (this.metricSyncPromise) {
+      return this.metricSyncPromise;
+    }
+
+    this.metricSyncPromise = this.rankProvider
+      .fetchSnapshots()
+      .then((snapshots) => this.fundCatalogRepository.upsertMetricSnapshots(snapshots))
+      .finally(() => {
+        this.metricSyncPromise = null;
+      });
+
+    return this.metricSyncPromise;
   };
 
   public importEastmoneyFund = async (code: string): Promise<FundImportResponse> => {
@@ -184,4 +261,70 @@ export class FundDiscoveryService {
     themes: [],
     canBuy: false
   });
+
+  private getImportedMetrics = (assetIds: string[]): Map<string, ImportedFundCatalogMetrics> => {
+    const metricsByAssetId = new Map<string, ImportedFundCatalogMetrics>();
+
+    for (const assetId of assetIds) {
+      const bars = this.marketDataRepository.listBars(assetId, "1d", this.historyLimit);
+      const latestBar = bars.at(-1) ?? null;
+
+      metricsByAssetId.set(assetId, {
+        dataPointCount: bars.length,
+        latestNav: latestBar?.close ?? null,
+        latestNavDate: latestBar ? new Date(latestBar.ts).toISOString().slice(0, 10) : null,
+        latestBarAt: toIsoDateTime(latestBar?.ts ?? null),
+        return1d: this.getPreviousBarReturn(bars),
+        return1m: this.getCalendarReturn(bars, 30),
+        return3m: this.getCalendarReturn(bars, 90),
+        return6m: this.getCalendarReturn(bars, 180),
+        return1y: this.getCalendarReturn(bars, 365)
+      });
+    }
+
+    return metricsByAssetId;
+  };
+
+  private toCatalogPageItem = (entry: FundCatalogPageRecord, metrics?: ImportedFundCatalogMetrics): FundCatalogPageItem => ({
+    ...entry,
+    isImported: Boolean(entry.assetId),
+    metricSource: metrics ? "local_bars" : entry.metricUpdatedAt ? "catalog_snapshot" : null,
+    dataPointCount: metrics?.dataPointCount ?? 0,
+    latestNav: metrics?.latestNav ?? entry.latestNav ?? null,
+    latestNavDate: metrics?.latestNavDate ?? entry.latestNavDate ?? null,
+    latestBarAt: metrics?.latestBarAt ?? null,
+    return1d: metrics?.return1d ?? entry.return1d ?? null,
+    return1m: metrics?.return1m ?? entry.return1m ?? null,
+    return3m: metrics?.return3m ?? entry.return3m ?? null,
+    return6m: metrics?.return6m ?? entry.return6m ?? null,
+    return1y: metrics?.return1y ?? entry.return1y ?? null
+  });
+
+  private getPreviousBarReturn = (bars: OhlcvBar[]): number | null => {
+    const latestBar = bars.at(-1);
+    const previousBar = bars.at(-2);
+
+    if (!latestBar || !previousBar || previousBar.close === 0) {
+      return null;
+    }
+
+    return ((latestBar.close - previousBar.close) / previousBar.close) * 100;
+  };
+
+  private getCalendarReturn = (bars: OhlcvBar[], days: number): number | null => {
+    const latestBar = bars.at(-1);
+
+    if (!latestBar) {
+      return null;
+    }
+
+    const targetTs = latestBar.ts - days * dayMs;
+    const baseBar = bars.find((bar) => bar.ts >= targetTs) ?? null;
+
+    if (!baseBar || baseBar.ts === latestBar.ts || baseBar.close === 0) {
+      return null;
+    }
+
+    return ((latestBar.close - baseBar.close) / baseBar.close) * 100;
+  };
 }

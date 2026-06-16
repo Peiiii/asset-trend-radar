@@ -22,9 +22,42 @@ export type FundCatalogEntry = {
   updatedAt: number;
 };
 
+export type FundCatalogMetricSnapshot = {
+  code: string;
+  latestNav: number | null;
+  accumulatedNav: number | null;
+  latestNavDate: string | null;
+  return1d: number | null;
+  return1w: number | null;
+  return1m: number | null;
+  return3m: number | null;
+  return6m: number | null;
+  return1y: number | null;
+  returnYtd: number | null;
+  metricUpdatedAt: number;
+};
+
+export type FundCatalogImportStatus = "all" | "imported" | "not_imported";
+
+export type FundCatalogPageItem = FundCatalogEntry & {
+  assetId: string | null;
+  isImported: boolean;
+  metricSource: "local_bars" | "catalog_snapshot" | null;
+  dataPointCount: number;
+  latestNav: number | null;
+  latestNavDate: string | null;
+  latestBarAt: string | null;
+  return1d: number | null;
+  return1m: number | null;
+  return3m: number | null;
+  return6m: number | null;
+  return1y: number | null;
+};
+
 export type FundCatalogSummary = {
   totalCount: number;
   syncedAt: string | null;
+  metricSyncedAt: string | null;
   source: "eastmoney";
 };
 
@@ -41,11 +74,35 @@ export type FundCatalogSyncResponse = {
   generatedAt: string;
   summary: FundCatalogSummary;
   insertedOrUpdated: number;
+  metricSnapshotsUpdated: number;
 };
 
 export type FundCatalogSummaryResponse = {
   generatedAt: string;
   summary: FundCatalogSummary;
+};
+
+export type FundCatalogPageResponse = {
+  generatedAt: string;
+  catalog: FundCatalogSummary;
+  keyword: string;
+  fundType: string;
+  status: FundCatalogImportStatus;
+  limit: number;
+  offset: number;
+  totalCount: number;
+  importedTotalCount: number;
+  items: FundCatalogPageItem[];
+  fundTypes: Array<{
+    value: string;
+    label: string;
+    count: number;
+  }>;
+  statusFacets: Array<{
+    value: FundCatalogImportStatus;
+    label: string;
+    count: number;
+  }>;
 };
 
 export type FundImportResponse = {

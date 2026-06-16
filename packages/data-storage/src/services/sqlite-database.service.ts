@@ -108,6 +108,17 @@ export class SqliteDatabaseService {
         pinyin TEXT,
         full_pinyin TEXT,
         source TEXT NOT NULL,
+        latest_nav REAL,
+        accumulated_nav REAL,
+        latest_nav_date TEXT,
+        return_1d REAL,
+        return_1w REAL,
+        return_1m REAL,
+        return_3m REAL,
+        return_6m REAL,
+        return_1y REAL,
+        return_ytd REAL,
+        metric_updated_at INTEGER,
         updated_at INTEGER NOT NULL
       );
 
@@ -138,6 +149,17 @@ export class SqliteDatabaseService {
     this.addColumnIfMissing("assets", "data_source", "TEXT");
     this.addColumnIfMissing("assets", "vendor_symbol", "TEXT");
     this.addColumnIfMissing("assets", "tags_json", "TEXT NOT NULL DEFAULT '[]'");
+    this.addColumnIfMissing("fund_catalog", "latest_nav", "REAL");
+    this.addColumnIfMissing("fund_catalog", "accumulated_nav", "REAL");
+    this.addColumnIfMissing("fund_catalog", "latest_nav_date", "TEXT");
+    this.addColumnIfMissing("fund_catalog", "return_1d", "REAL");
+    this.addColumnIfMissing("fund_catalog", "return_1w", "REAL");
+    this.addColumnIfMissing("fund_catalog", "return_1m", "REAL");
+    this.addColumnIfMissing("fund_catalog", "return_3m", "REAL");
+    this.addColumnIfMissing("fund_catalog", "return_6m", "REAL");
+    this.addColumnIfMissing("fund_catalog", "return_1y", "REAL");
+    this.addColumnIfMissing("fund_catalog", "return_ytd", "REAL");
+    this.addColumnIfMissing("fund_catalog", "metric_updated_at", "INTEGER");
   };
 
   private addColumnIfMissing = (tableName: string, columnName: string, columnDefinition: string): void => {

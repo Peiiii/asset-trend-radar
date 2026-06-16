@@ -121,6 +121,11 @@ export class LocalApiServerService {
         return;
       }
 
+      if (request.method === "GET" && url.pathname === "/api/funds/eastmoney/catalog") {
+        await this.fundDiscoveryController.handleCatalogPage(url, response);
+        return;
+      }
+
       if (request.method === "POST" && url.pathname === "/api/funds/eastmoney/catalog/sync") {
         await this.fundDiscoveryController.handleCatalogSync(response);
         return;

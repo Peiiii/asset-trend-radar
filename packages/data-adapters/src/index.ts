@@ -2,6 +2,7 @@ export { AkshareMarketDataProvider } from "./providers/akshare-market-data.provi
 export { BinanceMarketDataProvider } from "./providers/binance-market-data.provider";
 export { EastmoneyFundCatalogProvider } from "./providers/eastmoney-fund-catalog.provider";
 export { EastmoneyFundDataProvider } from "./providers/eastmoney-fund-data.provider";
+export { EastmoneyFundRankProvider } from "./providers/eastmoney-fund-rank.provider";
 export { EastmoneyFundSearchProvider } from "./providers/eastmoney-fund-search.provider";
 export { FredMacroDataProvider } from "./providers/fred-macro-data.provider";
 export { MassiveMarketDataProvider } from "./providers/massive-market-data.provider";
