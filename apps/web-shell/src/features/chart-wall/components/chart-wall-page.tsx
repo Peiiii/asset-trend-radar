@@ -19,7 +19,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { NavLink, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { AppShell, Button, EmptyState, ErrorState, FilterChip, IconButton, LoadingState, RangePicker, Select, TimeframePicker } from "@gold-insights/ui";
 import type { ControlOption } from "@gold-insights/ui";
-import type { ChartWallFacet, ChartWallItem, ChartWallSortOrder, ScannerEventsResponse, UniverseTreeNode, WatchlistSummary } from "@gold-insights/market-domain";
+import type { ChartWallFacet, ChartWallItem, ChartWallSortOrder, ScannerEventsResponse, WatchlistSummary } from "@gold-insights/market-domain";
 import type { AssetDetailData, ChartWallFilters, ChartWallPageData, CompareData } from "@/shared/types/api.types";
 import { formatDateTime } from "@/shared/utils/format-number.utils";
 import { AssetChartCard } from "./asset-chart-card";
@@ -33,6 +33,7 @@ import "./market-chart-primitives.css";
 import { ScannerSection } from "./scanner-section/scanner-section";
 import { TaskCenterSection } from "./task-center-section";
 import { TaskStatusButton } from "./task-status-button";
+import { UniverseSection } from "./universe-section/universe-section";
 import { chartWallApiService } from "../services/chart-wall-api.service";
 import { useFundDirectoryQuery } from "../hooks/use-fund-directory-query";
 import { useChartWallQuery } from "../hooks/use-chart-wall-query";
@@ -513,7 +514,13 @@ export function ChartWallPage(): JSX.Element {
             />
           )}
 
-          {activeView === "universe" && <UniverseSection nodes={data.universeTree.nodes} onSelectAsset={selectAsset} />}
+          {activeView === "universe" && (
+            <UniverseSection
+              nodes={data.universeTree.nodes}
+              filters={{ search, market, assetType, level }}
+              onSelectAsset={selectAsset}
+            />
+          )}
 
           {activeView === "scanner" && (
             <ScannerSection
@@ -695,45 +702,6 @@ function EventListSection({ events }: { events: ScannerEventsResponse["events"] 
         </div>
       )}
     </>
-  );
-}
-
-function UniverseSection({ nodes, onSelectAsset }: { nodes: UniverseTreeNode[]; onSelectAsset(assetId: string): void }): JSX.Element {
-  return (
-    <section className="single-view-section">
-      <SectionHeader title="资产宇宙" description="从大类资产到地区、板块、主题、基金、商品和重点公司" />
-      <div className="universe-grid">
-        {nodes.map((node) => (
-          <UniverseNodeCard key={node.id} node={node} onSelectAsset={onSelectAsset} />
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function UniverseNodeCard({ node, onSelectAsset }: { node: UniverseTreeNode; onSelectAsset(assetId: string): void }): JSX.Element {
-  return (
-    <article className="universe-node-card">
-      <header>
-        <strong>{node.label}</strong>
-        <span>{node.count}</span>
-      </header>
-      {node.children.length > 0 && (
-        <div className="universe-node-card__children">
-          {node.children.map((child) => (
-            <UniverseNodeCard key={child.id} node={child} onSelectAsset={onSelectAsset} />
-          ))}
-        </div>
-      )}
-      <div className="universe-node-card__assets">
-        {node.assets.slice(0, 14).map((asset) => (
-          <button key={asset.id} type="button" onClick={() => onSelectAsset(asset.id)}>
-            <span>{asset.name}</span>
-            <small>{asset.symbol}</small>
-          </button>
-        ))}
-      </div>
-    </article>
   );
 }
 
