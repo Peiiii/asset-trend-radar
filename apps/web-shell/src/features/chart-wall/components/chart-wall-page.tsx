@@ -30,6 +30,7 @@ import { DataHealthSection } from "./data-health-section/data-health-section";
 import { ExchangeTable } from "./exchange-table/exchange-table";
 import { FundDirectorySection } from "./fund-directory-section";
 import "./market-chart-primitives.css";
+import { OpportunityLeaderboard } from "./opportunity-leaderboard/opportunity-leaderboard";
 import { ScannerSection } from "./scanner-section/scanner-section";
 import { TaskCenterSection } from "./task-center/task-center-section";
 import { TaskStatusButton } from "./task-center/task-status-button";
@@ -461,6 +462,9 @@ export function ChartWallPage(): JSX.Element {
             <>
               <SummaryStrip data={data} visibleSearchCount={filteredItems.length} />
               <BreadthStrip data={data} />
+              {activeView === "chart-wall" && (
+                <OpportunityLeaderboard items={filteredItems} onSelect={selectAsset} onCompare={handleCompare} />
+              )}
             </>
           )}
 
