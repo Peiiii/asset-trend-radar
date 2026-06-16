@@ -29,6 +29,7 @@ import { ExchangeTable } from "./exchange-table/exchange-table";
 import { FundDirectorySection } from "./fund-directory-section";
 import "./market-chart-primitives.css";
 import { TaskCenterSection } from "./task-center-section";
+import { TaskStatusButton } from "./task-status-button";
 import { chartWallApiService } from "../services/chart-wall-api.service";
 import { useFundDirectoryQuery } from "../hooks/use-fund-directory-query";
 import { useChartWallQuery } from "../hooks/use-chart-wall-query";
@@ -208,7 +209,7 @@ export function ChartWallPage(): JSX.Element {
   );
   const { data, error, isLoading, isRefreshing, refresh, reload } = useChartWallQuery(filters);
   const fundDirectoryQuery = useFundDirectoryQuery(fundDirectory.filters, activeView === "fund-directory");
-  const taskCenterQuery = useTaskCenterQuery(activeView === "tasks");
+  const taskCenterQuery = useTaskCenterQuery(true);
   const comparedSet = useMemo(() => new Set(compareAssetIds), [compareAssetIds]);
   const chartItems = useMemo(() => (data?.chartWall.items ?? []).map((item) => ({ ...item, isCompared: comparedSet.has(item.id) })), [comparedSet, data]);
 
@@ -399,6 +400,14 @@ export function ChartWallPage(): JSX.Element {
               </button>
             )}
           </label>
+          <TaskStatusButton
+            data={taskCenterQuery.data}
+            error={taskCenterQuery.error}
+            isLoading={taskCenterQuery.isLoading}
+            onClick={() => {
+              navigate(`/tasks${currentSearch}`);
+            }}
+          />
           <IconButton label="刷新数据" onClick={handleRefresh} disabled={isRefreshing}>
             <RefreshCcw size={18} aria-hidden="true" />
           </IconButton>

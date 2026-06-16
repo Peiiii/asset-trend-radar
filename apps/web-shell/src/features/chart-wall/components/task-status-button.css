@@ -1,0 +1,46 @@
+.task-status-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 0 11px;
+  border: 1px solid #cfd7e4;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #425069;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.task-status-button:hover,
+.task-status-button:focus-visible {
+  border-color: #9fb0c7;
+  background: #f6f8fb;
+  outline: 0;
+}
+
+.task-status-button--positive {
+  border-color: #b9e5d6;
+  background: #edf9f4;
+  color: #146a58;
+}
+
+.task-status-button--blue {
+  border-color: #bdd6f3;
+  background: #edf5ff;
+  color: #265f9e;
+}
+
+.task-status-button--amber {
+  border-color: #efd39b;
+  background: #fff8e8;
+  color: #986211;
+}
+
+.task-status-button--negative {
+  border-color: #f2c4c4;
+  background: #fff1f1;
+  color: #a43131;
+}
