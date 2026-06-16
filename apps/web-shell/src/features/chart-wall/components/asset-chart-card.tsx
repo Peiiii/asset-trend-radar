@@ -2,6 +2,7 @@ import { GitCompare, Pin } from "lucide-react";
 import { ChartCardShell, IconButton, PriceChange, SignalBadge, TechnicalChart, TrendBadge } from "@gold-insights/ui";
 import type { ChartWallItem, MacdState } from "@gold-insights/market-domain";
 import { formatPrice } from "@/shared/utils/format-number.utils";
+import { DataQualityIndicator } from "./data-quality/data-quality-indicator";
 import "./asset-chart-card.css";
 
 type AssetChartCardProps = {
@@ -90,6 +91,7 @@ export function AssetChartCard({ item, sort, onSelect, onPin, onCompare }: Asset
         <span>{assetTypeLabel(item.assetType)}</span>
         <span>{item.source ?? item.dataSource ?? "unknown"}</span>
       </div>
+      <DataQualityIndicator item={item} />
 
       <TechnicalChart points={item.sparkline} indicators={item.indicators} />
 

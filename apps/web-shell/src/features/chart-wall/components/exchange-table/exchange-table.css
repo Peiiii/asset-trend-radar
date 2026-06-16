@@ -209,9 +209,7 @@
 }
 
 .exchange-table__identity strong,
-.exchange-table__identity span,
-.exchange-table__data-density strong,
-.exchange-table__data-density small {
+.exchange-table__identity span {
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -265,23 +263,6 @@
 .exchange-table .gi-signal-badge,
 .exchange-table .gi-trend-badge {
   font-variant-numeric: tabular-nums;
-}
-
-.exchange-table__data-density {
-  display: block;
-  max-width: 164px;
-}
-
-.exchange-table__data-density strong {
-  color: #243044;
-  font-variant-numeric: tabular-nums;
-}
-
-.exchange-table__data-density small {
-  margin-top: 3px;
-  color: #738095;
-  font-size: 11px;
-  font-weight: 800;
 }
 
 .exchange-table__actions {

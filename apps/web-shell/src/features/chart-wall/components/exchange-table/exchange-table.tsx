@@ -1,7 +1,8 @@
 import { ArrowDown, ArrowUp, Eye, GitCompare, Star } from "lucide-react";
 import { EmptyState, PriceChange, SignalBadge, TrendBadge, useTableScrollShadows } from "@gold-insights/ui";
 import type { ChartWallItem, ChartWallSortOrder } from "@gold-insights/market-domain";
-import { formatDateTime, formatPrice } from "@/shared/utils/format-number.utils";
+import { formatPrice } from "@/shared/utils/format-number.utils";
+import { DataQualityIndicator } from "../data-quality/data-quality-indicator";
 import "./exchange-table-active-sort.css";
 import "./exchange-table.css";
 
@@ -138,10 +139,7 @@ function ExchangeTableRow({ rank, item, sort, onSelect, onPin, onCompare }: { ra
       <td><SignalBadge label={macdLabel(item.macdState)} tone={macdTone(item.macdState)} /></td>
       <td className={activeSortCellClassName(sort === "event_count")}><SignalBadge label={`${item.events.length}`} tone={item.events.length > 0 ? "amber" : "neutral"} /></td>
       <td>
-        <span className="exchange-table__data-density">
-          <strong>{item.dataPointCount.toLocaleString("en-US")}</strong>
-          <small>{item.source} / {formatDateTime(item.latestBarAt)}</small>
-        </span>
+        <DataQualityIndicator item={item} compact />
       </td>
       <td className="exchange-table__actions-cell">
         <div className="row-actions exchange-table__actions">
