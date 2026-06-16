@@ -1,9 +1,10 @@
 import { AlertTriangle, CheckCircle2, Clock3, Loader2, RefreshCcw, XCircle } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Button, EmptyState, ErrorState, LoadingState, SegmentedControl, SignalBadge } from "@gold-insights/ui";
-import type { RuntimeTask, RuntimeTaskPipelineSummary, RuntimeTaskStatus, TaskCenterResponse } from "@gold-insights/market-domain";
-import type { ControlOption } from "@gold-insights/ui";
+import type { RuntimeTask, RuntimeTaskPipelineSummary, TaskCenterResponse } from "@gold-insights/market-domain";
 import { formatDateTime } from "@/shared/utils/format-number.utils";
+import { buildTaskActivitySummary, filterTasks, formatDuration, formatMetadata, getTaskFilterOptions, pipelineStatusLabel, pipelineTone, taskStatusLabel, taskStatusTone } from "./task-center.utils";
+import type { TaskFilter, TaskTone } from "./task-center.utils";
 import "./task-center-section.css";
 import "./task-center-overview.css";
 
@@ -13,8 +14,6 @@ type TaskCenterSectionProps = {
   isLoading: boolean;
   onRefresh(): void;
 };
-
-type TaskFilter = "all" | RuntimeTaskStatus | "stale";
 
 export function TaskCenterSection({ data, error, isLoading, onRefresh }: TaskCenterSectionProps): JSX.Element {
   const [taskFilter, setTaskFilter] = useState<TaskFilter>("all");
@@ -38,6 +37,8 @@ export function TaskCenterSection({ data, error, isLoading, onRefresh }: TaskCen
       {!isLoading && error && <ErrorState title="任务中心加载失败" message={error} />}
       {data && (
         <>
+          <TaskActivityPanel data={data} />
+
           <div className="task-summary-grid">
             <TaskSummaryCard label="运行中" value={data.runningCount} tone={data.runningCount > 0 ? "blue" : "neutral"} />
             <TaskSummaryCard label="疑似卡住" value={data.staleRunningCount} tone={data.staleRunningCount > 0 ? "amber" : "neutral"} />
@@ -74,6 +75,26 @@ export function TaskCenterSection({ data, error, isLoading, onRefresh }: TaskCen
           )}
         </>
       )}
+    </section>
+  );
+}
+
+function TaskActivityPanel({ data }: { data: TaskCenterResponse }): JSX.Element {
+  const summary = buildTaskActivitySummary(data);
+
+  return (
+    <section className={`task-activity-panel task-activity-panel--${summary.tone}`} aria-label="后台活动概览">
+      <div>
+        <span className="task-activity-panel__eyebrow">后台活动</span>
+        <h3>{summary.title}</h3>
+        <p>{summary.description}</p>
+      </div>
+      <dl>
+        <TaskMeta label="最近任务" value={summary.latestTaskLabel} />
+        <TaskMeta label="当前状态" value={summary.activeLabel} />
+        <TaskMeta label="管线覆盖" value={summary.pipelineLabel} />
+        <TaskMeta label="状态生成" value={formatDateTime(data.generatedAt)} />
+      </dl>
     </section>
   );
 }
@@ -160,7 +181,7 @@ function PipelineCard({ pipeline }: { pipeline: RuntimeTaskPipelineSummary }): J
   );
 }
 
-function TaskSummaryCard({ label, value, tone }: { label: string; value: number | string; tone: "positive" | "negative" | "neutral" | "amber" | "blue" }): JSX.Element {
+function TaskSummaryCard({ label, value, tone }: { label: string; value: number | string; tone: TaskTone }): JSX.Element {
   return (
     <article className={`task-summary-card task-summary-card--${tone}`}>
       <span>{label}</span>
@@ -217,102 +238,4 @@ function taskIcon(task: RuntimeTask): JSX.Element {
     return <CheckCircle2 size={18} aria-hidden="true" />;
   }
   return <Clock3 size={18} aria-hidden="true" />;
-}
-
-function taskStatusLabel(task: RuntimeTask): string {
-  if (task.isStale) {
-    return "疑似卡住";
-  }
-  if (task.status === "running") {
-    return "运行中";
-  }
-  if (task.status === "success") {
-    return "成功";
-  }
-  return "失败";
-}
-
-function taskStatusTone(task: RuntimeTask): "positive" | "negative" | "neutral" | "amber" | "blue" {
-  if (task.isStale) {
-    return "amber";
-  }
-  if (task.status === "running") {
-    return "blue";
-  }
-  if (task.status === "success") {
-    return "positive";
-  }
-  if (task.status === "failed") {
-    return "negative";
-  }
-  return "neutral";
-}
-
-function formatDuration(value: number | null): string {
-  if (value === null) {
-    return "暂无";
-  }
-
-  const seconds = Math.round(value / 1000);
-  if (seconds < 60) {
-    return `${seconds}s`;
-  }
-
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = seconds % 60;
-  return `${minutes}m ${remainingSeconds}s`;
-}
-
-function formatMetadata(metadata: Record<string, unknown>): string {
-  return Object.entries(metadata)
-    .map(([key, value]) => `${key}: ${String(value)}`)
-    .join(" / ");
-}
-
-function getTaskFilterOptions(data: TaskCenterResponse | null): ControlOption[] {
-  return [
-    { value: "all", label: `全部 ${data?.totalCount ?? 0}` },
-    { value: "running", label: `运行中 ${data?.runningCount ?? 0}` },
-    { value: "stale", label: `疑似卡住 ${data?.staleRunningCount ?? 0}` },
-    { value: "failed", label: `失败 ${data?.failedCount ?? 0}` },
-    { value: "success", label: `成功 ${data?.successCount ?? 0}` }
-  ];
-}
-
-function filterTasks(tasks: RuntimeTask[], filter: TaskFilter): RuntimeTask[] {
-  if (filter === "all") {
-    return tasks;
-  }
-
-  if (filter === "stale") {
-    return tasks.filter((task) => task.isStale);
-  }
-
-  return tasks.filter((task) => task.status === filter && !task.isStale);
-}
-
-function pipelineStatusLabel(pipeline: RuntimeTaskPipelineSummary): string {
-  if (pipeline.status === "stale") {
-    return "疑似卡住";
-  }
-  if (pipeline.status === "running") {
-    return "运行中";
-  }
-  if (pipeline.status === "failed") {
-    return "最近失败";
-  }
-  return "健康";
-}
-
-function pipelineTone(pipeline: RuntimeTaskPipelineSummary): "positive" | "negative" | "neutral" | "amber" | "blue" {
-  if (pipeline.status === "stale") {
-    return "amber";
-  }
-  if (pipeline.status === "running") {
-    return "blue";
-  }
-  if (pipeline.status === "failed") {
-    return "negative";
-  }
-  return "positive";
 }
