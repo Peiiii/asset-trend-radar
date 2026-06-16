@@ -45,7 +45,8 @@ const sortLabels: Record<string, string> = {
   volume_ratio: "量比",
   drawdown: "回撤",
   trend_score: "趋势",
-  event_count: "事件"
+  event_count: "事件",
+  data_point_count: "数据"
 };
 
 export function ExchangeTable({ items, sort, order, onSort, onSelect, onPin, onCompare }: ExchangeTableProps): JSX.Element {
@@ -100,7 +101,7 @@ export function ExchangeTable({ items, sort, order, onSort, onSelect, onPin, onC
               <SortableHeader label="趋势" sortValue="trend_score" currentSort={sort} order={order} onSort={handleSort} />
               <th>MACD</th>
               <SortableHeader label="事件" sortValue="event_count" currentSort={sort} order={order} onSort={handleSort} />
-              <th>数据</th>
+              <SortableHeader label="数据" sortValue="data_point_count" currentSort={sort} order={order} onSort={handleSort} />
               <th className="exchange-table__actions-heading">操作</th>
             </tr>
           </thead>
@@ -138,7 +139,7 @@ function ExchangeTableRow({ rank, item, sort, onSelect, onPin, onCompare }: { ra
       <td className={activeSortCellClassName(sort === "trend_score")}><TrendBadge label={`${item.trendScore}`} score={item.trendScore} /></td>
       <td><SignalBadge label={macdLabel(item.macdState)} tone={macdTone(item.macdState)} /></td>
       <td className={activeSortCellClassName(sort === "event_count")}><SignalBadge label={`${item.events.length}`} tone={item.events.length > 0 ? "amber" : "neutral"} /></td>
-      <td>
+      <td className={activeSortCellClassName(sort === "data_point_count")}>
         <DataQualityIndicator item={item} compact />
       </td>
       <td className="exchange-table__actions-cell">

@@ -1,4 +1,5 @@
 import type { AssetSummary, ChartWallFacet, ChartWallFacets, ChartWallItem } from "@gold-insights/market-domain";
+import { getDataQualityStatus } from "@gold-insights/market-domain";
 
 export class ChartWallFacetBuilderService {
   public buildFacets = (assets: AssetSummary[], items: ChartWallItem[]): ChartWallFacets => ({
@@ -18,11 +19,16 @@ export class ChartWallFacetBuilderService {
       { value: "breakout", label: "价格突破", count: this.applySignalFilter(items, "breakout").length },
       { value: "volume_breakout", label: "量能放大", count: this.applySignalFilter(items, "volume_breakout").length },
       { value: "eventful", label: "有扫描事件", count: this.applySignalFilter(items, "eventful").length },
-      { value: "pinned", label: "已自选", count: this.applySignalFilter(items, "pinned").length }
+      { value: "pinned", label: "已自选", count: this.applySignalFilter(items, "pinned").length },
+      { value: "data_fresh", label: "数据新鲜", count: this.applySignalFilter(items, "data_fresh").length },
+      { value: "data_thin", label: "样本较少", count: this.applySignalFilter(items, "data_thin").length },
+      { value: "data_lagged", label: "数据滞后", count: this.applySignalFilter(items, "data_lagged").length }
     ]
   });
 
   public applySignalFilter = (items: ChartWallItem[], signal: string): ChartWallItem[] => {
+    const referenceTimestamp = Date.now();
+
     switch (signal) {
       case "strong":
         return items.filter((item) => item.trendScore >= 30);
@@ -44,6 +50,12 @@ export class ChartWallFacetBuilderService {
         return items.filter((item) => item.events.length > 0);
       case "pinned":
         return items.filter((item) => item.isPinned);
+      case "data_fresh":
+        return items.filter((item) => getDataQualityStatus(item, referenceTimestamp) === "fresh");
+      case "data_thin":
+        return items.filter((item) => getDataQualityStatus(item, referenceTimestamp) === "thin");
+      case "data_lagged":
+        return items.filter((item) => ["lagged", "missing", "unknown"].includes(getDataQualityStatus(item, referenceTimestamp)));
       case "all":
       default:
         return items;

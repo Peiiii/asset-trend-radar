@@ -209,6 +209,8 @@ function getSortMetric(item: ChartWallItem, sort: string | undefined): { label: 
     case "event_count":
     case "macd":
       return { label: "事件", value: String(item.events.length), tone: "neutral" };
+    case "data_point_count":
+      return { label: "数据点", value: item.dataPointCount.toLocaleString("en-US"), tone: item.dataPointCount >= 120 ? "positive" : item.dataPointCount >= 20 ? "neutral" : "negative" };
     case "trend_score":
       return { label: "趋势分", value: String(item.trendScore), tone: item.trendScore > 0 ? "positive" : item.trendScore < 0 ? "negative" : "neutral" };
     default:

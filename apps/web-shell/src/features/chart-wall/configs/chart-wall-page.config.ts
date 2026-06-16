@@ -69,6 +69,7 @@ export const sortOptions: ControlOption[] = [
   { value: "volume_ratio", label: "量能放大", description: "最近成交相对 20 日均值" },
   { value: "drawdown", label: "回撤较小", description: "距离区间高点更近" },
   { value: "event_count", label: "事件数", description: "扫描事件多的靠前" },
+  { value: "data_point_count", label: "数据点", description: "样本更充足的靠前" },
   { value: "macd", label: "事件/MACD", description: "事件与 MACD 状态优先" },
   { value: "market", label: "市场" },
   { value: "asset_type", label: "品种" },
@@ -90,5 +91,8 @@ export const signalFallbackOptions: ControlOption[] = [
   { value: "breakout", label: "价格突破" },
   { value: "volume_breakout", label: "量能放大" },
   { value: "eventful", label: "有扫描事件" },
+  { value: "data_fresh", label: "数据新鲜" },
+  { value: "data_thin", label: "样本较少" },
+  { value: "data_lagged", label: "数据滞后" },
   { value: "pinned", label: "已自选" }
 ];

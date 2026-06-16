@@ -99,6 +99,8 @@ try {
   const preciousMetalsWall = await fetchJson("/api/chart-wall?range=6m&timeframe=1d&universe=global&level=all&market=%E5%95%86%E5%93%81&assetType=all&tag=%E8%B4%B5%E9%87%91%E5%B1%9E&sort=return_1m");
   const agricultureWall = await fetchJson("/api/chart-wall?range=6m&timeframe=1d&universe=global&level=all&market=%E5%95%86%E5%93%81&assetType=all&tag=%E5%86%9C%E4%BA%A7%E5%93%81&sort=return_1m");
   const sortedReturnWall = await fetchJson("/api/chart-wall?range=6m&timeframe=1d&universe=global&level=all&market=all&assetType=all&sort=return_1m");
+  const dataFreshWall = await fetchJson("/api/chart-wall?range=6m&timeframe=1d&universe=global&level=all&market=all&assetType=all&signal=data_fresh&sort=trend_score");
+  const sortedDataPointWall = await fetchJson("/api/chart-wall?range=6m&timeframe=1d&universe=global&level=all&market=all&assetType=all&sort=data_point_count&order=desc");
   const cryptoOneMonthWall = await fetchJson("/api/chart-wall?range=1m&timeframe=1d&universe=global&level=all&market=%E5%8A%A0%E5%AF%86&assetType=crypto&sort=return_1m&order=desc");
   const sortedVolumeWall = await fetchJson("/api/chart-wall?range=6m&timeframe=1d&universe=global&level=all&market=all&assetType=all&sort=volume_ratio");
   const weeklyWall = await fetchJson("/api/chart-wall?range=1y&timeframe=1w&universe=global&level=all&market=all&assetType=all&sort=trend_score");
@@ -164,6 +166,7 @@ try {
   assert(chartWall.facets.markets.some((facet) => facet.value === "美股"), "expected market facets");
   assert(chartWall.facets.assetTypes.some((facet) => facet.value === "fund"), "expected fund asset facet");
   assert(chartWall.facets.signals.some((facet) => facet.value === "breakout"), "expected signal facets");
+  assert(chartWall.facets.signals.some((facet) => facet.value === "data_fresh" && facet.count > 0), "expected data freshness signal facet");
   assert(markets.has("A 股") && markets.has("美股") && markets.has("港股") && markets.has("商品") && markets.has("基金") && markets.has("外汇") && markets.has("加密"), "expected multiple markets");
   assert(assetTypes.has("equity") && assetTypes.has("index") && assetTypes.has("fund") && assetTypes.has("commodity") && assetTypes.has("macro") && assetTypes.has("crypto"), "expected multiple asset types");
   assert(levels.has("broad-index") && levels.has("sector-index") && levels.has("company") && levels.has("instrument"), "expected multiple asset levels");
@@ -176,6 +179,8 @@ try {
   assert(preciousMetalsWall.tag === "贵金属" && preciousMetalsWall.items.length >= 8 && preciousMetalsWall.items.every((item) => item.tags.includes("贵金属")), "expected precious metals tag-filtered commodity chart wall");
   assert(agricultureWall.tag === "农产品" && agricultureWall.items.length >= 6 && agricultureWall.items.every((item) => item.tags.includes("农产品")), "expected agriculture tag-filtered commodity chart wall");
   assert(isSortedDesc(sortedReturnWall.items, (item) => item.return1m), "expected return_1m sorting");
+  assert(dataFreshWall.signal === "data_fresh" && dataFreshWall.items.length > 0 && dataFreshWall.items.every((item) => item.latestBarAt && item.dataPointCount >= 20), "expected data_fresh signal filter");
+  assert(isSortedDesc(sortedDataPointWall.items, (item) => item.dataPointCount), "expected data_point_count sorting");
   assert(cryptoOneMonthWall.order === "desc" && isSortedDesc(cryptoOneMonthWall.items, (item) => item.return1m), "expected explicit sort order for crypto 1M return");
   assert(
     cryptoOneMonthWall.items.every((item) => numbersAlmostEqual(item.returnPct, item.return1m)),
@@ -256,6 +261,8 @@ try {
         assetCount: finalHealth.assetCount,
         barCount: finalHealth.barCount,
         chartWallItems: chartWall.items.length,
+        dataFreshItems: dataFreshWall.items.length,
+        topDataPointCount: sortedDataPointWall.items[0]?.dataPointCount ?? null,
         fundItems: fundWall.items.length,
         commodityItems: commodityWall.items.length,
         preciousMetalsItems: preciousMetalsWall.items.length,

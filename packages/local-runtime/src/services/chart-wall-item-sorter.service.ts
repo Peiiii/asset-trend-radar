@@ -23,6 +23,8 @@ export class ChartWallItemSorter {
         return this.sortByNullableNumber(items, (item) => item.drawdownPct, order);
       case "event_count":
         return this.sortByNullableNumber(items, (item) => item.events.length, order);
+      case "data_point_count":
+        return this.sortByNullableNumber(items, (item) => item.dataPointCount, order);
       case "market":
         return this.sortByText(items, (item) => item.market, order);
       case "asset_type":
