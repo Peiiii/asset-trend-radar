@@ -3,6 +3,7 @@
   align-items: center;
   gap: 6px;
   min-height: 38px;
+  max-width: 220px;
   padding: 0 11px;
   border: 1px solid #cfd7e4;
   border-radius: 8px;
@@ -12,6 +13,28 @@
   font-size: 12px;
   font-weight: 850;
   white-space: nowrap;
+}
+
+.task-status-button__copy {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+  text-align: left;
+}
+
+.task-status-button__label,
+.task-status-button__meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-status-button__meta {
+  max-width: 154px;
+  color: currentColor;
+  font-size: 10px;
+  font-weight: 800;
+  opacity: 0.72;
 }
 
 .task-status-button:hover,
@@ -43,4 +66,14 @@
   border-color: #f2c4c4;
   background: #fff1f1;
   color: #a43131;
+}
+
+@media (max-width: 760px) {
+  .task-status-button {
+    max-width: none;
+  }
+
+  .task-status-button__meta {
+    display: none;
+  }
 }
