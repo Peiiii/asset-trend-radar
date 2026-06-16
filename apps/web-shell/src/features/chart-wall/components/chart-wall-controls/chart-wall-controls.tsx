@@ -46,6 +46,12 @@ type ChartWallControlsProps = {
     sorts: ControlOption[];
     orders: ControlOption[];
   };
+  summary: {
+    visibleCount: number;
+    apiCount: number;
+    sortLabel: string;
+    orderLabel: string;
+  };
   isRefreshing: boolean;
   onQueryChange(name: string, value: string, fallback?: string): void;
   onSortChange(sort: string, order?: ChartWallSortOrder): void;
@@ -55,7 +61,7 @@ type ChartWallControlsProps = {
   onRefresh(): void;
 };
 
-export function ChartWallControls({ values, defaults, facets, options, isRefreshing, onQueryChange, onSortChange, onDefaultOrder, onParseOrder, onReset, onRefresh }: ChartWallControlsProps): JSX.Element {
+export function ChartWallControls({ values, defaults, facets, options, summary, isRefreshing, onQueryChange, onSortChange, onDefaultOrder, onParseOrder, onReset, onRefresh }: ChartWallControlsProps): JSX.Element {
   return (
     <section className="chart-wall-controls" aria-label="图表控制">
       <div className="chart-wall-controls__filters">
@@ -66,6 +72,18 @@ export function ChartWallControls({ values, defaults, facets, options, isRefresh
         <Select id="signal-filter" label="信号" value={values.signal} onChange={(value) => onQueryChange("signal", value, defaults.signal)} options={facetOptions("全部信号", facets?.signals, options.signals)} />
         <Select id="sort-filter" label="排序" value={values.sort} onChange={(value) => onSortChange(value, onDefaultOrder(value))} options={options.sorts} />
         <Select id="sort-order-filter" label="方向" value={values.order} onChange={(value) => onSortChange(values.sort, onParseOrder(value))} options={options.orders} />
+      </div>
+
+      <div className="chart-wall-controls__summary" aria-label="当前筛选摘要">
+        <span>
+          当前 <strong>{summary.visibleCount.toLocaleString("en-US")}</strong>
+        </span>
+        <span>
+          接口 <strong>{summary.apiCount.toLocaleString("en-US")}</strong>
+        </span>
+        <span>
+          排序 <strong>{summary.sortLabel} {summary.orderLabel}</strong>
+        </span>
       </div>
 
       <div className="chart-wall-controls__timeline">

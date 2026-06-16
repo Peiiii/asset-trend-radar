@@ -17,12 +17,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { NavLink, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { AppShell, Button, EmptyState, ErrorState, IconButton, LoadingState, RangePicker, TimeframePicker } from "@gold-insights/ui";
 import type { ControlOption } from "@gold-insights/ui";
-import type { ChartWallItem, ChartWallSortOrder, ScannerEventsResponse } from "@gold-insights/market-domain";
+import type { ChartWallSortOrder, ScannerEventsResponse } from "@gold-insights/market-domain";
 import type { AssetDetailData, ChartWallFilters, ChartWallPageData, CompareData } from "@/shared/types/api.types";
 import { formatDateTime } from "@/shared/utils/format-number.utils";
-import { AssetChartCard } from "./asset-chart-card";
 import { ActiveFilterChips } from "./active-filter-chips/active-filter-chips";
 import { AssetDetailSection } from "./asset-detail-section/asset-detail-section";
+import { ChartGrid } from "./chart-grid/chart-grid";
 import { ComparePanel } from "./compare-panel/compare-panel";
 import { BreadthStrip, SummaryStrip } from "./dashboard-strips";
 import { ChartWallControls, type ChartWallViewMode } from "./chart-wall-controls/chart-wall-controls";
@@ -480,6 +480,7 @@ export function ChartWallPage(): JSX.Element {
             defaults={defaultFilters}
             facets={data?.chartWall.facets}
             options={{ markets: marketFallbackOptions, assetTypes: assetTypeFallbackOptions, levels: levelFallbackOptions, tags: tagFallbackOptions, signals: signalFallbackOptions, sorts: sortOptions, orders: sortOrderOptions }}
+            summary={{ visibleCount: filteredItems.length, apiCount: chartItems.length, sortLabel: sortDisplayLabel(sort), orderLabel: sortOrderLabel(order) }}
             isRefreshing={isRefreshing}
             onQueryChange={setQueryValue}
             onSortChange={setSortQueryValue}
@@ -535,7 +536,7 @@ export function ChartWallPage(): JSX.Element {
                 />
                 <ComparePanel compareData={compareData} compareAssetIds={compareAssetIds} allItems={chartItems} onRemove={handleCompare} onClear={() => setCompareAssetIds([])} />
                 {viewMode === "grid" ? (
-                  <ChartGrid items={filteredItems} sort={sort} onSelect={selectAsset} onPin={handlePin} onCompare={handleCompare} />
+                  <ChartGrid items={filteredItems} sort={sort} onSelect={selectAsset} onPin={handlePin} onCompare={handleCompare} onResetFilters={resetFilters} />
                 ) : (
                   <ExchangeTable items={filteredItems} sort={sort} order={order} onSort={setSortQueryValue} onSelect={selectAsset} onPin={handlePin} onCompare={handleCompare} />
                 )}
@@ -715,20 +716,6 @@ function SectionHeader({ title, description, generatedAt }: { title: string; des
           {formatDateTime(generatedAt)}
         </span>
       )}
-    </div>
-  );
-}
-
-function ChartGrid({ items, sort, onSelect, onPin, onCompare }: { items: ChartWallItem[]; sort?: string; onSelect(assetId: string): void; onPin(assetId: string): void; onCompare(assetId: string): void }): JSX.Element {
-  if (items.length === 0) {
-    return <EmptyState title="没有匹配资产" description="当前筛选条件没有命中已采集的真实资产。" />;
-  }
-
-  return (
-    <div className="chart-wall-grid">
-      {items.map((item) => (
-        <AssetChartCard key={item.id} item={item} sort={sort} onSelect={onSelect} onPin={onPin} onCompare={onCompare} />
-      ))}
     </div>
   );
 }

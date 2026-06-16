@@ -1,0 +1,6 @@
+.chart-grid-empty {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 8px 0 18px;
+}

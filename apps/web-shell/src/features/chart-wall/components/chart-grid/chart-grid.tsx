@@ -1,0 +1,34 @@
+import { Button, EmptyState } from "@gold-insights/ui";
+import type { ChartWallItem } from "@gold-insights/market-domain";
+import { AssetChartCard } from "../asset-chart-card";
+import "./chart-grid.css";
+
+type ChartGridProps = {
+  items: ChartWallItem[];
+  sort?: string;
+  onSelect(assetId: string): void;
+  onPin(assetId: string): void;
+  onCompare(assetId: string): void;
+  onResetFilters(): void;
+};
+
+export function ChartGrid({ items, sort, onSelect, onPin, onCompare, onResetFilters }: ChartGridProps): JSX.Element {
+  if (items.length === 0) {
+    return (
+      <div className="chart-grid-empty">
+        <EmptyState title="没有匹配资产" description="当前筛选或搜索没有命中已采集的真实资产，可以清空条件恢复全市场图表墙。" />
+        <Button type="button" variant="ghost" onClick={onResetFilters}>
+          清空筛选
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="chart-wall-grid">
+      {items.map((item) => (
+        <AssetChartCard key={item.id} item={item} sort={sort} onSelect={onSelect} onPin={onPin} onCompare={onCompare} />
+      ))}
+    </div>
+  );
+}

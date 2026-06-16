@@ -16,6 +16,7 @@
 }
 
 .chart-wall-controls__filters,
+.chart-wall-controls__summary,
 .chart-wall-controls__timeline,
 .chart-wall-controls__actions,
 .chart-wall-controls__view-mode {
@@ -38,8 +39,41 @@
   flex: 0 0 auto;
 }
 
+.chart-wall-controls__summary {
+  grid-column: 1;
+  grid-row: 2;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chart-wall-controls__summary span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 9px;
+  border: 1px solid rgba(207, 215, 228, 0.92);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #647184;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.chart-wall-controls__summary strong {
+  margin-left: 4px;
+  color: #172033;
+  font-weight: 950;
+}
+
 .chart-wall-controls__actions {
+  grid-column: 2;
+  grid-row: 2;
   justify-self: end;
+}
+
+.chart-wall-controls__timeline {
+  grid-column: 1 / -1;
+  grid-row: 3;
 }
 
 .chart-wall-controls__view-mode {
@@ -66,6 +100,13 @@
     align-items: stretch;
   }
 
+  .chart-wall-controls__summary,
+  .chart-wall-controls__timeline,
+  .chart-wall-controls__actions {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
   .chart-wall-controls__timeline,
   .chart-wall-controls__actions {
     flex-wrap: wrap;
@@ -79,6 +120,7 @@
   }
 
   .chart-wall-controls__filters,
+  .chart-wall-controls__summary,
   .chart-wall-controls__timeline,
   .chart-wall-controls__actions {
     align-items: stretch;
