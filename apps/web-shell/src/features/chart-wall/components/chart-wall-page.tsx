@@ -18,7 +18,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { NavLink, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { AppShell, Button, EmptyState, ErrorState, FilterChip, IconButton, LoadingState, RangePicker, Select, SparklineChart, TechnicalChart, TimeframePicker } from "@gold-insights/ui";
 import type { ControlOption } from "@gold-insights/ui";
-import type { ChartWallFacet, ChartWallItem, ChartWallSortOrder, FundCatalogImportStatus, ScannerEventsResponse, UniverseTreeNode, WatchlistSummary } from "@gold-insights/market-domain";
+import type { ChartWallFacet, ChartWallItem, ChartWallSortOrder, ScannerEventsResponse, UniverseTreeNode, WatchlistSummary } from "@gold-insights/market-domain";
 import type { AssetDetailData, ChartWallFilters, ChartWallPageData, CompareData } from "@/shared/types/api.types";
 import { formatDateTime, formatPrice } from "@/shared/utils/format-number.utils";
 import { AssetChartCard } from "./asset-chart-card";
@@ -29,6 +29,7 @@ import "./market-chart-primitives.css";
 import { chartWallApiService } from "../services/chart-wall-api.service";
 import { useFundDirectoryQuery } from "../hooks/use-fund-directory-query";
 import { useChartWallQuery } from "../hooks/use-chart-wall-query";
+import { useFundDirectoryUrlState } from "../hooks/use-fund-directory-url-state";
 
 type ActiveView = "chart-wall" | "fund-directory" | "universe" | "scanner" | "asset-detail" | "watchlist" | "data-health";
 type ViewMode = "grid" | "table";
@@ -141,11 +142,7 @@ export function ChartWallPage(): JSX.Element {
   const search = getSearchValue(searchParams, "q", "");
   const scannerEventType = getSearchValue(searchParams, "eventType", "all");
   const scannerMinSeverity = getSearchValue(searchParams, "severity", "0");
-  const fundDirectoryKeyword = getSearchValue(searchParams, "fundKeyword", "");
-  const fundDirectoryType = getSearchValue(searchParams, "fundType", "all");
-  const fundDirectoryStatus = getFundCatalogImportStatus(getSearchValue(searchParams, "fundStatus", "all"));
-  const fundDirectoryPage = getPositiveIntegerSearchValue(searchParams, "fundPage", 1);
-  const fundDirectoryLimit = 50;
+  const fundDirectory = useFundDirectoryUrlState(searchParams, setSearchParams);
   const [compareAssetIds, setCompareAssetIds] = useState<string[]>([]);
   const [compareData, setCompareData] = useState<CompareData | null>(null);
   const [isFundCatalogSyncing, setIsFundCatalogSyncing] = useState(false);
@@ -205,17 +202,7 @@ export function ChartWallPage(): JSX.Element {
     [assetType, level, market, order, range, signal, sort, timeframe]
   );
   const { data, error, isLoading, isRefreshing, refresh, reload } = useChartWallQuery(filters);
-  const fundDirectoryFilters = useMemo(
-    () => ({
-      keyword: fundDirectoryKeyword,
-      fundType: fundDirectoryType,
-      status: fundDirectoryStatus,
-      limit: fundDirectoryLimit,
-      offset: (fundDirectoryPage - 1) * fundDirectoryLimit
-    }),
-    [fundDirectoryKeyword, fundDirectoryPage, fundDirectoryStatus, fundDirectoryType]
-  );
-  const fundDirectoryQuery = useFundDirectoryQuery(fundDirectoryFilters, activeView === "fund-directory");
+  const fundDirectoryQuery = useFundDirectoryQuery(fundDirectory.filters, activeView === "fund-directory");
   const comparedSet = useMemo(() => new Set(compareAssetIds), [compareAssetIds]);
   const chartItems = useMemo(() => (data?.chartWall.items ?? []).map((item) => ({ ...item, isCompared: comparedSet.has(item.id) })), [comparedSet, data]);
 
@@ -298,22 +285,6 @@ export function ChartWallPage(): JSX.Element {
   const handleCompare = (assetId: string): void => {
     setCompareAssetIds((current) => (current.includes(assetId) ? current.filter((id) => id !== assetId) : [...current, assetId].slice(-6)));
   };
-
-  const setFundDirectoryQueryValue = useCallback((name: string, value: string, fallback: string): void => {
-    const next = new URLSearchParams(searchParams);
-
-    if (value === fallback || value.length === 0) {
-      next.delete(name);
-    } else {
-      next.set(name, value);
-    }
-
-    if (name !== "fundPage") {
-      next.delete("fundPage");
-    }
-
-    setSearchParams(next);
-  }, [searchParams, setSearchParams]);
 
   const handleFundCatalogSync = async (): Promise<void> => {
     setIsFundCatalogSyncing(true);
@@ -503,18 +474,21 @@ export function ChartWallPage(): JSX.Element {
               data={fundDirectoryQuery.data}
               error={fundDirectoryQuery.error}
               isLoading={fundDirectoryQuery.isLoading}
-              keyword={fundDirectoryKeyword}
-              fundType={fundDirectoryType}
-              status={fundDirectoryStatus}
-              page={fundDirectoryPage}
-              limit={fundDirectoryLimit}
+              keyword={fundDirectory.keyword}
+              fundType={fundDirectory.fundType}
+              status={fundDirectory.status}
+              sort={fundDirectory.sort}
+              order={fundDirectory.order}
+              page={fundDirectory.page}
+              limit={fundDirectory.limit}
               message={fundImportMessage}
               importingCode={importingFundCode}
               isCatalogSyncing={isFundCatalogSyncing}
-              onKeywordChange={(value) => setFundDirectoryQueryValue("fundKeyword", value, "")}
-              onFundTypeChange={(value) => setFundDirectoryQueryValue("fundType", value, "all")}
-              onStatusChange={(value) => setFundDirectoryQueryValue("fundStatus", value, "all")}
-              onPageChange={(value) => setFundDirectoryQueryValue("fundPage", String(value), "1")}
+              onKeywordChange={(value) => fundDirectory.setQueryValue("fundKeyword", value, "")}
+              onFundTypeChange={(value) => fundDirectory.setQueryValue("fundType", value, "all")}
+              onStatusChange={(value) => fundDirectory.setQueryValue("fundStatus", value, "all")}
+              onSortChange={fundDirectory.setSortValue}
+              onPageChange={(value) => fundDirectory.setQueryValue("fundPage", String(value), "1")}
               onImport={(code) => {
                 void handleFundImport(code);
               }}
@@ -1161,15 +1135,6 @@ function isSafeWorkspacePath(path: string): boolean {
 
 function getSearchValue(searchParams: URLSearchParams, name: string, fallback: string): string {
   return searchParams.get(name) ?? fallback;
-}
-
-function getPositiveIntegerSearchValue(searchParams: URLSearchParams, name: string, fallback: number): number {
-  const value = Number(searchParams.get(name));
-  return Number.isInteger(value) && value > 0 ? value : fallback;
-}
-
-function getFundCatalogImportStatus(value: string): FundCatalogImportStatus {
-  return value === "imported" || value === "not_imported" ? value : "all";
 }
 
 function getViewMode(value: string): ViewMode {

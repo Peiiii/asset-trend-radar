@@ -1,10 +1,13 @@
 import type { DatabaseSync } from "node:sqlite";
-import type { FundCatalogEntry, FundCatalogImportStatus, FundCatalogMetricSnapshot, FundCatalogSummary } from "@gold-insights/market-domain";
+import type { FundCatalogEntry, FundCatalogImportStatus, FundCatalogMetricSnapshot, FundCatalogSortKey, FundCatalogSummary, SortOrder } from "@gold-insights/market-domain";
+import { SqliteFundCatalogOrderBuilder } from "./sqlite-fund-catalog-order.builder";
 
 export type FundCatalogPageQuery = {
   keyword: string;
   fundType: string;
   status: FundCatalogImportStatus;
+  sort: FundCatalogSortKey;
+  order: SortOrder;
   limit: number;
   offset: number;
 };
@@ -31,7 +34,10 @@ export type FundCatalogPageResult = {
 };
 
 export class SqliteFundCatalogRepository {
-  public constructor(private readonly database: DatabaseSync) {}
+  public constructor(
+    private readonly database: DatabaseSync,
+    private readonly orderBuilder = new SqliteFundCatalogOrderBuilder()
+  ) {}
 
   public upsertEntries = (entries: FundCatalogEntry[]): number => {
     const statement = this.database.prepare(`
@@ -150,7 +156,7 @@ export class SqliteFundCatalogRepository {
 
   public listPage = (query: FundCatalogPageQuery): FundCatalogPageResult => {
     const filter = this.createPageFilter(query);
-    const order = this.createOrder(query.keyword);
+    const order = this.orderBuilder.createOrder(query);
     const totalRow = this.database.prepare(`SELECT COUNT(*) AS count ${filter.fromSql} ${filter.whereSql}`).get(...filter.params) as { count: number };
     const importedRow = this.database
       .prepare(
@@ -200,6 +206,8 @@ export class SqliteFundCatalogRepository {
       keyword,
       fundType: "all",
       status,
+      sort: "relevance",
+      order: "desc",
       limit: 1,
       offset: 0
     });
@@ -275,7 +283,7 @@ export class SqliteFundCatalogRepository {
     }
 
     return {
-      fromSql: "FROM fund_catalog c LEFT JOIN assets a ON a.id = 'fund-cn-' || c.code",
+      fromSql: "FROM fund_catalog c LEFT JOIN assets a ON a.id = 'fund-cn-' || c.code LEFT JOIN (SELECT asset_id, COUNT(*) AS data_point_count FROM ohlcv_bars WHERE timeframe = '1d' GROUP BY asset_id) b ON b.asset_id = a.id",
       whereSql: `WHERE ${conditions.join(" AND ")}`,
       params
     };
@@ -286,32 +294,13 @@ export class SqliteFundCatalogRepository {
       keyword,
       fundType,
       status,
+      sort: "relevance",
+      order: "desc",
       limit: 1,
       offset: 0
     });
     const row = this.database.prepare(`SELECT COUNT(*) AS count ${filter.fromSql} ${filter.whereSql}`).get(...filter.params) as { count: number };
     return row.count;
-  };
-
-  private createOrder = (keyword: string): { sql: string; params: string[] } => {
-    const normalizedKeyword = keyword.trim();
-
-    if (normalizedKeyword.length === 0) {
-      return { sql: "ORDER BY c.code", params: [] };
-    }
-
-    return {
-      sql: `ORDER BY
-        CASE
-          WHEN c.code = ? THEN 0
-          WHEN c.code LIKE ? THEN 1
-          WHEN c.name = ? THEN 2
-          WHEN c.name LIKE ? THEN 3
-          ELSE 4
-        END,
-        c.code`,
-      params: [normalizedKeyword, `${normalizedKeyword}%`, normalizedKeyword, `${normalizedKeyword}%`]
-    };
   };
 
   private toEntry = (row: unknown): FundCatalogEntry => {

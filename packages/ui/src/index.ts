@@ -18,5 +18,7 @@ export { TimeframePicker } from "./components/timeframe-picker";
 export { TrendBadge } from "./components/trend-badge";
 export { chartColors } from "./configs/chart-colors.config";
 export { uiTheme } from "./configs/ui-theme.config";
+export { useTableScrollShadows } from "./hooks/use-table-scroll-shadows";
+export type { TableScrollShadowState } from "./hooks/use-table-scroll-shadows";
 export type { ControlOption } from "./types/control-option.types";
 export { cn } from "./utils/class-name.utils";

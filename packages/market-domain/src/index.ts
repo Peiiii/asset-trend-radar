@@ -25,9 +25,11 @@ export type {
   FundCatalogMetricSnapshot,
   FundCatalogPageItem,
   FundCatalogPageResponse,
+  FundCatalogSortKey,
   FundCatalogSummary,
   FundCatalogSummaryResponse,
   FundCatalogSyncResponse,
+  SortOrder,
   FundImportResponse,
   FundSearchResponse,
   FundSearchResult

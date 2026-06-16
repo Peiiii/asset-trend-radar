@@ -111,6 +111,7 @@ try {
   const mutualFundBars = await fetchJson("/api/assets/fund-cn-005827/bars?range=1y&timeframe=1d");
   const fundCatalogSummary = await fetchJson("/api/funds/eastmoney/catalog/summary");
   const fundCatalogPage = await fetchJson("/api/funds/eastmoney/catalog?keyword=%E5%8D%8E%E5%A4%8F&fundType=all&status=all&limit=20&offset=0");
+  const sortedFundCatalogPage = await fetchJson("/api/funds/eastmoney/catalog?keyword=%E5%8D%8E%E5%A4%8F&fundType=all&status=not_imported&sort=return_1m&order=desc&limit=20&offset=0");
   const fundSearch = await fetchJson("/api/funds/eastmoney/search?keyword=000001&limit=5");
   const importedFund = await fetchJson("/api/funds/eastmoney/import", {
     method: "POST",
@@ -203,6 +204,15 @@ try {
     fundCatalogPage.items.some((item) => !item.isImported && item.metricSource === "catalog_snapshot" && item.latestNav !== null && item.return1m !== null),
     "expected not-imported funds to include lightweight catalog snapshot returns"
   );
+  assert(sortedFundCatalogPage.sort === "return_1m" && sortedFundCatalogPage.order === "desc", "expected fund catalog sort contract to round-trip");
+  assert(
+    isSortedDesc(sortedFundCatalogPage.items, (item) => item.return1m),
+    "expected fund catalog lightweight 1M return sorting"
+  );
+  assert(
+    sortedFundCatalogPage.items.some((item) => !item.isImported && item.metricSource === "catalog_snapshot" && item.return1m !== null),
+    "expected sorted fund catalog to include not-imported snapshot metrics"
+  );
   assert(fundSearch.catalog.totalCount >= 20000 && fundSearch.source === "local-catalog", "expected local Eastmoney fund catalog search");
   assert(fundSearch.results.some((item) => item.code === "000001" && item.name.includes("华夏成长")), "expected Eastmoney fund catalog search result");
   assert(importedFund.asset?.id === "fund-cn-000001" && importedFund.barsImported >= 180, "expected dynamic Eastmoney fund import");
@@ -229,6 +239,7 @@ try {
         commodityItems: commodityWall.items.length,
         mutualFundBars: mutualFundBars.bars.length,
         fundCatalogCount: fundSearch.catalog.totalCount,
+        sortedFundCatalogTopReturn1m: sortedFundCatalogPage.items[0]?.return1m ?? null,
         importedFund: {
           id: importedFund.asset.id,
           barsImported: importedFund.barsImported,

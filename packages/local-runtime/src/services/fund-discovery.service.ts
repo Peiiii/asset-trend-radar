@@ -1,7 +1,7 @@
 import { EastmoneyFundCatalogProvider, EastmoneyFundDataProvider, EastmoneyFundRankProvider, EastmoneyFundSearchProvider } from "@gold-insights/data-adapters";
 import type { FundCatalogPageRecord, LocalRawFileRepository, SqliteAssetRepository, SqliteFundCatalogRepository, SqliteMarketDataRepository, SqliteScannerEventRepository } from "@gold-insights/data-storage";
 import { calculateIndicators } from "@gold-insights/indicator-engine";
-import type { AssetSummary, FundCatalogEntry, FundCatalogImportStatus, FundCatalogPageItem, FundCatalogPageResponse, FundCatalogSummaryResponse, FundCatalogSyncResponse, FundImportResponse, FundSearchResponse, FundSearchResult, OhlcvBar } from "@gold-insights/market-domain";
+import type { AssetSummary, FundCatalogEntry, FundCatalogImportStatus, FundCatalogPageItem, FundCatalogPageResponse, FundCatalogSortKey, FundCatalogSummaryResponse, FundCatalogSyncResponse, FundImportResponse, FundSearchResponse, FundSearchResult, OhlcvBar, SortOrder } from "@gold-insights/market-domain";
 import { dayMs, toIsoDateTime } from "@gold-insights/market-domain";
 import { ScannerEngineManager } from "@gold-insights/scanner-engine";
 
@@ -77,12 +77,16 @@ export class FundDiscoveryService {
     keyword,
     fundType,
     status,
+    sort,
+    order,
     limit,
     offset
   }: {
     keyword: string;
     fundType: string;
     status: FundCatalogImportStatus;
+    sort: FundCatalogSortKey;
+    order: SortOrder;
     limit: number;
     offset: number;
   }): Promise<FundCatalogPageResponse> => {
@@ -93,6 +97,8 @@ export class FundDiscoveryService {
       keyword,
       fundType,
       status,
+      sort,
+      order,
       limit,
       offset
     });
@@ -104,6 +110,8 @@ export class FundDiscoveryService {
       keyword,
       fundType,
       status,
+      sort,
+      order,
       limit,
       offset,
       totalCount: page.totalCount,

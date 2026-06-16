@@ -38,6 +38,8 @@ export type FundCatalogMetricSnapshot = {
 };
 
 export type FundCatalogImportStatus = "all" | "imported" | "not_imported";
+export type FundCatalogSortKey = "relevance" | "code" | "name" | "latest_nav" | "return_1d" | "return_1w" | "return_1m" | "return_3m" | "return_6m" | "return_1y" | "data_point_count";
+export type SortOrder = "asc" | "desc";
 
 export type FundCatalogPageItem = FundCatalogEntry & {
   assetId: string | null;
@@ -88,6 +90,8 @@ export type FundCatalogPageResponse = {
   keyword: string;
   fundType: string;
   status: FundCatalogImportStatus;
+  sort: FundCatalogSortKey;
+  order: SortOrder;
   limit: number;
   offset: number;
   totalCount: number;

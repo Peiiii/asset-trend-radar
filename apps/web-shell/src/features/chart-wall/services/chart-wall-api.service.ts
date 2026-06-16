@@ -34,6 +34,8 @@ export class ChartWallApiService {
       keyword: filters.keyword,
       fundType: filters.fundType,
       status: filters.status,
+      sort: filters.sort,
+      order: filters.order,
       limit: String(filters.limit),
       offset: String(filters.offset)
     }).toString();

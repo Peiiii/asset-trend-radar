@@ -1,4 +1,4 @@
-import type { AssetDetailResponse, ChartWallResponse, CompareResponse, DataHealthResponse, FundCatalogImportStatus, FundCatalogPageResponse, FundCatalogSummaryResponse, FundImportResponse, FundSearchResponse, ScannerEventsResponse, UniverseTreeResponse, WatchlistsResponse } from "@gold-insights/market-domain";
+import type { AssetDetailResponse, ChartWallResponse, CompareResponse, DataHealthResponse, FundCatalogImportStatus, FundCatalogPageResponse, FundCatalogSortKey, FundCatalogSummaryResponse, FundImportResponse, FundSearchResponse, ScannerEventsResponse, SortOrder, UniverseTreeResponse, WatchlistsResponse } from "@gold-insights/market-domain";
 import type { ChartWallSortOrder } from "@gold-insights/market-domain";
 
 export type ChartWallPageData = {
@@ -31,6 +31,8 @@ export type FundCatalogPageFilters = {
   keyword: string;
   fundType: string;
   status: FundCatalogImportStatus;
+  sort: FundCatalogSortKey;
+  order: SortOrder;
   limit: number;
   offset: number;
 };
