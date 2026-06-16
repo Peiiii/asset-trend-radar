@@ -1,5 +1,6 @@
 import {
   Activity,
+  ArrowLeft,
   BarChart3,
   Database,
   Grid3X3,
@@ -31,7 +32,7 @@ const viewTitles: Record<ActiveView, string> = {
   "chart-wall": "全市场图表墙",
   universe: "资产宇宙",
   scanner: "机会扫描",
-  "asset-detail": "单资产详情",
+  "asset-detail": "资产详情",
   watchlist: "自选图表墙",
   "data-health": "数据源与任务状态"
 };
@@ -296,16 +297,20 @@ export function ChartWallPage(): JSX.Element {
     }
   };
 
-  const selectAsset = (assetId: string): void => {
-    navigate({ pathname: `/assets/${assetId}`, search: location.search });
-  };
-
   const resetFilters = (): void => {
     setSearchParams(new URLSearchParams());
   };
 
-  const currentSearch = location.search;
-  const assetDetailPath = `/assets/${routeAssetId ?? selectedItem?.id ?? chartItems[0]?.id ?? "us-nvda"}`;
+  const currentSearch = getSearchWithout(searchParams, ["from"]);
+  const assetDetailReturnPath = getAssetDetailReturnPath(searchParams);
+  const assetDetailReturnLabel = getAssetDetailReturnLabel(assetDetailReturnPath);
+
+  const selectAsset = (assetId: string): void => {
+    const next = new URLSearchParams(searchParams);
+    const sourcePath = activeView === "asset-detail" ? assetDetailReturnPath : getReturnSourcePath(location.pathname, searchParams);
+    next.set("from", sourcePath);
+    navigate({ pathname: `/assets/${assetId}`, search: `?${next.toString()}` });
+  };
 
   return (
     <AppShell
@@ -328,9 +333,6 @@ export function ChartWallPage(): JSX.Element {
             <SidebarButton active={activeView === "scanner"} label="机会扫描" title="机会扫描" to={`/scanner${currentSearch}`}>
               <Sparkles size={18} aria-hidden="true" />
             </SidebarButton>
-            <SidebarButton active={activeView === "asset-detail"} label="资产详情" title="单资产详情" to={`${assetDetailPath}${currentSearch}`}>
-              <Activity size={18} aria-hidden="true" />
-            </SidebarButton>
             <SidebarButton active={activeView === "watchlist"} label="自选" title="自选图表墙" to={`/watchlist${currentSearch}`}>
               <Star size={18} aria-hidden="true" />
             </SidebarButton>
@@ -344,7 +346,7 @@ export function ChartWallPage(): JSX.Element {
       <header className="workspace-header">
         <div>
           <p className="workspace-header__eyebrow">真实数据源: {data?.chartWall.sources.join(" / ") || "加载中"}</p>
-          <h1>{viewTitles[activeView]}</h1>
+          <h1>{activeView === "asset-detail" && selectedItem ? selectedItem.name : viewTitles[activeView]}</h1>
         </div>
         <div className="workspace-header__actions">
           <label className="search-control" htmlFor="asset-search">
@@ -362,33 +364,45 @@ export function ChartWallPage(): JSX.Element {
         </div>
       </header>
 
-      <section className="control-strip" aria-label="图表控制">
-        <Select id="market-filter" label="市场" value={market} onChange={(value) => setQueryValue("market", value, defaultFilters.market)} options={facetOptions("全部市场", data?.chartWall.facets?.markets, marketFallbackOptions)} />
-        <Select id="asset-type-filter" label="品种" value={assetType} onChange={(value) => setQueryValue("assetType", value, defaultFilters.assetType)} options={facetOptions("全部品种", data?.chartWall.facets?.assetTypes, assetTypeFallbackOptions)} />
-        <Select id="level-filter" label="层级" value={level} onChange={(value) => setQueryValue("level", value, defaultFilters.level)} options={facetOptions("全部层级", data?.chartWall.facets?.levels, levelFallbackOptions)} />
-        <Select id="signal-filter" label="信号" value={signal} onChange={(value) => setQueryValue("signal", value, defaultFilters.signal)} options={facetOptions("全部信号", data?.chartWall.facets?.signals, signalFallbackOptions)} />
-        <Select id="sort-filter" label="排序" value={sort} onChange={(value) => setSortQueryValue(value, defaultOrderForSort(value))} options={sortOptions} />
-        <Select id="sort-order-filter" label="方向" value={order} onChange={(value) => setSortQueryValue(sort, getSortOrder(value))} options={sortOrderOptions} />
-        <RangePicker value={range} onChange={(value) => setQueryValue("range", value, defaultFilters.range)} />
-        <TimeframePicker value={timeframe} onChange={(value) => setQueryValue("timeframe", value, defaultFilters.timeframe)} />
-        <div className="view-mode-toggle" aria-label="图表墙视图">
-          <IconButton label="卡片视图" className={viewMode === "grid" ? "gi-icon-button--active" : ""} onClick={() => setQueryValue("view", "grid", "grid")}>
-            <Grid3X3 size={17} aria-hidden="true" />
-          </IconButton>
-          <IconButton label="表格视图" className={viewMode === "table" ? "gi-icon-button--active" : ""} onClick={() => setQueryValue("view", "table", "grid")}>
-            <Table2 size={17} aria-hidden="true" />
-          </IconButton>
-        </div>
-        <Button variant="ghost" onClick={resetFilters}>
-          重置
-        </Button>
-        <Button variant="ghost" onClick={handleRefresh} disabled={isRefreshing}>
-          {isRefreshing ? "刷新中" : "重新采集"}
-        </Button>
-      </section>
+      {activeView === "asset-detail" ? (
+        <section className="control-strip control-strip--detail" aria-label="详情图表控制">
+          <RangePicker value={range} onChange={(value) => setQueryValue("range", value, defaultFilters.range)} />
+          <TimeframePicker value={timeframe} onChange={(value) => setQueryValue("timeframe", value, defaultFilters.timeframe)} />
+          <Button variant="ghost" onClick={handleRefresh} disabled={isRefreshing}>
+            {isRefreshing ? "刷新中" : "重新采集"}
+          </Button>
+        </section>
+      ) : (
+        <>
+          <section className="control-strip" aria-label="图表控制">
+            <Select id="market-filter" label="市场" value={market} onChange={(value) => setQueryValue("market", value, defaultFilters.market)} options={facetOptions("全部市场", data?.chartWall.facets?.markets, marketFallbackOptions)} />
+            <Select id="asset-type-filter" label="品种" value={assetType} onChange={(value) => setQueryValue("assetType", value, defaultFilters.assetType)} options={facetOptions("全部品种", data?.chartWall.facets?.assetTypes, assetTypeFallbackOptions)} />
+            <Select id="level-filter" label="层级" value={level} onChange={(value) => setQueryValue("level", value, defaultFilters.level)} options={facetOptions("全部层级", data?.chartWall.facets?.levels, levelFallbackOptions)} />
+            <Select id="signal-filter" label="信号" value={signal} onChange={(value) => setQueryValue("signal", value, defaultFilters.signal)} options={facetOptions("全部信号", data?.chartWall.facets?.signals, signalFallbackOptions)} />
+            <Select id="sort-filter" label="排序" value={sort} onChange={(value) => setSortQueryValue(value, defaultOrderForSort(value))} options={sortOptions} />
+            <Select id="sort-order-filter" label="方向" value={order} onChange={(value) => setSortQueryValue(sort, getSortOrder(value))} options={sortOrderOptions} />
+            <RangePicker value={range} onChange={(value) => setQueryValue("range", value, defaultFilters.range)} />
+            <TimeframePicker value={timeframe} onChange={(value) => setQueryValue("timeframe", value, defaultFilters.timeframe)} />
+            <div className="view-mode-toggle" aria-label="图表墙视图">
+              <IconButton label="卡片视图" className={viewMode === "grid" ? "gi-icon-button--active" : ""} onClick={() => setQueryValue("view", "grid", "grid")}>
+                <Grid3X3 size={17} aria-hidden="true" />
+              </IconButton>
+              <IconButton label="表格视图" className={viewMode === "table" ? "gi-icon-button--active" : ""} onClick={() => setQueryValue("view", "table", "grid")}>
+                <Table2 size={17} aria-hidden="true" />
+              </IconButton>
+            </div>
+            <Button variant="ghost" onClick={resetFilters}>
+              重置
+            </Button>
+            <Button variant="ghost" onClick={handleRefresh} disabled={isRefreshing}>
+              {isRefreshing ? "刷新中" : "重新采集"}
+            </Button>
+          </section>
 
-      <ActiveFilterChips filters={{ market, assetType, level, signal, sort, order, search }} onReset={resetFilters} />
-      {data && assetType === "fund" && <FundScopeStrip data={data} market={market} />}
+          <ActiveFilterChips filters={{ market, assetType, level, signal, sort, order, search }} onReset={resetFilters} />
+        </>
+      )}
+      {data && activeView !== "asset-detail" && assetType === "fund" && <FundScopeStrip data={data} market={market} />}
       {activeView === "chart-wall" && (
         <FundDiscoveryPanel
           keyword={fundKeyword}
@@ -457,7 +471,15 @@ export function ChartWallPage(): JSX.Element {
           )}
 
           {activeView === "asset-detail" && (
-            <AssetDetailSection item={selectedItem} relatedItems={filteredItems.filter((item) => item.id !== selectedItem?.id && item.market === selectedItem?.market).slice(0, 8)} onPin={handlePin} onCompare={handleCompare} />
+            <AssetDetailSection
+              item={selectedItem}
+              relatedItems={filteredItems.filter((item) => item.id !== selectedItem?.id && item.market === selectedItem?.market).slice(0, 8)}
+              returnLabel={assetDetailReturnLabel}
+              onBack={() => navigate(assetDetailReturnPath)}
+              onSelect={selectAsset}
+              onPin={handlePin}
+              onCompare={handleCompare}
+            />
           )}
 
           {activeView === "watchlist" && (
@@ -920,14 +942,38 @@ function ScannerSection({
   );
 }
 
-function AssetDetailSection({ item, relatedItems, onPin, onCompare }: { item: ChartWallItem | null; relatedItems: ChartWallItem[]; onPin(assetId: string): void; onCompare(assetId: string): void }): JSX.Element {
+function AssetDetailSection({
+  item,
+  relatedItems,
+  returnLabel,
+  onBack,
+  onSelect,
+  onPin,
+  onCompare
+}: {
+  item: ChartWallItem | null;
+  relatedItems: ChartWallItem[];
+  returnLabel: string;
+  onBack(): void;
+  onSelect(assetId: string): void;
+  onPin(assetId: string): void;
+  onCompare(assetId: string): void;
+}): JSX.Element {
   if (!item) {
     return <EmptyState title="没有可查看资产" description="当前筛选条件下没有资产。" />;
   }
 
   return (
     <section className="single-view-section">
-      <SectionHeader title={`${item.name} / ${item.symbol}`} description={`${item.market} / ${assetTypeLabel(item.assetType)} / ${item.exchange} / ${item.source ?? item.dataSource ?? "unknown"}`} />
+      <div className="asset-detail-context-row">
+        <button type="button" className="asset-detail-back-link" onClick={onBack}>
+          <ArrowLeft size={16} aria-hidden="true" />
+          <span>返回{returnLabel}</span>
+        </button>
+        <span>{item.market}</span>
+        <span>{assetTypeLabel(item.assetType)}</span>
+      </div>
+      <SectionHeader title={`${item.name} / ${item.symbol}`} description={`${item.exchange} / ${item.source ?? item.dataSource ?? "unknown"} / ${formatDateTime(item.latestBarAt)}`} />
       <div className="asset-detail-grid">
         <article className="asset-detail-main">
           <div className="asset-detail-main__hero">
@@ -983,7 +1029,7 @@ function AssetDetailSection({ item, relatedItems, onPin, onCompare }: { item: Ch
         </div>
       )}
       <SectionHeader title="相关资产" description="同市场内的可比资产" />
-      <ChartGrid items={relatedItems} onSelect={() => undefined} onPin={onPin} onCompare={onCompare} />
+      <ChartGrid items={relatedItems} onSelect={onSelect} onPin={onPin} onCompare={onCompare} />
     </section>
   );
 }
@@ -1220,6 +1266,60 @@ function getActiveView(pathname: string): ActiveView {
     return "asset-detail";
   }
   return "chart-wall";
+}
+
+function getAssetDetailReturnPath(searchParams: URLSearchParams): string {
+  const from = searchParams.get("from");
+
+  if (from && isSafeWorkspacePath(from)) {
+    return from;
+  }
+
+  return `/chart-wall${getSearchWithout(searchParams, ["from"])}`;
+}
+
+function getAssetDetailReturnLabel(path: string): string {
+  if (path.startsWith("/universe")) {
+    return "资产宇宙";
+  }
+
+  if (path.startsWith("/scanner")) {
+    return "机会扫描";
+  }
+
+  if (path.startsWith("/watchlist")) {
+    return "自选";
+  }
+
+  if (path.startsWith("/data-health")) {
+    return "数据状态";
+  }
+
+  return "图表墙";
+}
+
+function getReturnSourcePath(pathname: string, searchParams: URLSearchParams): string {
+  const search = getSearchWithout(searchParams, ["from"]);
+  return `${pathname}${search}`;
+}
+
+function getSearchWithout(searchParams: URLSearchParams, excludedNames: string[]): string {
+  const next = new URLSearchParams(searchParams);
+
+  for (const name of excludedNames) {
+    next.delete(name);
+  }
+
+  const value = next.toString();
+  return value.length > 0 ? `?${value}` : "";
+}
+
+function isSafeWorkspacePath(path: string): boolean {
+  if (!path.startsWith("/") || path.startsWith("//") || path.startsWith("/assets/")) {
+    return false;
+  }
+
+  return ["/chart-wall", "/universe", "/scanner", "/watchlist", "/data-health"].some((prefix) => path === prefix || path.startsWith(`${prefix}?`));
 }
 
 function getSearchValue(searchParams: URLSearchParams, name: string, fallback: string): string {

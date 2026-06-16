@@ -173,6 +173,9 @@ try {
   );
   assert(cryptoOneMonthWall.facets.markets.every((facet) => typeof facet.count === "number"), "expected eager market facet counts");
   assert(cryptoOneMonthWall.facets.assetTypes.every((facet) => typeof facet.count === "number"), "expected eager asset type facet counts");
+  assert(cryptoOneMonthWall.facets.markets.some((facet) => facet.value === "美股" && facet.count > 0), "expected market facet counts to ignore current market filter");
+  assert(cryptoOneMonthWall.facets.assetTypes.some((facet) => facet.value === "fund" && facet.count > 0), "expected asset type facet counts to ignore current asset type filter");
+  assert(cryptoOneMonthWall.facets.levels.some((facet) => facet.value === "company" && facet.count > 0), "expected level facet counts to ignore current level filter");
   assert(isSortedDesc(sortedVolumeWall.items, (item) => item.volumeRatio), "expected volume_ratio sorting");
   assert(weeklyWall.items.length >= 45 && weeklyWall.items.every((item) => item.sparkline.length > 10), "expected weekly resampled chart wall");
   assert(monthlyWall.items.length >= 45 && monthlyWall.items.every((item) => item.sparkline.length >= 36), "expected 5Y monthly chart wall");

@@ -46,12 +46,16 @@ export class ChartWallQueryService {
 
   public getChartWall = (query: ChartWallQuery): ChartWallResponse => {
     const marketDataAssets = this.assetRepository.listAssets().filter((asset) => this.isMarketDataAsset(asset));
+    const facetAssets = marketDataAssets.filter((asset) => this.matchesChartWallUniverseQuery(asset, query));
     const watchlistAssetIds = new Set(this.watchlistRepository.listWatchlists().flatMap((watchlist) => watchlist.assets.map((asset) => asset.id)));
     const comparedAssetIds = new Set<string>();
     const matchedItems = marketDataAssets
       .filter((asset) => this.matchesChartWallQuery(asset, query))
       .map((asset) => this.getChartWallItem(asset, query, watchlistAssetIds, comparedAssetIds))
       .filter((item) => item.lastPrice !== null);
+    const facetItems = this.canReuseMatchedItemsForFacets(query)
+      ? matchedItems
+      : facetAssets.map((asset) => this.getChartWallItem(asset, query, watchlistAssetIds, comparedAssetIds)).filter((item) => item.lastPrice !== null);
     const signalFilteredItems = this.applySignalFilter(matchedItems, query.signal);
     const items = this.sortItems(signalFilteredItems, query.sort, query.order);
 
@@ -66,7 +70,7 @@ export class ChartWallQueryService {
       generatedAt: new Date().toISOString(),
       sources: [...new Set(items.map((item) => item.source))],
       summary: this.getChartWallSummary(items, marketDataAssets.length),
-      facets: this.getChartWallFacets(query, marketDataAssets, matchedItems),
+      facets: this.getChartWallFacets(facetAssets, facetItems),
       fundScope: this.getFundScope(query, items, marketDataAssets),
       items
     };
@@ -320,22 +324,11 @@ export class ChartWallQueryService {
     };
   };
 
-  private getChartWallFacets = (query: ChartWallQuery, assets: AssetSummary[], items: ChartWallItem[]): ChartWallFacets => ({
-    markets: this.toFacetCounts(
-      assets.filter((asset) => this.matchesChartWallFacetQuery(asset, query, "market")),
-      (asset) => asset.market
-    ),
-    assetTypes: this.toFacetCounts(
-      assets.filter((asset) => this.matchesChartWallFacetQuery(asset, query, "assetType")),
-      (asset) => asset.assetType,
-      (value) => this.getAssetTypeLabel(value)
-    ),
-    levels: this.toFacetCounts(
-      assets.filter((asset) => this.matchesChartWallFacetQuery(asset, query, "level")),
-      (asset) => asset.level ?? "instrument",
-      (value) => this.getLevelLabel(value)
-    ),
-    sources: this.toFacetCounts(items, (item) => item.source),
+  private getChartWallFacets = (assets: AssetSummary[], items: ChartWallItem[]): ChartWallFacets => ({
+    markets: this.toFacetCounts(assets, (asset) => asset.market),
+    assetTypes: this.toFacetCounts(assets, (asset) => asset.assetType, (value) => this.getAssetTypeLabel(value)),
+    levels: this.toFacetCounts(assets, (asset) => asset.level ?? "instrument", (value) => this.getLevelLabel(value)),
+    sources: this.toFacetCounts(assets, (asset) => asset.dataSource ?? "unknown"),
     signals: [
       { value: "all", label: "全部信号", count: items.length },
       { value: "strong", label: "强趋势", count: this.applySignalFilter(items, "strong").length },
@@ -382,26 +375,6 @@ export class ChartWallQueryService {
         count
       }))
       .sort((left, right) => right.count - left.count || left.label.localeCompare(right.label, "zh-Hans-CN"));
-  };
-
-  private matchesChartWallFacetQuery = (asset: AssetSummary, query: ChartWallQuery, facet: "market" | "assetType" | "level"): boolean => {
-    if (query.universe !== "global" && asset.market !== query.universe && asset.parentId !== query.universe) {
-      return false;
-    }
-
-    if (facet !== "level" && query.level !== "all" && asset.level !== query.level) {
-      return false;
-    }
-
-    if (facet !== "market" && query.market !== "all" && asset.market !== query.market) {
-      return false;
-    }
-
-    if (facet !== "assetType" && query.assetType !== "all" && asset.assetType !== query.assetType) {
-      return false;
-    }
-
-    return true;
   };
 
   private applySignalFilter = (items: ChartWallItem[], signal: string): ChartWallItem[] => {
@@ -565,8 +538,13 @@ export class ChartWallQueryService {
 
   private isMarketDataAsset = (asset: AssetSummary): boolean => asset.level !== "asset-class" && asset.level !== "market";
 
+  private canReuseMatchedItemsForFacets = (query: ChartWallQuery): boolean => query.market === "all" && query.assetType === "all" && query.level === "all";
+
+  private matchesChartWallUniverseQuery = (asset: AssetSummary, query: ChartWallQuery): boolean =>
+    query.universe === "global" || asset.market === query.universe || asset.parentId === query.universe;
+
   private matchesChartWallQuery = (asset: AssetSummary, query: ChartWallQuery): boolean => {
-    if (query.universe !== "global" && asset.market !== query.universe && asset.parentId !== query.universe) {
+    if (!this.matchesChartWallUniverseQuery(asset, query)) {
       return false;
     }
 
