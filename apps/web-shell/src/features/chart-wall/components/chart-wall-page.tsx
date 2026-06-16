@@ -28,6 +28,7 @@ import { DataHealthSection } from "./data-health-section";
 import { ExchangeTable } from "./exchange-table/exchange-table";
 import { FundDirectorySection } from "./fund-directory-section";
 import "./market-chart-primitives.css";
+import { ScannerSection } from "./scanner-section/scanner-section";
 import { TaskCenterSection } from "./task-center-section";
 import { TaskStatusButton } from "./task-status-button";
 import { chartWallApiService } from "../services/chart-wall-api.service";
@@ -121,15 +122,6 @@ const signalFallbackOptions: ControlOption[] = [
   { value: "eventful", label: "有扫描事件" },
   { value: "pinned", label: "已自选" }
 ];
-const scannerEventOptions: ControlOption[] = [
-  { value: "all", label: "全部事件" },
-  { value: "macd_golden_cross", label: "MACD 金叉" },
-  { value: "macd_dead_cross", label: "MACD 死叉" },
-  { value: "price_breakout_20d", label: "20D 突破" },
-  { value: "price_breakout_60d", label: "60D 突破" },
-  { value: "relative_strength_leader", label: "相对强势" }
-];
-
 export function ChartWallPage(): JSX.Element {
   const location = useLocation();
   const navigate = useNavigate();
@@ -148,6 +140,8 @@ export function ChartWallPage(): JSX.Element {
   const search = getSearchValue(searchParams, "q", "");
   const scannerEventType = getSearchValue(searchParams, "eventType", "all");
   const scannerMinSeverity = getSearchValue(searchParams, "severity", "0");
+  const scannerMarket = getSearchValue(searchParams, "scannerMarket", "all");
+  const scannerQuery = getSearchValue(searchParams, "scannerQ", "");
   const fundDirectory = useFundDirectoryUrlState(searchParams, setSearchParams);
   const [compareAssetIds, setCompareAssetIds] = useState<string[]>([]);
   const [compareData, setCompareData] = useState<CompareData | null>(null);
@@ -524,8 +518,12 @@ export function ChartWallPage(): JSX.Element {
               scannerEvents={data.scannerEvents}
               eventType={scannerEventType}
               minSeverity={scannerMinSeverity}
+              market={scannerMarket}
+              query={scannerQuery}
               onEventTypeChange={(value) => setQueryValue("eventType", value, "all")}
               onMinSeverityChange={(value) => setQueryValue("severity", value, "0")}
+              onMarketChange={(value) => setQueryValue("scannerMarket", value, "all")}
+              onQueryChange={(value) => setQueryValue("scannerQ", value, "")}
               onSelectAsset={selectAsset}
             />
           )}
@@ -734,76 +732,6 @@ function UniverseNodeCard({ node, onSelectAsset }: { node: UniverseTreeNode; onS
         ))}
       </div>
     </article>
-  );
-}
-
-function ScannerSection({
-  scannerEvents,
-  eventType,
-  minSeverity,
-  onEventTypeChange,
-  onMinSeverityChange,
-  onSelectAsset
-}: {
-  scannerEvents: ScannerEventsResponse;
-  eventType: string;
-  minSeverity: string;
-  onEventTypeChange(value: string): void;
-  onMinSeverityChange(value: string): void;
-  onSelectAsset(assetId: string): void;
-}): JSX.Element {
-  const filteredEvents = scannerEvents.events.filter((event) => (eventType === "all" || event.eventType === eventType) && event.severity >= Number(minSeverity));
-
-  return (
-    <section className="single-view-section">
-      <SectionHeader title="机会扫描" description={`${filteredEvents.length}/${scannerEvents.events.length} 个真实数据触发事件`} generatedAt={scannerEvents.generatedAt} />
-      <div className="sub-control-strip">
-        <Select id="scanner-event-type" label="事件" value={eventType} onChange={onEventTypeChange} options={scannerEventOptions} />
-        <Select
-          id="scanner-severity"
-          label="强度"
-          value={minSeverity}
-          onChange={onMinSeverityChange}
-          options={[
-            { value: "0", label: "全部" },
-            { value: "2", label: ">= 2" },
-            { value: "3", label: ">= 3" },
-            { value: "4", label: ">= 4" }
-          ]}
-        />
-      </div>
-      {filteredEvents.length === 0 ? (
-        <EmptyState title="暂无机会事件" description="当前真实行情没有触发所选扫描规则。" />
-      ) : (
-        <div className="scanner-table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>资产</th>
-                <th>市场</th>
-                <th>事件</th>
-                <th>严重度</th>
-                <th>说明</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredEvents.map((event) => (
-                <tr key={event.id} onClick={() => onSelectAsset(event.assetId)}>
-                  <td>
-                    <strong>{event.asset?.name ?? event.asset?.symbol ?? event.assetId}</strong>
-                    <small>{event.asset?.symbol ?? event.assetId}</small>
-                  </td>
-                  <td>{event.asset?.market ?? "-"}</td>
-                  <td>{event.title}</td>
-                  <td>{event.severity}</td>
-                  <td>{event.summary}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </section>
   );
 }
 

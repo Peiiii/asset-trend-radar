@@ -1,0 +1,243 @@
+.scanner-section {
+  gap: 14px;
+}
+
+.scanner-summary-grid,
+.scanner-priority-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.scanner-summary-grid {
+  grid-template-columns: repeat(5, minmax(120px, 1fr));
+}
+
+.scanner-summary-card,
+.scanner-priority-card {
+  min-width: 0;
+  border: 1px solid #d7dde7;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.scanner-summary-card {
+  padding: 12px;
+}
+
+.scanner-summary-card span,
+.scanner-summary-card small {
+  display: block;
+  color: #657184;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.scanner-summary-card strong {
+  display: block;
+  margin: 6px 0 4px;
+  color: #162033;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.scanner-toolbar,
+.scanner-filter-strip,
+.scanner-priority-card__eyebrow,
+.scanner-priority-card__badges,
+.scanner-open-button {
+  display: flex;
+  align-items: center;
+}
+
+.scanner-toolbar {
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.scanner-search-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: min(420px, 100%);
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid #cfd7e4;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #657184;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+}
+
+.scanner-search-control:hover,
+.scanner-search-control:focus-within {
+  border-color: #9fb5c7;
+  background: #fbfdff;
+  box-shadow: 0 0 0 3px rgba(47, 111, 178, 0.1);
+}
+
+.scanner-search-control input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  color: #182032;
+  font-weight: 700;
+}
+
+.scanner-filter-strip {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.scanner-priority-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.scanner-priority-card {
+  min-height: 174px;
+  padding: 14px;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
+}
+
+.scanner-priority-card:hover,
+.scanner-priority-card:focus-visible {
+  border-color: #9fb5c7;
+  box-shadow: 0 10px 24px rgba(24, 32, 50, 0.08);
+  outline: 0;
+  transform: translateY(-1px);
+}
+
+.scanner-priority-card__eyebrow {
+  gap: 6px;
+  margin-bottom: 8px;
+  color: #b7791f;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.scanner-priority-card strong,
+.scanner-priority-card small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scanner-priority-card strong {
+  color: #172033;
+  font-size: 17px;
+}
+
+.scanner-priority-card small {
+  margin-top: 4px;
+  color: #657184;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.scanner-priority-card__badges {
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0;
+}
+
+.scanner-priority-card p {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 0;
+  color: #4c596d;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.scanner-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid #d7dde7;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.scanner-table-wrapper table {
+  width: 100%;
+  min-width: 980px;
+  border-collapse: collapse;
+}
+
+.scanner-table-wrapper th,
+.scanner-table-wrapper td {
+  padding: 12px;
+  border-bottom: 1px solid #e5eaf1;
+  text-align: left;
+}
+
+.scanner-table-wrapper th {
+  color: #657184;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.scanner-table-wrapper td {
+  color: #243044;
+  font-size: 13px;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.scanner-table-wrapper td strong,
+.scanner-table-wrapper td small {
+  display: block;
+}
+
+.scanner-table-wrapper td small {
+  margin-top: 3px;
+  color: #687386;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.scanner-table-wrapper tbody tr {
+  cursor: pointer;
+  transition: background 0.16s ease;
+}
+
+.scanner-table-wrapper tbody tr:hover {
+  background: #f7fafc;
+}
+
+.scanner-table-wrapper tbody tr:focus-within {
+  background: #f2f6fb;
+}
+
+.scanner-open-button {
+  gap: 6px;
+  white-space: nowrap;
+}
+
+@media (max-width: 1100px) {
+  .scanner-summary-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .scanner-priority-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .scanner-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .scanner-toolbar,
+  .scanner-toolbar .gi-select,
+  .scanner-toolbar .gi-select__trigger,
+  .scanner-search-control {
+    width: 100%;
+  }
+}
