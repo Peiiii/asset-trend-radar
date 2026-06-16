@@ -6,13 +6,19 @@ type TaskCenterQueryState = {
   data: TaskCenterData | null;
   error: string | null;
   isLoading: boolean;
+  isPolling: boolean;
+  lastLoadedAt: string | null;
+  pollIntervalMs: number;
   reload(): Promise<void>;
 };
+
+const taskCenterPollIntervalMs = 3000;
 
 export function useTaskCenterQuery(enabled: boolean): TaskCenterQueryState {
   const [data, setData] = useState<TaskCenterData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [lastLoadedAt, setLastLoadedAt] = useState<string | null>(null);
 
   const load = useCallback(
     async (signal?: AbortSignal): Promise<void> => {
@@ -25,6 +31,7 @@ export function useTaskCenterQuery(enabled: boolean): TaskCenterQueryState {
 
       try {
         setData(await chartWallApiService.fetchTaskCenter(signal));
+        setLastLoadedAt(new Date().toISOString());
       } catch (nextError) {
         if (!signal?.aborted) {
           setError(nextError instanceof Error ? nextError.message : "任务中心加载失败");
@@ -47,7 +54,7 @@ export function useTaskCenterQuery(enabled: boolean): TaskCenterQueryState {
     void load(controller.signal);
     const intervalId = window.setInterval(() => {
       void load(controller.signal);
-    }, 3000);
+    }, taskCenterPollIntervalMs);
 
     return () => {
       window.clearInterval(intervalId);
@@ -59,6 +66,9 @@ export function useTaskCenterQuery(enabled: boolean): TaskCenterQueryState {
     data,
     error,
     isLoading,
+    isPolling: enabled,
+    lastLoadedAt,
+    pollIntervalMs: taskCenterPollIntervalMs,
     reload: () => load()
   };
 }

@@ -452,6 +452,9 @@ export function ChartWallPage(): JSX.Element {
             data={taskCenterQuery.data}
             error={taskCenterQuery.error}
             isLoading={taskCenterQuery.isLoading}
+            isPolling={taskCenterQuery.isPolling}
+            lastLoadedAt={taskCenterQuery.lastLoadedAt}
+            pollIntervalMs={taskCenterQuery.pollIntervalMs}
             onClick={() => {
               navigate(`/tasks${currentSearch}`);
             }}
@@ -638,6 +641,9 @@ export function ChartWallPage(): JSX.Element {
               data={taskCenterQuery.data}
               error={taskCenterQuery.error}
               isLoading={taskCenterQuery.isLoading}
+              isPolling={taskCenterQuery.isPolling}
+              lastLoadedAt={taskCenterQuery.lastLoadedAt}
+              pollIntervalMs={taskCenterQuery.pollIntervalMs}
               onRefresh={() => {
                 void taskCenterQuery.reload();
               }}

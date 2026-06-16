@@ -130,6 +130,17 @@ export function formatDuration(value: number | null): string {
   return `${minutes}m ${remainingSeconds}s`;
 }
 
+export function formatPollInterval(value: number): string {
+  const seconds = Math.max(1, Math.round(value / 1000));
+  if (seconds < 60) {
+    return `${seconds}s`;
+  }
+
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return remainingSeconds === 0 ? `${minutes}m` : `${minutes}m ${remainingSeconds}s`;
+}
+
 export function formatMetadata(metadata: Record<string, unknown>): string {
   return Object.entries(metadata)
     .map(([key, value]) => `${key}: ${String(value)}`)

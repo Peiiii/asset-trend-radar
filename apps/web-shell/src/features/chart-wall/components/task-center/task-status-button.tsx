@@ -1,16 +1,21 @@
 import { AlertTriangle, CheckCircle2, Loader2, ListChecks, XCircle } from "lucide-react";
 import type { TaskCenterResponse } from "@gold-insights/market-domain";
+import { formatDateTime } from "@/shared/utils/format-number.utils";
+import { formatPollInterval } from "./task-center.utils";
 import "./task-status-button.css";
 
 type TaskStatusButtonProps = {
   data: TaskCenterResponse | null;
   isLoading: boolean;
   error: string | null;
+  isPolling: boolean;
+  lastLoadedAt: string | null;
+  pollIntervalMs: number;
   onClick(): void;
 };
 
-export function TaskStatusButton({ data, isLoading, error, onClick }: TaskStatusButtonProps): JSX.Element {
-  const state = getTaskStatusState(data, isLoading, error);
+export function TaskStatusButton({ data, isLoading, error, isPolling, lastLoadedAt, pollIntervalMs, onClick }: TaskStatusButtonProps): JSX.Element {
+  const state = getTaskStatusState(data, isLoading, error, isPolling, lastLoadedAt, pollIntervalMs);
 
   return (
     <button type="button" className={`task-status-button task-status-button--${state.tone}`} onClick={onClick} title={state.title} aria-label={state.title}>
@@ -23,13 +28,16 @@ export function TaskStatusButton({ data, isLoading, error, onClick }: TaskStatus
   );
 }
 
-function getTaskStatusState(data: TaskCenterResponse | null, isLoading: boolean, error: string | null): { tone: "neutral" | "blue" | "positive" | "negative" | "amber"; label: string; secondary: string; title: string; icon: JSX.Element } {
+function getTaskStatusState(data: TaskCenterResponse | null, isLoading: boolean, error: string | null, isPolling: boolean, lastLoadedAt: string | null, pollIntervalMs: number): { tone: "neutral" | "blue" | "positive" | "negative" | "amber"; label: string; secondary: string; title: string; icon: JSX.Element } {
+  const pollingLabel = isPolling ? `${formatPollInterval(pollIntervalMs)}轮询` : "未轮询";
+  const loadedLabel = lastLoadedAt ? `上次 ${formatDateTime(lastLoadedAt)}` : "尚未拉取";
+
   if (error) {
     return {
       tone: "negative",
       label: "任务异常",
-      secondary: "点击查看",
-      title: `任务中心加载失败: ${error}`,
+      secondary: loadedLabel,
+      title: `任务中心加载失败: ${error}，${pollingLabel}`,
       icon: <XCircle size={16} aria-hidden="true" />
     };
   }
@@ -39,7 +47,7 @@ function getTaskStatusState(data: TaskCenterResponse | null, isLoading: boolean,
       tone: "amber",
       label: `疑似卡住 ${data.staleRunningCount}`,
       secondary: data.latestTask ? `最近 ${data.latestTask.label}` : "需要排查",
-      title: "有后台任务疑似卡住，点击查看任务中心",
+      title: `有后台任务疑似卡住，${pollingLabel}，点击查看任务中心`,
       icon: <AlertTriangle size={16} aria-hidden="true" />
     };
   }
@@ -49,7 +57,7 @@ function getTaskStatusState(data: TaskCenterResponse | null, isLoading: boolean,
       tone: "blue",
       label: `运行中 ${data.runningCount}`,
       secondary: data.latestTask ? data.latestTask.label : "正在同步",
-      title: "有后台任务正在运行，点击查看任务中心",
+      title: `有后台任务正在运行，${pollingLabel}，点击查看任务中心`,
       icon: <Loader2 size={16} aria-hidden="true" />
     };
   }
@@ -59,7 +67,7 @@ function getTaskStatusState(data: TaskCenterResponse | null, isLoading: boolean,
       tone: "negative",
       label: `失败 ${data.failedCount}`,
       secondary: data.latestTask ? `最近 ${data.latestTask.label}` : "查看错误",
-      title: "最近任务存在失败，点击查看任务中心",
+      title: `最近任务存在失败，${pollingLabel}，点击查看任务中心`,
       icon: <XCircle size={16} aria-hidden="true" />
     };
   }
@@ -68,8 +76,8 @@ function getTaskStatusState(data: TaskCenterResponse | null, isLoading: boolean,
     return {
       tone: "positive",
       label: "任务正常",
-      secondary: data.latestTask ? `最近 ${data.latestTask.label}` : "暂无任务",
-      title: data.latestTask ? `最近任务: ${data.latestTask.label}` : "暂无任务异常",
+      secondary: data.latestTask ? `最近 ${data.latestTask.label}` : loadedLabel,
+      title: data.latestTask ? `最近任务: ${data.latestTask.label}，${pollingLabel}` : `暂无任务异常，${pollingLabel}`,
       icon: <CheckCircle2 size={16} aria-hidden="true" />
     };
   }

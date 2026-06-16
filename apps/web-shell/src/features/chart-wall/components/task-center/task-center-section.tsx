@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { Button, EmptyState, ErrorState, LoadingState, SegmentedControl, SignalBadge } from "@gold-insights/ui";
 import type { RuntimeTask, RuntimeTaskPipelineSummary, TaskCenterResponse } from "@gold-insights/market-domain";
 import { formatDateTime } from "@/shared/utils/format-number.utils";
-import { buildTaskActivitySummary, filterTasks, formatDuration, formatMetadata, getTaskFilterOptions, pipelineStatusLabel, pipelineTone, taskStatusLabel, taskStatusTone } from "./task-center.utils";
+import { buildTaskActivitySummary, filterTasks, formatDuration, formatMetadata, formatPollInterval, getTaskFilterOptions, pipelineStatusLabel, pipelineTone, taskStatusLabel, taskStatusTone } from "./task-center.utils";
 import type { TaskFilter, TaskTone } from "./task-center.utils";
 import "./task-center-section.css";
 import "./task-center-overview.css";
@@ -12,10 +12,13 @@ type TaskCenterSectionProps = {
   data: TaskCenterResponse | null;
   error: string | null;
   isLoading: boolean;
+  isPolling: boolean;
+  lastLoadedAt: string | null;
+  pollIntervalMs: number;
   onRefresh(): void;
 };
 
-export function TaskCenterSection({ data, error, isLoading, onRefresh }: TaskCenterSectionProps): JSX.Element {
+export function TaskCenterSection({ data, error, isLoading, isPolling, lastLoadedAt, pollIntervalMs, onRefresh }: TaskCenterSectionProps): JSX.Element {
   const [taskFilter, setTaskFilter] = useState<TaskFilter>("all");
   const filteredTasks = useMemo(() => filterTasks(data?.tasks ?? [], taskFilter), [data, taskFilter]);
   const filterOptions = useMemo(() => getTaskFilterOptions(data), [data]);
@@ -37,7 +40,7 @@ export function TaskCenterSection({ data, error, isLoading, onRefresh }: TaskCen
       {!isLoading && error && <ErrorState title="任务中心加载失败" message={error} />}
       {data && (
         <>
-          <TaskActivityPanel data={data} />
+          <TaskActivityPanel data={data} isPolling={isPolling} lastLoadedAt={lastLoadedAt} pollIntervalMs={pollIntervalMs} />
 
           <div className="task-summary-grid">
             <TaskSummaryCard label="运行中" value={data.runningCount} tone={data.runningCount > 0 ? "blue" : "neutral"} />
@@ -79,8 +82,9 @@ export function TaskCenterSection({ data, error, isLoading, onRefresh }: TaskCen
   );
 }
 
-function TaskActivityPanel({ data }: { data: TaskCenterResponse }): JSX.Element {
+function TaskActivityPanel({ data, isPolling, lastLoadedAt, pollIntervalMs }: { data: TaskCenterResponse; isPolling: boolean; lastLoadedAt: string | null; pollIntervalMs: number }): JSX.Element {
   const summary = buildTaskActivitySummary(data);
+  const pollingLabel = isPolling ? `${formatPollInterval(pollIntervalMs)} 自动轮询` : "未开启";
 
   return (
     <section className={`task-activity-panel task-activity-panel--${summary.tone}`} aria-label="后台活动概览">
@@ -92,8 +96,10 @@ function TaskActivityPanel({ data }: { data: TaskCenterResponse }): JSX.Element 
       <dl>
         <TaskMeta label="最近任务" value={summary.latestTaskLabel} />
         <TaskMeta label="当前状态" value={summary.activeLabel} />
-        <TaskMeta label="管线覆盖" value={summary.pipelineLabel} />
-        <TaskMeta label="状态生成" value={formatDateTime(data.generatedAt)} />
+        <TaskMeta label="任务管线" value={summary.pipelineLabel} />
+        <TaskMeta label="轮询状态" value={pollingLabel} />
+        <TaskMeta label="最近拉取" value={formatDateTime(lastLoadedAt)} />
+        <TaskMeta label="后端生成" value={formatDateTime(data.generatedAt)} />
       </dl>
     </section>
   );
