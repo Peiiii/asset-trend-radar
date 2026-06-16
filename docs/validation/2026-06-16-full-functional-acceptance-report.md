@@ -1,102 +1,143 @@
 # Gold Insights 全功能完整性验收报告
 
-验收时间：2026-06-16 10:12 CST
+验收时间：2026-06-16 22:02 CST
 
 ## 结论
 
-本轮已从单一数字货币 MVP 扩展为全市场本地资产趋势雷达。当前运行版本使用真实 Yahoo Finance 行情数据，不使用假行情，覆盖 A 股、美股、港股、商品、宏观代理、外汇、债券、加密，并实现设计文档中的主要产品入口：全市场图表墙、资产宇宙、机会扫描、单资产详情、自选图表墙、数据源与任务状态。
+本轮已从单一数字货币 MVP 扩展为本地运行的全市场资产趋势雷达。当前版本使用真实行情和真实基金净值，不使用假行情；覆盖 A 股、美股、港股、商品、宏观代理、外汇、债券、加密、基金/ETF，并实现全市场图表墙、资产宇宙、机会扫描、单资产详情、自选图表墙、数据源与任务状态。
 
-当前本地服务：
+阶段性提交已完成：
 
-- 前端：http://127.0.0.1:5193/
-- Runtime API：http://127.0.0.1:3193/
-- SQLite：`.tmp/manual-full-runtime-data-5y/gold-insights.sqlite`
-- Raw JSONL：`.tmp/manual-full-runtime-data-5y/raw`
+```text
+f82a7eb Initialize local market insight dashboard
+```
+
+## 基金数据说明
+
+基金数据分两类：
+
+| 类型 | 来源 | 当前覆盖 | 说明 |
+| --- | --- | ---: | --- |
+| ETF / 可交易基金 | Yahoo Finance chart endpoint | 25 个 | 包含美股 ETF、A 股 ETF、港股 ETF、商品 ETF、债券 ETF |
+| 场外基金净值 | 东方财富 F10 历史净值接口 | 44 个 | 接口形态：`https://fundf10.eastmoney.com/F10DataApi.aspx?type=lsjz&code=<基金代码>&page=<页码>&per=49` |
+
+当前基金/ETF 合计 69 个。之前页面看起来“只有几只基金”，原因不是数据源只能拿几只，而是资产宇宙里只维护了少量场外基金种子；本轮已扩展到 44 只常见场外基金。终态设计仍然应该继续做自动基金池同步，从东方财富/天天基金的基金列表、排行、主题分类接口中定期发现全量基金，而不是长期依赖人工种子。
+
+场外基金只有每日单位净值，没有交易所 K 线里的开高低收和成交量。系统为了复用同一套趋势、MACD、图表墙和比较逻辑，会把单位净值映射为 `open/high/low/close = unit_nav`，`volume = 0`。这不是假数据，而是基金净值数据在 K 线模型中的统一表示。
+
+样例实测：
+
+```json
+[
+  {
+    "code": "005827",
+    "name": "易方达蓝筹精选混合",
+    "source": "eastmoney",
+    "latest": "2026-06-15",
+    "latestClose": 1.5427
+  },
+  {
+    "code": "161725",
+    "name": "招商中证白酒指数(LOF)",
+    "source": "eastmoney",
+    "latest": "2026-06-15",
+    "latestClose": 0.5386
+  },
+  {
+    "code": "320007",
+    "name": "诺安成长混合A",
+    "source": "eastmoney",
+    "latest": "2026-06-15",
+    "latestClose": 2.419
+  }
+]
+```
 
 ## 数据完整性
 
-当前运行态 API 验证：
+完整 smoke 使用临时本地库重新拉取真实数据，通过结果：
 
 ```json
 {
-  "assetCount": 71,
-  "barCount": 109012,
-  "dailyItems": 57,
-  "dailyMin": 1210,
-  "monthlyItems": 57,
-  "monthlyMin": 44,
-  "monthlyMax": 61,
-  "m15Items": 57
+  "status": "passed",
+  "sources": ["yahoo", "eastmoney"],
+  "assetCount": 131,
+  "barCount": 161639,
+  "chartWallItems": 111,
+  "fundItems": 69,
+  "commodityItems": 12,
+  "mutualFundBars": 365,
+  "rawFileCount": 312,
+  "databaseSizeBytes": 58974208
 }
 ```
 
-本地落盘：
+按数据源：
 
-```text
-raw files: 228
-sqlite size: 37M
+```json
+[
+  { "source": "yahoo", "count": 128375 },
+  { "source": "eastmoney", "count": 33264 }
+]
+```
+
+按周期：
+
+```json
+[
+  { "timeframe": "15m", "count": 14795 },
+  { "timeframe": "1d", "count": 117217 },
+  { "timeframe": "1h", "count": 14795 },
+  { "timeframe": "4h", "count": 14832 }
+]
 ```
 
 覆盖市场：
 
 ```json
-["A 股", "美股", "商品", "宏观", "外汇", "债券", "港股", "加密"]
+["美股", "基金", "A 股", "商品", "宏观", "外汇", "债券", "港股", "加密"]
 ```
 
 覆盖资产类型：
 
 ```json
-["index", "commodity", "equity", "macro", "crypto"]
-```
-
-覆盖层级：
-
-```json
-["sector-index", "broad-index", "instrument", "company", "macro-indicator", "theme-basket"]
+["fund", "commodity", "index", "equity", "macro", "crypto"]
 ```
 
 ## 功能完整性验收
 
-| 设计功能 | 验收结果 | 证据 |
+| 功能 | 结果 | 证据 |
 | --- | --- | --- |
-| 真实数据优先，无假行情 | 通过 | `pnpm smoke` 拉取真实 Yahoo 数据，57 个可展示资产，109161 条 K 线 |
-| 多图同屏图表墙 | 通过 | 浏览器显示 57 张图表卡 |
-| 多市场筛选 | 通过 | A 股筛选返回 12 张卡，且全部为 A 股 |
-| 多品种覆盖 | 通过 | index / equity / commodity / macro / crypto 全部出现 |
-| 多层级覆盖 | 通过 | 宽基、行业、主题、公司、工具/合约、宏观指标全部出现 |
-| 多周期走势 | 通过 | 15m / 1H / 4H / 1D / 1W / 1M 均通过 smoke 或浏览器验证 |
-| 1M/3M/6M/1Y/3Y/5Y 区间 | 通过 | 5Y 月线浏览器验证为 57 个资产，月线 44-61 点 |
-| MACD/均线指标 | 通过 | 图表卡和详情页返回 indicators，3M NVDA 指标不少于 60 条 |
-| 机会扫描 | 通过 | 浏览器机会扫描页显示 21 行事件 |
-| 资产宇宙树 | 通过 | 浏览器资产宇宙页显示 14 个节点卡；API 顶层节点 6 个 |
-| 单资产详情 | 通过 | 资产详情页展示价格、收益、趋势分、信号解释、相关资产 |
-| 自选图表墙 | 通过 | Watchlist API 添加 `us-nvda` 后返回 1 个自选资产 |
-| Compare 多资产对比 | 通过 | Compare API 返回 4 个资产；浏览器对比面板显示 2 张图 |
-| 数据源与任务状态 | 通过 | 数据状态页显示 4 个数据卡、3 个 provider 卡 |
-| 本地 SQLite 存储 | 通过 | SQLite 109012 条 K 线，37M |
-| Raw 原始数据落盘 | 通过 | raw JSONL 文件 228 个 |
-| 后端 package-first | 通过 | 核心运行时在 `packages/local-runtime`，入口为 `apps/local-shell` 薄壳 |
-
-## API 验收
-
-已实现并验证：
-
-```text
-GET /api/universe/tree
-GET /api/assets?parentId=:assetId
-GET /api/assets/:assetId
-GET /api/assets/:assetId/bars?timeframe=1d&range=1y
-GET /api/assets/:assetId/indicators?timeframe=1d&range=1y
-GET /api/chart-wall?universe=global&level=all&timeframe=1d&range=1y&sort=trend_score
-GET /api/scanner/events?universe=global&eventType=all
-GET /api/compare?assetIds=us-nvda,cn-csi300,cmd-gold,btcusdt&timeframe=1d&range=6m
-GET /api/watchlists
-POST /api/watchlists
-POST /api/watchlists/:watchlistId/assets
-DELETE /api/watchlists/:watchlistId/assets/:assetId
-GET /api/data-health
-POST /api/refresh
-```
+| 真实数据优先，无假行情 | 通过 | smoke 重新拉取 Yahoo + Eastmoney，共 161,685 条 bars |
+| 场外基金净值 | 通过 | Eastmoney 44 只基金、33,264 条净值 bars |
+| 基金/ETF 图表墙 | 通过 | `assetType=fund` 返回 69 个基金/ETF |
+| 多图同屏图表墙 | 通过 | 全市场图表墙返回 111 个可展示资产 |
+| 多市场筛选 | 通过 | A 股筛选返回 12 个资产，商品筛选返回 12 个资产 |
+| 多品种覆盖 | 通过 | fund / commodity / index / equity / macro / crypto 全部出现 |
+| 多层级覆盖 | 通过 | 宽基、行业、主题、公司、工具/合约、宏观指标均覆盖 |
+| 多周期走势 | 通过 | 15m / 1H / 4H / 1D / 1W / 1M 均通过 smoke |
+| 1M/3M/6M/1Y/3Y/5Y 区间 | 通过 | 周线/月线 API 返回 111 个资产 |
+| MACD 指标 | 通过 | chart wall item 返回 indicators，详情页展示 DIF/DEA，卡片只展示 histogram |
+| MACD 对齐 | 通过 | 技术图使用同一个 SVG、同一套 x 轴映射价格与 MACD |
+| 坐标与时间刻度 | 通过 | 技术图和 sparkline 均显示价格范围与起止时间 |
+| hover 明细 | 通过 | hover tooltip 展示日期、收盘价、Hist、DIF、DEA |
+| 名称主次 | 通过 | 卡片、表格、详情均以名称为主，代码/编号为辅 |
+| React Router | 通过 | `/chart-wall`、`/universe`、`/scanner`、`/watchlist`、`/data-health`、`/assets/:assetId` |
+| URL 查询态 | 通过 | `range/timeframe/market/assetType/level/sort/signal/view/q` 写入 URL |
+| 根目录清理 | 通过 | 前端源码位于 `apps/web-shell/src`，根目录无废弃 `src` |
+| 后端 package-first | 通过 | 核心 runtime 位于 `packages/local-runtime`，`apps/local-shell` 只是薄入口 |
+| 本地 SQLite | 通过 | smoke SQLite 文件 59,150,336 bytes |
+| Raw JSONL | 通过 | smoke 产生 312 个 raw 文件 |
+| 资产宇宙树 | 通过 | API 返回资产类和市场层级节点 |
+| 机会扫描 | 通过 | scanner events endpoint 返回结构化事件数组 |
+| 自选图表墙 | 通过 | watchlist add/remove 与 pinned signal filter 通过 |
+| Compare 多资产对比 | 通过 | compare API 返回 4 个资产 |
+| 数据健康页 | 通过 | 展示 source/timeframe/provider/job 状态 |
+| 同步任务状态 | 通过 | health 返回 running/success 最新任务，不再运行中显示空 |
+| 冷启动性能 | 通过 | ingestion 改为 4 路有限并发，完整 smoke 在 420 秒预算内通过 |
+| 刷新接口 | 通过 | `POST /api/refresh` 完成后更新 lastIngestionAt |
+| source facet | 通过 | chart wall sources 同时包含 `yahoo` 和 `eastmoney` |
+| signal facet | 通过 | 强趋势、偏弱、涨跌、MACD、突破、放量、自选均有 facet |
 
 ## 自动化验收
 
@@ -114,84 +155,130 @@ pnpm smoke
 ```json
 {
   "status": "passed",
-  "sources": ["yahoo"],
-  "assetCount": 71,
-  "barCount": 109161,
-  "chartWallItems": 57,
-  "markets": ["A 股", "美股", "商品", "宏观", "外汇", "债券", "港股", "加密"],
-  "assetTypes": ["index", "commodity", "equity", "macro", "crypto"],
-  "levels": ["sector-index", "broad-index", "instrument", "company", "macro-indicator", "theme-basket"],
+  "sources": ["yahoo", "eastmoney"],
+  "assetCount": 131,
+  "barCount": 161639,
+  "chartWallItems": 111,
+  "fundItems": 69,
+  "commodityItems": 12,
+  "mutualFundBars": 365,
+  "markets": ["美股", "基金", "A 股", "商品", "宏观", "外汇", "债券", "港股", "加密"],
+  "assetTypes": ["fund", "commodity", "index", "equity", "macro", "crypto"],
+  "levels": ["sector-index", "instrument", "broad-index", "company", "macro-indicator", "theme-basket"],
+  "rawFileCount": 312,
+  "databaseSizeBytes": 58974208,
   "aShareItems": 12,
-  "weeklyItems": 57,
-  "monthlyItems": 57,
-  "fifteenMinuteItems": 57,
-  "oneHourItems": 57,
-  "fourHourItems": 57,
+  "weeklyItems": 111,
+  "monthlyItems": 111,
+  "fifteenMinuteItems": 67,
+  "oneHourItems": 67,
+  "fourHourItems": 67,
   "compareAssets": 4,
   "watchlistAssets": 1,
-  "latestBarAt": "2026-06-16T02:11:50.000Z",
-  "lastIngestionAt": "2026-06-16T02:11:56.031Z"
+  "latestBarAt": "2026-06-16T14:12:19.000Z",
+  "lastIngestionAt": "2026-06-16T14:12:22.912Z"
 }
 ```
 
 ## 浏览器验收
 
-全市场图表墙：
+本地服务：
+
+```text
+Frontend: http://127.0.0.1:5193/
+Runtime:  http://127.0.0.1:3193/
+```
+
+基金图表墙页面：
 
 ```json
 {
+  "url": "http://127.0.0.1:5193/chart-wall?market=基金&assetType=fund&view=grid&range=6m&timeframe=1d",
   "title": "全市场图表墙",
-  "cards": 57,
-  "summary": ["71", "109,012", "06/16 10:06", "06/16 10:06"],
-  "hasError": false
+  "cards": 44,
+  "samples": [
+    { "name": "创金合信专精特新股票发起A", "symbol": "014736", "source": "eastmoney" },
+    { "name": "广发全球精选股票(QDII)人民币A", "symbol": "270023", "source": "eastmoney" },
+    { "name": "交银精选混合", "symbol": "519688", "source": "eastmoney" }
+  ],
+  "cardTechnicalChart": {
+    "paths": 1,
+    "histogramBars": 186,
+    "axisTexts": ["3.281", "1.425", "MACD", "09-03", "06-15"]
+  }
 }
 ```
 
-6 个一级视图：
+数据健康页：
 
 ```json
 {
-  "universe": { "title": "资产宇宙", "universeCards": 14, "hasError": false },
-  "scanner": { "title": "机会扫描", "scannerRows": 21, "hasError": false },
-  "detail": { "title": "单资产详情", "chartCards": 8, "hasError": false },
-  "watchlist": { "title": "自选图表墙", "hasError": false },
-  "dataHealth": { "title": "数据源与任务状态", "dataCards": 4, "providerCards": 3, "hasError": false },
-  "chartWall": { "title": "全市场图表墙", "chartCards": 57, "hasError": false }
+  "title": "数据源与任务状态",
+  "providerCards": 4,
+  "eastmoneyProvider": "东方财富基金 active 44 个资产",
+  "barsBySource": {
+    "yahoo": 128615,
+    "eastmoney": 36016
+  },
+  "job": "成功 / 06/16 22:05"
 }
 ```
 
-A 股筛选：
+基金详情页：
 
 ```json
 {
-  "cards": 12,
-  "hasError": false,
-  "sample": [
-    "512480.SS 半导体 ETF",
-    "399001.SZ 深证成指",
-    "300750.SZ 宁德时代"
-  ]
+  "url": "http://127.0.0.1:5193/assets/fund-cn-005827?range=1y&timeframe=1d",
+  "title": "单资产详情",
+  "asset": "易方达蓝筹精选混合 / 005827",
+  "technicalChart": {
+    "paths": 3,
+    "histogramBars": 365,
+    "axisTexts": ["2.077", "1.543", "MACD", "12-10", "06-15"]
+  }
 }
 ```
 
-5Y 月线：
+浏览器没有新的 error。开发期仅有 React Router v7 future flag warning，不影响当前功能。
 
-```json
-{
-  "cards": 57,
-  "text": "5Y / 1mo / 57 个资产",
-  "hasError": false
-}
-```
+## 本轮关键优化点
 
-浏览器控制台错误：
+1. 引入 `fund` 资产类型，基金不再混在 index/equity 里。
+2. 接入东方财富 F10 场外基金历史净值。
+3. 扩展 44 只常见场外基金种子。
+4. 扩展 25 个 ETF/可交易基金。
+5. 场外基金只抓 1d，避免伪造分钟级净值。
+6. 基金净值映射为统一 OHLCV 模型。
+7. chart wall 增加 source、dataPointCount、first/latest bar。
+8. chart wall 增加 1D/1W/1M/3M/6M/1Y 固定窗口收益。
+9. chart wall 增加 drawdown、volumeRatio、MA、MACD、RSI。
+10. 增加 summary 和 facets。
+11. 增加 signal filter。
+12. 增加 return、volume、drawdown、event、market、asset type 等排序。
+13. 左侧导航改为 React Router NavLink。
+14. 页面状态进入 URL query。
+15. 前端源码迁移到 `apps/web-shell/src`。
+16. 后端核心放在 package，入口保持薄壳。
+17. API 启动和后台 refresh 解耦。
+18. ingestion 增加并发保护。
+19. ingestion 改为 4 路有限并发。
+20. health 能展示 running job。
+21. data health 增加 raw/db/timeframe/source/provider/job。
+22. 卡片名称主、代码辅。
+23. 表格名称主、代码辅。
+24. 技术图价格与 MACD 共用 x 轴。
+25. 卡片 MACD 只展示 histogram，避免 DIF/DEA 压缩柱体。
+26. 详情页保留 DIF/DEA。
+27. MACD 正红负绿并显示零轴。
+28. 图表加入坐标和时间刻度。
+29. hover tooltip 展示具体点位数据。
+30. smoke 增加 Eastmoney 和 fund 断言。
+31. smoke readiness 等待真实数据源完整落库。
+32. smoke 等待预算调整为真实网络数据量可接受的 420 秒。
 
-```json
-[]
-```
+## 已知边界
 
-## 说明
-
-- 当前必跑真实数据源为 Yahoo Finance chart endpoint；Binance provider 和 FRED provider 保留在 adapter 层，但不作为完整 smoke 的必成功依赖，避免外部连接超时或 504 阻塞本地产品验收。
-- 宏观指标采用可真实获取的市场代理：美债 ETF、10Y 利率、VIX、美元指数、主要外汇对。
-- 本产品是投研辅助工具，界面和事件文案只表达“触发信号/值得研究/风险提示”，不构成投资建议。
+- 当前 44 只场外基金是代表性种子，不是全量基金宇宙。终态需要自动同步基金列表、分类、规模、评级、基金经理、持仓、费率等元数据。
+- 东方财富场外基金当前每只抓约 756 条日净值，适合 1Y 日线和 3Y/月线观察；更长历史应做懒加载或后台增量。
+- 场外基金没有成交量，volume-based signal 对这类资产天然不适用，应在后续 UI 中按资产类型隐藏或降权。
+- 当前产品是投研辅助工具，只展示趋势和信号，不构成投资建议。

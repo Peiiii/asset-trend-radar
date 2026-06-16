@@ -33,7 +33,7 @@ const waitForRuntime = async () => {
   const startedAt = Date.now();
   let lastError = null;
 
-  while (Date.now() - startedAt < 240000) {
+  while (Date.now() - startedAt < 420000) {
     try {
       const health = await fetchJson("/api/data-health");
       const hasDailyBars = health.barsByTimeframe?.some((row) => row.timeframe === "1d" && row.count >= 80 * 1000);

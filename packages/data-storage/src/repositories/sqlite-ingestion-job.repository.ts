@@ -19,6 +19,19 @@ export class SqliteIngestionJobRepository {
       .run(status, Date.now(), errorMessage, id);
   };
 
+  public getLatestJob = (): IngestionJobSummary | null => {
+    const row = this.database
+      .prepare(
+        `SELECT id, vendor, dataset, status, started_at, finished_at, error_message
+         FROM ingestion_jobs
+         ORDER BY started_at DESC
+         LIMIT 1`
+      )
+      .get();
+
+    return this.toSummary(row);
+  };
+
   public getLatestFinishedJob = (): IngestionJobSummary | null => {
     const row = this.database
       .prepare(
@@ -30,6 +43,10 @@ export class SqliteIngestionJobRepository {
       )
       .get();
 
+    return this.toSummary(row);
+  };
+
+  private toSummary = (row: unknown): IngestionJobSummary | null => {
     if (!row) {
       return null;
     }

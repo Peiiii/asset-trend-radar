@@ -834,6 +834,7 @@ function ComparePanel({
 
 function DataHealthSection({ data }: { data: ChartWallPageData }): JSX.Element {
   const latestJob = data.dataHealth.latestJob ?? null;
+  const latestJobTime = latestJob?.finishedAt ?? latestJob?.startedAt ?? null;
   const rawFileCount = data.dataHealth.rawFileCount ?? 0;
   const databaseSizeBytes = data.dataHealth.databaseSizeBytes ?? 0;
   const barsByTimeframe = data.dataHealth.barsByTimeframe ?? [];
@@ -847,8 +848,8 @@ function DataHealthSection({ data }: { data: ChartWallPageData }): JSX.Element {
         <DataHealthCard label="Raw" value={data.dataHealth.rawDataPath} />
         <DataHealthCard label="数据库大小" value={formatBytes(databaseSizeBytes)} />
         <DataHealthCard label="Raw 文件数" value={rawFileCount.toLocaleString("en-US")} />
-        <DataHealthCard label="Latest job" value={latestJob ? `${latestJob.status} / ${formatDateTime(latestJob.finishedAt)}` : "暂无"} />
-        <DataHealthCard label="Job error" value={latestJob?.errorMessage ?? "无"} />
+        <DataHealthCard label="同步任务" value={latestJob ? `${jobStatusLabel(latestJob.status)} / ${formatDateTime(latestJobTime)}` : "暂无"} />
+        <DataHealthCard label="任务错误" value={latestJob?.errorMessage ?? "无"} />
       </div>
       <div className="provider-grid">
         {data.dataHealth.providers.map((provider) => (
@@ -867,6 +868,22 @@ function DataHealthSection({ data }: { data: ChartWallPageData }): JSX.Element {
       <ExchangeTable items={data.chartWall.items} sort={data.chartWall.sort} onSort={() => undefined} onSelect={() => undefined} onPin={() => undefined} onCompare={() => undefined} />
     </section>
   );
+}
+
+function jobStatusLabel(status: string): string {
+  if (status === "running") {
+    return "同步中";
+  }
+
+  if (status === "success") {
+    return "成功";
+  }
+
+  if (status === "failed") {
+    return "失败";
+  }
+
+  return status;
 }
 
 function DataHealthCard({ label, value }: { label: string; value: string }): JSX.Element {

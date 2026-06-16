@@ -85,6 +85,7 @@ export class ChartWallQueryService {
   };
 
   public getDataHealth = (): DataHealthResponse => {
+    const latestJob = this.ingestionJobRepository.getLatestJob();
     const latestFinishedJob = this.ingestionJobRepository.getLatestFinishedJob();
 
     return {
@@ -98,15 +99,15 @@ export class ChartWallQueryService {
       lastIngestionAt: toIsoDateTime(latestFinishedJob?.finishedAt ?? null),
       barsByTimeframe: this.marketDataRepository.countBarsByTimeframe(),
       barsBySource: this.marketDataRepository.countBarsBySource(),
-      latestJob: latestFinishedJob
+      latestJob: latestJob
         ? {
-            id: latestFinishedJob.id,
-            vendor: latestFinishedJob.vendor,
-            dataset: latestFinishedJob.dataset,
-            status: latestFinishedJob.status,
-            startedAt: toIsoDateTime(latestFinishedJob.startedAt),
-            finishedAt: toIsoDateTime(latestFinishedJob.finishedAt),
-            errorMessage: latestFinishedJob.errorMessage
+            id: latestJob.id,
+            vendor: latestJob.vendor,
+            dataset: latestJob.dataset,
+            status: latestJob.status,
+            startedAt: toIsoDateTime(latestJob.startedAt),
+            finishedAt: toIsoDateTime(latestJob.finishedAt),
+            errorMessage: latestJob.errorMessage
           }
         : null,
       providers: this.getProviderHealth()
