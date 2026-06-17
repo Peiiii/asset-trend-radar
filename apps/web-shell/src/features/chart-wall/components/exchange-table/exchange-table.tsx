@@ -39,6 +39,7 @@ const sortLabels: Record<string, string> = {
   symbol: "资产",
   market: "市场",
   asset_type: "品种",
+  return: "区间涨幅",
   return_1d: "1D 涨幅",
   return_1m: "1M 涨幅",
   return_3m: "3M 涨幅",
@@ -97,6 +98,7 @@ export function ExchangeTable({ items, sort, order, onSort, onSelect, onPin, onC
               <SortableHeader label="品种" sortValue="asset_type" currentSort={sort} order={order} onSort={handleSort} />
               <th>最新价</th>
               {showValuationColumn && <SortableHeader label="市值" sortValue="market_cap" currentSort={sort} order={order} onSort={handleSort} />}
+              <SortableHeader label="区间" sortValue="return" currentSort={sort} order={order} onSort={handleSort} />
               <SortableHeader label="1D" sortValue="return_1d" currentSort={sort} order={order} onSort={handleSort} />
               <SortableHeader label="1M" sortValue="return_1m" currentSort={sort} order={order} onSort={handleSort} />
               <SortableHeader label="3M" sortValue="return_3m" currentSort={sort} order={order} onSort={handleSort} />
@@ -136,6 +138,7 @@ function ExchangeTableRow({ rank, item, sort, showValuationColumn, onSelect, onP
       <td className={activeSortCellClassName(sort === "asset_type")}><SignalBadge label={assetTypeLabel(item.assetType)} tone="blue" /></td>
       <td className="exchange-table__price">{formatPrice(item.lastPrice, item.currency)}</td>
       {showValuationColumn && <ValuationCell item={item} active={sort === "market_cap"} />}
+      <MetricCell active={sort === "return"}><PriceChange value={item.returnPct} /></MetricCell>
       <MetricCell active={sort === "return_1d"}><PriceChange value={item.return1d} /></MetricCell>
       <MetricCell active={sort === "return_1m"}><PriceChange value={item.return1m} /></MetricCell>
       <MetricCell active={sort === "return_3m"}><PriceChange value={item.return3m} /></MetricCell>
