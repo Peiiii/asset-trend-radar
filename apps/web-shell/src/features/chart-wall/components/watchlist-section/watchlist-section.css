@@ -2,6 +2,10 @@
   gap: 14px;
 }
 
+.watchlist-section__show-all {
+  gap: 6px;
+}
+
 .watchlist-summary-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -10,6 +14,7 @@
 
 .watchlist-summary-card,
 .watchlist-events,
+.watchlist-filter-recovery,
 .watchlist-table-wrapper {
   border: 1px solid #d7dde7;
   border-radius: 8px;
@@ -60,6 +65,24 @@
   color: #687386;
   font-size: 12px;
   font-weight: 800;
+}
+
+.watchlist-filter-recovery {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 16px;
+}
+
+.watchlist-filter-recovery .gi-empty-state {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.watchlist-filter-recovery .gi-button {
+  gap: 6px;
 }
 
 .watchlist-events {

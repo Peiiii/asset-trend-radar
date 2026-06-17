@@ -1,4 +1,4 @@
-import { GitCompare, PinOff } from "lucide-react";
+import { FilterX, GitCompare, PinOff } from "lucide-react";
 import { Button, EmptyState, PriceChange, SignalBadge } from "@gold-insights/ui";
 import type { ChartWallItem, WatchlistSummary } from "@gold-insights/market-domain";
 import { AssetChartCard } from "../asset-chart-card";
@@ -17,13 +17,15 @@ type WatchlistSectionProps = {
   onSelect(assetId: string): void;
   onCompare(assetId: string): void;
   onRemove(assetId: string): void;
+  onShowAll(): void;
 };
 
-export function WatchlistSection({ watchlists, chartItems, onSelect, onCompare, onRemove }: WatchlistSectionProps): JSX.Element {
+export function WatchlistSection({ watchlists, chartItems, onSelect, onCompare, onRemove, onShowAll }: WatchlistSectionProps): JSX.Element {
   const watchlistAssetIds = getWatchlistAssetIds(watchlists);
   const items = getWatchlistItems(chartItems, watchlistAssetIds);
   const summary = buildWatchlistSummary(items, watchlistAssetIds.size);
   const events = getTopWatchlistEvents(items);
+  const hasHiddenItems = summary.hiddenByFilters > 0;
 
   return (
     <section className="single-view-section watchlist-section">
@@ -32,6 +34,12 @@ export function WatchlistSection({ watchlists, chartItems, onSelect, onCompare, 
           <h2>自选图表墙</h2>
           <p>{`${summary.visibleItems}/${summary.totalPinned} 个自选资产在当前筛选下可见`}</p>
         </div>
+        {hasHiddenItems && (
+          <Button type="button" variant="ghost" className="watchlist-section__show-all" onClick={onShowAll}>
+            <FilterX size={15} aria-hidden="true" />
+            显示全部自选
+          </Button>
+        )}
       </div>
 
       {summary.totalPinned === 0 ? (
@@ -53,7 +61,13 @@ export function WatchlistSection({ watchlists, chartItems, onSelect, onCompare, 
           </div>
 
           {items.length === 0 ? (
-            <EmptyState title="当前筛选下没有自选资产" description="自选资产存在，但被当前市场、品种、层级或搜索条件过滤掉了。" />
+            <div className="watchlist-filter-recovery">
+              <EmptyState title="当前筛选下没有自选资产" description="自选资产存在，但被当前市场、品种、层级或搜索条件过滤掉了。" />
+              <Button type="button" onClick={onShowAll}>
+                <FilterX size={15} aria-hidden="true" />
+                显示全部自选
+              </Button>
+            </div>
           ) : (
             <>
               {events.length > 0 && (

@@ -504,6 +504,7 @@ export function ChartWallPage(): JSX.Element {
               onRemove={(assetId) => {
                 void chartWallApiService.removeWatchlistAsset(assetId).then(() => reload());
               }}
+              onShowAll={resetFilters}
             />
           )}
 
