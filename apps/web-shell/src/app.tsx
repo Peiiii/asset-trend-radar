@@ -8,6 +8,8 @@ export default function App(): JSX.Element {
         <Route path="/" element={<Navigate to="/overview" replace />} />
         <Route path="/overview" element={<ChartWallPage />} />
         <Route path="/chart-wall" element={<ChartWallPage />} />
+        <Route path="/directories/funds" element={<ChartWallPage />} />
+        <Route path="/directories/crypto" element={<ChartWallPage />} />
         <Route path="/funds" element={<ChartWallPage />} />
         <Route path="/universe" element={<ChartWallPage />} />
         <Route path="/scanner" element={<ChartWallPage />} />

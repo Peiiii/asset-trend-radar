@@ -1,5 +1,6 @@
 import { ExternalLink, Plus, RefreshCcw } from "lucide-react";
 import type { FundCatalogPageItem, FundCatalogSortKey } from "@gold-insights/market-domain";
+import { DirectoryReturnPill } from "./directory-table/directory-return-pill";
 import "./fund-directory-active-sort.css";
 
 type FundDirectoryRowProps = {
@@ -68,19 +69,13 @@ export function FundDirectoryRow({ item, importingCode, sort, onImport, onSelect
 }
 
 function FundPercentCell({ value, active }: { value: number | null; active: boolean }): JSX.Element {
-  const tone = value === null ? "neutral" : value >= 0 ? "positive" : "negative";
-  const strength = value === null ? "neutral" : Math.abs(value) >= 10 ? "strong" : Math.abs(value) >= 3 ? "medium" : "soft";
   return (
     <td className={activeSortCellClassName(active)}>
-      <span className={`fund-return-pill fund-return-pill--${tone} fund-return-pill--${strength}`}>{formatPercent(value)}</span>
+      <DirectoryReturnPill value={value} />
     </td>
   );
 }
 
 function activeSortCellClassName(active: boolean): string | undefined {
   return active ? "fund-directory-cell--active-sort" : undefined;
-}
-
-function formatPercent(value: number | null): string {
-  return value === null ? "暂无快照" : `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
 }

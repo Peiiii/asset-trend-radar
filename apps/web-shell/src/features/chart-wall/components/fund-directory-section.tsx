@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, RefreshCcw, Search } from "lucide-react";
-import { Button, EmptyState, ErrorState, LoadingState, Select, useTableScrollShadows } from "@gold-insights/ui";
+import { Button, DataTableFrame, EmptyState, ErrorState, LoadingState, Select } from "@gold-insights/ui";
 import type { ControlOption } from "@gold-insights/ui";
 import type { FundCatalogImportStatus, FundCatalogPageResponse, FundCatalogSortKey, SortOrder } from "@gold-insights/market-domain";
 import { formatDateTime } from "@/shared/utils/format-number.utils";
@@ -61,17 +61,10 @@ export function FundDirectorySection({
   const toIndex = Math.min(page * limit, totalCount);
   const fundTypeOptions = useMemo<ControlOption[]>(() => createFundTypeOptions(data, fundType), [data, fundType]);
   const statusOptions = useMemo<ControlOption[]>(() => createStatusOptions(data), [data]);
-  const tableScroll = useTableScrollShadows(data?.items.length ?? 0);
 
   useEffect(() => {
     setDraftKeyword(keyword);
   }, [keyword]);
-
-  const tableWrapperClassName = [
-    "fund-directory-table-wrapper",
-    tableScroll.canScrollLeft ? "fund-directory-table-wrapper--left-shadow" : "",
-    tableScroll.canScrollRight ? "fund-directory-table-wrapper--right-shadow" : ""
-  ].filter(Boolean).join(" ");
 
   return (
     <section className="single-view-section fund-directory-section">
@@ -132,30 +125,28 @@ export function FundDirectorySection({
           {data.items.length === 0 ? (
             <EmptyState title="没有匹配基金" description="换一个关键词、类型或入库状态试试。" />
           ) : (
-            <div ref={tableScroll.tableWrapperRef} className={tableWrapperClassName} onScroll={tableScroll.updateScrollEdges}>
-              <table>
-                <thead>
-                  <tr>
-                    <SortableFundHeader label="基金" sortValue="name" currentSort={sort} order={order} onSort={onSortChange} />
-                    <th>类型</th>
-                    <th>状态</th>
-                    <SortableFundHeader label="最新净值" sortValue="latest_nav" currentSort={sort} order={order} onSort={onSortChange} />
-                    <SortableFundHeader label="1D" sortValue="return_1d" currentSort={sort} order={order} onSort={onSortChange} />
-                    <SortableFundHeader label="1M" sortValue="return_1m" currentSort={sort} order={order} onSort={onSortChange} />
-                    <SortableFundHeader label="3M" sortValue="return_3m" currentSort={sort} order={order} onSort={onSortChange} />
-                    <SortableFundHeader label="6M" sortValue="return_6m" currentSort={sort} order={order} onSort={onSortChange} />
-                    <SortableFundHeader label="1Y" sortValue="return_1y" currentSort={sort} order={order} onSort={onSortChange} />
-                    <SortableFundHeader label="数据点" sortValue="data_point_count" currentSort={sort} order={order} onSort={onSortChange} />
-                    <th>操作</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.items.map((item) => (
-                    <FundDirectoryRow key={item.code} item={item} importingCode={importingCode} sort={sort} onImport={onImport} onSelectAsset={onSelectAsset} />
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <DataTableFrame rowCount={data.items.length} className="fund-directory-table-wrapper" minWidth={1220} firstColumnMinWidth={274} lastColumnMinWidth={206}>
+              <thead>
+                <tr>
+                  <SortableFundHeader label="基金" sortValue="name" currentSort={sort} order={order} onSort={onSortChange} />
+                  <th>类型</th>
+                  <th>状态</th>
+                  <SortableFundHeader label="最新净值" sortValue="latest_nav" currentSort={sort} order={order} onSort={onSortChange} />
+                  <SortableFundHeader label="1D" sortValue="return_1d" currentSort={sort} order={order} onSort={onSortChange} />
+                  <SortableFundHeader label="1M" sortValue="return_1m" currentSort={sort} order={order} onSort={onSortChange} />
+                  <SortableFundHeader label="3M" sortValue="return_3m" currentSort={sort} order={order} onSort={onSortChange} />
+                  <SortableFundHeader label="6M" sortValue="return_6m" currentSort={sort} order={order} onSort={onSortChange} />
+                  <SortableFundHeader label="1Y" sortValue="return_1y" currentSort={sort} order={order} onSort={onSortChange} />
+                  <SortableFundHeader label="数据" sortValue="data_point_count" currentSort={sort} order={order} onSort={onSortChange} />
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.items.map((item) => (
+                  <FundDirectoryRow key={item.code} item={item} importingCode={importingCode} sort={sort} onImport={onImport} onSelectAsset={onSelectAsset} />
+                ))}
+              </tbody>
+            </DataTableFrame>
           )}
 
           <div className="fund-directory-pagination">

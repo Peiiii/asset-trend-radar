@@ -1,0 +1,119 @@
+.asset-directory-section {
+  display: grid;
+  gap: 14px;
+}
+
+.asset-directory-hero,
+.asset-directory-result-bar {
+  display: flex;
+  align-items: center;
+}
+
+.asset-directory-hero {
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px;
+  border: 1px solid #d7dde7;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.asset-directory-hero p {
+  max-width: 680px;
+  margin: 6px 0 0;
+  color: #5f6d7f;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.asset-directory-hero__metrics,
+.asset-directory-result-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.asset-directory-hero__metrics span,
+.asset-directory-result-bar span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 26px;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: #eef3f8;
+  color: #516077;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.asset-directory-result-bar {
+  justify-content: space-between;
+}
+
+.asset-directory-identity {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.asset-directory-identity:hover strong,
+.asset-directory-identity:focus-visible strong {
+  color: #1f6f5f;
+}
+
+.asset-directory-identity:focus-visible {
+  outline: 2px solid #8fc9bd;
+  outline-offset: 2px;
+}
+
+.asset-directory-identity strong,
+.asset-directory-identity small {
+  display: block;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.asset-directory-identity small {
+  color: #687386;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.asset-directory-type-stack,
+.asset-directory-data-stack {
+  display: inline-grid;
+  gap: 5px;
+}
+
+.asset-directory-type-stack small,
+.asset-directory-data-stack small {
+  color: #687386;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.asset-directory-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.asset-directory-actions .gi-button {
+  gap: 5px;
+}
+
+@media (max-width: 760px) {
+  .asset-directory-hero,
+  .asset-directory-result-bar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

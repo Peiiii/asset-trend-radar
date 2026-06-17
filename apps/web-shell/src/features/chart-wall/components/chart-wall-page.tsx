@@ -2,8 +2,10 @@ import {
   Activity,
   ArrowLeft,
   BarChart3,
+  Bitcoin,
   BookOpen,
   Database,
+  FolderOpen,
   Gauge,
   LineChart,
   ListChecks,
@@ -24,6 +26,7 @@ import { formatDateTime } from "@/shared/utils/format-number.utils";
 import { assetTypeFallbackOptions, defaultFilters, levelFallbackOptions, marketFallbackOptions, signalFallbackOptions, sortOptions, sortOrderOptions, tagFallbackOptions } from "../configs/chart-wall-page.config";
 import { ActiveFilterChips } from "./active-filter-chips/active-filter-chips";
 import { AssetDetailSection } from "./asset-detail-section/asset-detail-section";
+import { AssetDirectorySection } from "./asset-directory-section/asset-directory-section";
 import { ChartGrid } from "./chart-grid/chart-grid";
 import { ComparePanel } from "./compare-panel/compare-panel";
 import { ChartWallControls, type ChartWallViewMode } from "./chart-wall-controls/chart-wall-controls";
@@ -48,12 +51,13 @@ import { useFundDirectoryUrlState } from "../hooks/use-fund-directory-url-state"
 import { useTaskActions } from "../hooks/use-task-actions";
 import { useTaskCenterQuery } from "../hooks/use-task-center-query";
 
-type ActiveView = "overview" | "chart-wall" | "fund-directory" | "universe" | "scanner" | "asset-detail" | "watchlist" | "tasks" | "data-health";
+type ActiveView = "overview" | "chart-wall" | "fund-directory" | "crypto-directory" | "universe" | "scanner" | "asset-detail" | "watchlist" | "tasks" | "data-health";
 
 const viewTitles: Record<ActiveView, string> = {
   overview: "全市场概览",
   "chart-wall": "全市场图表墙",
   "fund-directory": "基金目录",
+  "crypto-directory": "加密货币目录",
   universe: "资产宇宙",
   scanner: "机会扫描",
   "asset-detail": "资产详情",
@@ -87,6 +91,11 @@ export function ChartWallPage(): JSX.Element {
   const compareSelection = useCompareSelection(range, timeframe);
   const [importingFundCode, setImportingFundCode] = useState<string | null>(null);
   const [fundImportMessage, setFundImportMessage] = useState<string | null>(null);
+  const isAssetDirectoryView = activeView === "fund-directory" || activeView === "crypto-directory";
+  const effectiveMarket = activeView === "crypto-directory" ? "加密" : market;
+  const effectiveAssetType = activeView === "crypto-directory" ? "crypto" : assetType;
+  const effectiveSort = activeView === "crypto-directory" && !searchParams.has("sort") ? "return_1m" : sort;
+  const effectiveOrder = activeView === "crypto-directory" && !searchParams.has("order") ? "desc" : order;
 
   const setQueryValue = useCallback((name: string, value: string, fallback = ""): void => {
     const next = new URLSearchParams(searchParams);
@@ -129,14 +138,14 @@ export function ChartWallPage(): JSX.Element {
       timeframe,
       universe: "global",
       level,
-      market,
-      assetType,
+      market: effectiveMarket,
+      assetType: effectiveAssetType,
       tag,
-      sort,
-      order,
+      sort: effectiveSort,
+      order: effectiveOrder,
       signal
     }),
-    [assetType, level, market, order, range, signal, sort, tag, timeframe]
+    [effectiveAssetType, effectiveMarket, effectiveOrder, effectiveSort, level, range, signal, tag, timeframe]
   );
   const { data, error, isLoading, reload } = useChartWallQuery(filters);
   const fundDirectoryQuery = useFundDirectoryQuery(fundDirectory.filters, activeView === "fund-directory");
@@ -243,6 +252,8 @@ export function ChartWallPage(): JSX.Element {
   };
 
   const currentSearch = getSearchWithout(searchParams, ["from"]);
+  const fundDirectorySearch = getFundDirectorySearch(searchParams);
+  const cryptoDirectorySearch = getCryptoDirectorySearch(searchParams);
   const assetDetailReturnPath = getAssetDetailReturnPath(searchParams);
   const assetDetailReturnLabel = getAssetDetailReturnLabel(assetDetailReturnPath);
   const handleAssetDetailBack = (): void => {
@@ -274,9 +285,14 @@ export function ChartWallPage(): JSX.Element {
             <SidebarButton active={activeView === "chart-wall"} label="图表墙" title="全市场图表墙" to={`/chart-wall${currentSearch}`}>
               <BarChart3 size={18} aria-hidden="true" />
             </SidebarButton>
-            <SidebarButton active={activeView === "fund-directory"} label="基金目录" title="基金目录" to={`/funds${currentSearch}`}>
-              <BookOpen size={18} aria-hidden="true" />
-            </SidebarButton>
+            <SidebarGroup active={isAssetDirectoryView} label="资产目录" title="资产目录" icon={<FolderOpen size={18} aria-hidden="true" />}>
+              <SidebarButton active={activeView === "fund-directory"} label="基金目录" title="基金目录" to={`/directories/funds${fundDirectorySearch}`} level="child">
+                <BookOpen size={16} aria-hidden="true" />
+              </SidebarButton>
+              <SidebarButton active={activeView === "crypto-directory"} label="加密目录" title="加密货币目录" to={`/directories/crypto${cryptoDirectorySearch}`} level="child">
+                <Bitcoin size={16} aria-hidden="true" />
+              </SidebarButton>
+            </SidebarGroup>
             <SidebarButton active={activeView === "universe"} label="资产宇宙" title="资产宇宙" to={`/universe${currentSearch}`}>
               <Network size={18} aria-hidden="true" />
             </SidebarButton>
@@ -354,7 +370,7 @@ export function ChartWallPage(): JSX.Element {
             {isGlobalSyncing ? "刷新中" : "重新采集"}
           </Button>
         </section>
-      ) : activeView === "fund-directory" || activeView === "tasks" ? null : (
+      ) : isAssetDirectoryView || activeView === "tasks" ? null : (
         <>
           <ChartWallControls
             values={{ market, assetType, level, tag, signal, sort, order, range, timeframe, viewMode }}
@@ -450,6 +466,18 @@ export function ChartWallPage(): JSX.Element {
                 void handleFundCatalogSync();
               }}
               onSelectAsset={selectAsset}
+            />
+          )}
+
+          {activeView === "crypto-directory" && (
+            <AssetDirectorySection
+              title="加密货币目录"
+              description="当前展示真实已入库、可打开完整走势和指标的加密资产。后续接入交易所全量目录后，这里会扩展为轻量候选池，再按需加入走势池。"
+              items={filteredItems}
+              search={search}
+              statusLabel="真实已入库 / 走势池"
+              onSelect={selectAsset}
+              onCompare={compareSelection.toggleCompare}
             />
           )}
 
@@ -553,14 +581,43 @@ type SidebarButtonProps = {
   label: string;
   children: JSX.Element;
   to: string;
+  level?: "root" | "child";
 };
 
-function SidebarButton({ active, title, label, children, to }: SidebarButtonProps): JSX.Element {
+function SidebarButton({ active, title, label, children, to, level = "root" }: SidebarButtonProps): JSX.Element {
+  const className = [
+    "sidebar-nav__item",
+    level === "child" ? "sidebar-nav__item--child" : "",
+    active ? "sidebar-nav__item--active" : ""
+  ].filter(Boolean).join(" ");
+
   return (
-    <NavLink className={`sidebar-nav__item ${active ? "sidebar-nav__item--active" : ""}`} title={title} aria-current={active ? "page" : undefined} to={to}>
+    <NavLink className={className} title={title} aria-current={active ? "page" : undefined} to={to}>
       {children}
       <span>{label}</span>
     </NavLink>
+  );
+}
+
+type SidebarGroupProps = {
+  active: boolean;
+  title: string;
+  label: string;
+  icon: JSX.Element;
+  children: JSX.Element | JSX.Element[];
+};
+
+function SidebarGroup({ active, title, label, icon, children }: SidebarGroupProps): JSX.Element {
+  return (
+    <div className={`sidebar-nav__group ${active ? "sidebar-nav__group--active" : ""}`}>
+      <div className="sidebar-nav__group-header" title={title}>
+        {icon}
+        <span>{label}</span>
+      </div>
+      <div className="sidebar-nav__group-children">
+        {children}
+      </div>
+    </div>
   );
 }
 
@@ -603,8 +660,11 @@ function getActiveView(pathname: string): ActiveView {
   if (pathname.startsWith("/overview")) {
     return "overview";
   }
-  if (pathname.startsWith("/funds")) {
+  if (pathname.startsWith("/directories/funds") || pathname.startsWith("/funds")) {
     return "fund-directory";
+  }
+  if (pathname.startsWith("/directories/crypto")) {
+    return "crypto-directory";
   }
   if (pathname.startsWith("/universe")) {
     return "universe";
@@ -644,6 +704,14 @@ function getAssetDetailReturnLabel(path: string): string {
 
   if (path.startsWith("/funds")) {
     return "基金目录";
+  }
+
+  if (path.startsWith("/directories/funds")) {
+    return "基金目录";
+  }
+
+  if (path.startsWith("/directories/crypto")) {
+    return "加密目录";
   }
 
   if (path.startsWith("/universe")) {
@@ -690,7 +758,43 @@ function isSafeWorkspacePath(path: string): boolean {
     return false;
   }
 
-  return ["/overview", "/chart-wall", "/funds", "/universe", "/scanner", "/watchlist", "/tasks", "/data-health"].some((prefix) => path === prefix || path.startsWith(`${prefix}?`));
+  return ["/overview", "/chart-wall", "/directories/funds", "/directories/crypto", "/funds", "/universe", "/scanner", "/watchlist", "/tasks", "/data-health"].some((prefix) => path === prefix || path.startsWith(`${prefix}?`));
+}
+
+function getFundDirectorySearch(searchParams: URLSearchParams): string {
+  const next = new URLSearchParams();
+
+  for (const name of ["fundKeyword", "fundType", "fundStatus", "fundSort", "fundOrder", "fundPage"]) {
+    const value = searchParams.get(name);
+    if (value) {
+      next.set(name, value);
+    }
+  }
+
+  return toSearchString(next);
+}
+
+function getCryptoDirectorySearch(searchParams: URLSearchParams): string {
+  const next = new URLSearchParams();
+
+  for (const name of ["range", "timeframe", "q"]) {
+    const value = searchParams.get(name);
+    if (value) {
+      next.set(name, value);
+    }
+  }
+
+  next.set("market", "加密");
+  next.set("assetType", "crypto");
+  next.set("sort", "return_1m");
+  next.set("order", "desc");
+
+  return toSearchString(next);
+}
+
+function toSearchString(searchParams: URLSearchParams): string {
+  const value = searchParams.toString();
+  return value.length > 0 ? `?${value}` : "";
 }
 
 function getSearchValue(searchParams: URLSearchParams, name: string, fallback: string): string {

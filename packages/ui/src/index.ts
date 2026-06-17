@@ -1,6 +1,7 @@
 export { AppShell } from "./components/app-shell";
 export { Button } from "./components/button";
 export { ChartCardShell } from "./components/chart-card-shell";
+export { DataTableFrame } from "./components/data-table-frame/data-table-frame";
 export { EmptyState } from "./components/empty-state";
 export { ErrorState } from "./components/error-state";
 export { FilterChip } from "./components/filter-chip";

@@ -1,0 +1,45 @@
+.directory-return-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.directory-return-pill--positive {
+  background: #e9f8f2;
+  color: #14705d;
+}
+
+.directory-return-pill--negative {
+  background: #fff0f0;
+  color: #a43131;
+}
+
+.directory-return-pill--neutral {
+  background: #edf1f6;
+  color: #647287;
+}
+
+.directory-return-pill--positive.directory-return-pill--medium {
+  background: #d9f2e8;
+  color: #0f604f;
+}
+
+.directory-return-pill--positive.directory-return-pill--strong {
+  background: #1f6f5f;
+  color: #ffffff;
+}
+
+.directory-return-pill--negative.directory-return-pill--medium {
+  background: #fbdada;
+  color: #8f2525;
+}
+
+.directory-return-pill--negative.directory-return-pill--strong {
+  background: #a43131;
+  color: #ffffff;
+}
