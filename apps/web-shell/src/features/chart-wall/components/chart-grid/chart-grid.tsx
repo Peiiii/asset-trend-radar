@@ -1,7 +1,7 @@
 import { Button, EmptyState } from "@gold-insights/ui";
 import type { ChartWallItem, ChartWallSortOrder } from "@gold-insights/market-domain";
 import { AssetChartCard } from "../asset-chart-card";
-import { ChartGridRankSummary } from "./chart-grid-rank-summary";
+import { RankingQualitySummary } from "../ranking-quality-summary/ranking-quality-summary";
 import "./chart-grid.css";
 
 type ChartGridProps = {
@@ -28,7 +28,7 @@ export function ChartGrid({ items, sort, order, onSelect, onPin, onCompare, onRe
 
   return (
     <>
-      <ChartGridRankSummary items={items} sort={sort} order={order} />
+      <RankingQualitySummary items={items} sort={sort} order={order} />
       <div className="chart-wall-grid">
         {items.map((item, index) => (
           <AssetChartCard key={item.id} item={item} sort={sort} rank={index + 1} onSelect={onSelect} onPin={onPin} onCompare={onCompare} />

@@ -1,9 +1,9 @@
 import { BarChart3 } from "lucide-react";
 import { SignalBadge } from "@gold-insights/ui";
 import type { ChartWallItem, ChartWallSortOrder } from "@gold-insights/market-domain";
-import "./chart-grid-rank-summary.css";
+import "./ranking-quality-summary.css";
 
-type ChartGridRankSummaryProps = {
+type RankingQualitySummaryProps = {
   items: ChartWallItem[];
   sort?: string;
   order?: ChartWallSortOrder;
@@ -40,17 +40,17 @@ const sortMetrics: Record<string, SortMetricDefinition> = {
   data_point_count: { label: "数据点", unit: "number", getValue: (item) => item.dataPointCount }
 };
 
-export function ChartGridRankSummary({ items, sort = "trend_score", order = "desc" }: ChartGridRankSummaryProps): JSX.Element {
+export function RankingQualitySummary({ items, sort = "trend_score", order = "desc" }: RankingQualitySummaryProps): JSX.Element {
   const metric = sortMetrics[sort];
 
   if (!metric) {
     return (
-      <section className="chart-grid-rank-summary chart-grid-rank-summary--muted" aria-label="图表榜单质量">
-        <div className="chart-grid-rank-summary__heading">
+      <section className="ranking-quality-summary ranking-quality-summary--muted" aria-label="榜单质量">
+        <div className="ranking-quality-summary__heading">
           <BarChart3 size={16} aria-hidden="true" />
           <strong>榜单质量</strong>
         </div>
-        <p>当前按非数值字段排序，卡片名次仅代表列表顺序。</p>
+        <p>当前按非数值字段排序，名次仅代表列表顺序。</p>
       </section>
     );
   }
@@ -60,13 +60,13 @@ export function ChartGridRankSummary({ items, sort = "trend_score", order = "des
   const coverageTone = summary.validCount === items.length ? "positive" : summary.validCount / Math.max(items.length, 1) >= 0.8 ? "blue" : "amber";
 
   return (
-    <section className="chart-grid-rank-summary" aria-label="图表榜单质量">
-      <div className="chart-grid-rank-summary__heading">
+    <section className="ranking-quality-summary" aria-label="榜单质量">
+      <div className="ranking-quality-summary__heading">
         <BarChart3 size={16} aria-hidden="true" />
         <strong>榜单质量</strong>
         <SignalBadge label={`${summary.label} ${order === "desc" ? "降序" : "升序"}`} tone="blue" />
       </div>
-      <dl className="chart-grid-rank-summary__metrics">
+      <dl className="ranking-quality-summary__metrics">
         <RankSummaryMetric label="有效样本" value={`${summary.validCount.toLocaleString("en-US")} / ${items.length.toLocaleString("en-US")}`} tone={coverageTone} />
         <RankSummaryMetric label="缺值" value={summary.missingCount.toLocaleString("en-US")} tone={summary.missingCount > 0 ? "amber" : "positive"} />
         <RankSummaryMetric label="中位数" value={formatMetricValue(summary.median, summary.unit)} tone="neutral" />
@@ -78,7 +78,7 @@ export function ChartGridRankSummary({ items, sort = "trend_score", order = "des
 
 function RankSummaryMetric({ label, value, tone }: { label: string; value: string; tone: "positive" | "negative" | "neutral" | "amber" | "blue" }): JSX.Element {
   return (
-    <div className={`chart-grid-rank-summary__metric chart-grid-rank-summary__metric--${tone}`}>
+    <div className={`ranking-quality-summary__metric ranking-quality-summary__metric--${tone}`}>
       <dt>{label}</dt>
       <dd>{value}</dd>
     </div>

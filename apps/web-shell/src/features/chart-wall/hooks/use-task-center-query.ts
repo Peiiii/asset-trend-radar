@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { TaskCenterData } from "@/shared/types/api.types";
 import { chartWallApiService } from "../services/chart-wall-api.service";
 
@@ -19,6 +19,7 @@ export function useTaskCenterQuery(enabled: boolean): TaskCenterQueryState {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [lastLoadedAt, setLastLoadedAt] = useState<string | null>(null);
+  const hasLoadedRef = useRef(false);
 
   const load = useCallback(
     async (signal?: AbortSignal): Promise<void> => {
@@ -26,18 +27,22 @@ export function useTaskCenterQuery(enabled: boolean): TaskCenterQueryState {
         return;
       }
 
-      setIsLoading(true);
+      const shouldShowLoading = !hasLoadedRef.current;
+      if (shouldShowLoading) {
+        setIsLoading(true);
+      }
       setError(null);
 
       try {
         setData(await chartWallApiService.fetchTaskCenter(signal));
         setLastLoadedAt(new Date().toISOString());
+        hasLoadedRef.current = true;
       } catch (nextError) {
         if (!signal?.aborted) {
           setError(nextError instanceof Error ? nextError.message : "任务中心加载失败");
         }
       } finally {
-        if (!signal?.aborted) {
+        if (!signal?.aborted && shouldShowLoading) {
           setIsLoading(false);
         }
       }

@@ -3,6 +3,7 @@ import { EmptyState, PriceChange, SignalBadge, TrendBadge, useTableScrollShadows
 import type { ChartWallItem, ChartWallSortOrder } from "@gold-insights/market-domain";
 import { formatPrice } from "@/shared/utils/format-number.utils";
 import { DataQualityIndicator } from "../data-quality/data-quality-indicator";
+import { RankingQualitySummary } from "../ranking-quality-summary/ranking-quality-summary";
 import "./exchange-table-active-sort.css";
 import "./exchange-table.css";
 
@@ -82,6 +83,7 @@ export function ExchangeTable({ items, sort, order, onSort, onSelect, onPin, onC
           <SummaryPill label="强趋势" value={summary.strongTrendCount} tone={summary.strongTrendCount > 0 ? "blue" : "neutral"} />
         </div>
       </div>
+      <RankingQualitySummary items={items} sort={sort} order={order} />
       <div ref={tableScroll.tableWrapperRef} className={tableWrapperClassName} onScroll={tableScroll.updateScrollEdges}>
         <table className="exchange-table">
           <thead>
