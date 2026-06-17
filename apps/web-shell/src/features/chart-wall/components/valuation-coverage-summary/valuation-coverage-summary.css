@@ -1,0 +1,182 @@
+.valuation-coverage-summary {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid #d7dde7;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.valuation-coverage-summary__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.valuation-coverage-summary__header h3,
+.valuation-coverage-panel h4 {
+  margin: 0;
+  color: #172033;
+}
+
+.valuation-coverage-summary__header p {
+  margin: 5px 0 0;
+  color: #657184;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.valuation-coverage-summary__header > strong {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 64px;
+  min-height: 34px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: #edf9f4;
+  color: #116955;
+  font-size: 16px;
+  font-weight: 950;
+}
+
+.valuation-coverage-summary__cards,
+.valuation-coverage-summary__body {
+  display: grid;
+  gap: 10px;
+}
+
+.valuation-coverage-summary__cards {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.valuation-coverage-summary__body {
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+}
+
+.valuation-coverage-card,
+.valuation-coverage-panel,
+.valuation-coverage-source {
+  min-width: 0;
+  border: 1px solid #d7dde7;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.valuation-coverage-card {
+  display: grid;
+  gap: 5px;
+  min-height: 84px;
+  padding: 10px;
+}
+
+.valuation-coverage-card--positive,
+.valuation-coverage-source--positive {
+  border-color: #b9e5d6;
+  background: #edf9f4;
+}
+
+.valuation-coverage-card--negative,
+.valuation-coverage-source--negative {
+  border-color: #f2c4c4;
+  background: #fff1f1;
+}
+
+.valuation-coverage-card--amber,
+.valuation-coverage-source--amber {
+  border-color: #ecd8a8;
+  background: #fff8e6;
+}
+
+.valuation-coverage-card span,
+.valuation-coverage-card small,
+.valuation-coverage-table span,
+.valuation-coverage-table small,
+.valuation-coverage-source span,
+.valuation-coverage-source small,
+.valuation-coverage-source em {
+  color: #657184;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.valuation-coverage-card strong {
+  color: #172033;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.valuation-coverage-panel {
+  padding: 12px;
+}
+
+.valuation-coverage-panel h4 {
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.valuation-coverage-table,
+.valuation-coverage-source-list {
+  display: grid;
+  gap: 8px;
+}
+
+.valuation-coverage-table__row {
+  display: grid;
+  grid-template-columns: minmax(70px, 0.7fr) minmax(64px, auto) minmax(140px, 1fr);
+  gap: 10px;
+  align-items: center;
+  min-height: 32px;
+  padding-top: 8px;
+  border-top: 1px solid #e5eaf1;
+}
+
+.valuation-coverage-table strong,
+.valuation-coverage-source strong {
+  color: #172033;
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.valuation-coverage-source {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 3px 10px;
+  padding: 9px 10px;
+}
+
+.valuation-coverage-source small,
+.valuation-coverage-source em {
+  grid-column: 1 / -1;
+}
+
+.valuation-coverage-source em {
+  overflow: hidden;
+  font-style: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 1180px) {
+  .valuation-coverage-summary__cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .valuation-coverage-summary__body {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .valuation-coverage-summary__header,
+  .valuation-coverage-table__row {
+    display: grid;
+  }
+
+  .valuation-coverage-summary__cards {
+    grid-template-columns: 1fr;
+  }
+}
