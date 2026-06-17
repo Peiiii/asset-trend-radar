@@ -1,7 +1,7 @@
 import { AlertTriangle, ArrowRight, Loader2, XCircle } from "lucide-react";
 import type { RuntimeTask, TaskCenterResponse } from "@gold-insights/market-domain";
 import { formatDateTime } from "@/shared/utils/format-number.utils";
-import { formatDuration, taskStatusLabel, taskStatusTone } from "./task-center.utils";
+import { taskStatusLabel, taskStatusTone } from "./task-center.utils";
 import "./task-activity-notice.css";
 
 type TaskActivityNoticeProps = {
@@ -37,7 +37,7 @@ export function TaskActivityNotice({ data, error, isLoading, onOpen }: TaskActiv
           <div className="task-activity-notice__tasks" aria-label="当前后台任务">
             {state.tasks.slice(0, 3).map((task) => (
               <span key={task.id} className={`task-activity-notice__task task-activity-notice__task--${taskStatusTone(task)}`}>
-                {taskStatusLabel(task)} · {task.label} · {formatDuration(task.durationMs)}
+                {taskStatusLabel(task)} · {task.label}
               </span>
             ))}
           </div>
