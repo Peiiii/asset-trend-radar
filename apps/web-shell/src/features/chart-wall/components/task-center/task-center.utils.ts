@@ -13,9 +13,14 @@ export type TaskActivitySummary = {
   activeLabel: string;
 };
 
+export function hasCurrentTaskFailure(data: TaskCenterResponse): boolean {
+  return data.latestTask?.status === "failed";
+}
+
 export function buildTaskActivitySummary(data: TaskCenterResponse): TaskActivitySummary {
   const latestTaskLabel = data.latestTask ? data.latestTask.label : "暂无任务";
   const pipelineLabel = `${data.pipelineSummaries.length.toLocaleString("en-US")} 条任务管线`;
+  const hasCurrentFailure = hasCurrentTaskFailure(data);
 
   if (data.staleRunningCount > 0) {
     return {
@@ -39,21 +44,23 @@ export function buildTaskActivitySummary(data: TaskCenterResponse): TaskActivity
     };
   }
 
-  if (data.failedCount > 0) {
+  if (hasCurrentFailure) {
     return {
       tone: "negative",
-      title: "最近存在失败任务",
-      description: "失败任务会保留错误信息，可以先查看最近失败和对应管线。",
+      title: "最新任务失败",
+      description: "最新后台任务没有完成，可以先查看最近失败和对应管线。",
       latestTaskLabel,
       pipelineLabel,
       activeLabel: `${data.failedCount} 个失败`
     };
   }
 
+  const historicalFailureCopy = data.failedCount > 0 ? `，历史失败 ${data.failedCount.toLocaleString("en-US")} 个仍可追溯` : "";
+
   return {
     tone: "positive",
     title: data.totalCount > 0 ? "后台空闲，任务正常" : "暂无后台任务",
-    description: data.totalCount > 0 ? "当前没有运行中或失败任务，最近同步记录可在下方追溯。" : "启动同步、基金目录或基金导入后，这里会形成可追踪的任务记录。",
+    description: data.totalCount > 0 ? `当前没有运行中、卡住或最新失败任务${historicalFailureCopy}。` : "启动同步、基金目录或基金导入后，这里会形成可追踪的任务记录。",
     latestTaskLabel,
     pipelineLabel,
     activeLabel: data.totalCount > 0 ? "无运行任务" : "等待首次任务"

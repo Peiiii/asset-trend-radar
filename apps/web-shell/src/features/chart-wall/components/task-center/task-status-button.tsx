@@ -1,7 +1,7 @@
 import { AlertTriangle, CheckCircle2, Loader2, ListChecks, XCircle } from "lucide-react";
 import type { TaskCenterResponse } from "@gold-insights/market-domain";
 import { formatDateTime } from "@/shared/utils/format-number.utils";
-import { formatPollInterval } from "./task-center.utils";
+import { formatPollInterval, hasCurrentTaskFailure } from "./task-center.utils";
 import "./task-status-button.css";
 
 type TaskStatusButtonProps = {
@@ -54,6 +54,7 @@ function getTaskStatusState(data: TaskCenterResponse | null, isLoading: boolean,
   const pollingLabel = isPolling ? `${formatPollInterval(pollIntervalMs)}轮询` : "未轮询";
   const loadedLabel = lastLoadedAt ? `上次 ${formatDateTime(lastLoadedAt)}` : "尚未拉取";
   const metrics = buildTaskStatusMetrics(data, isLoading);
+  const hasCurrentFailure = data ? hasCurrentTaskFailure(data) : false;
 
   if (error) {
     return {
@@ -88,10 +89,10 @@ function getTaskStatusState(data: TaskCenterResponse | null, isLoading: boolean,
     };
   }
 
-  if (data?.failedCount) {
+  if (data && hasCurrentFailure) {
     return {
       tone: "negative",
-      label: `失败 ${data.failedCount}`,
+      label: "最新失败",
       secondary: data.latestTask ? `最近 ${data.latestTask.label}` : "查看错误",
       title: `最近任务存在失败，运行 ${data.runningCount}，卡住 ${data.staleRunningCount}，${pollingLabel}，点击查看任务中心`,
       icon: <XCircle size={16} aria-hidden="true" />,
@@ -125,9 +126,11 @@ function buildTaskStatusMetrics(data: TaskCenterResponse | null, isLoading: bool
     return [{ label: "状态", value: isLoading ? "拉取中" : "未知", tone: "neutral" }];
   }
 
+  const hasCurrentFailure = hasCurrentTaskFailure(data);
+
   return [
     { label: "运行", value: data.runningCount, tone: data.runningCount > 0 ? "blue" : "neutral" },
     { label: "卡住", value: data.staleRunningCount, tone: data.staleRunningCount > 0 ? "amber" : "neutral" },
-    { label: "失败", value: data.failedCount, tone: data.failedCount > 0 ? "negative" : "neutral" }
+    { label: hasCurrentFailure ? "失败" : "历史失败", value: data.failedCount, tone: hasCurrentFailure ? "negative" : "neutral" }
   ];
 }
