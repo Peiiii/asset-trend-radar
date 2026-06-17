@@ -55,6 +55,8 @@ export function AssetChartCard({ item, sort, rank, onSelect, onPin, onCompare }:
   const topEvent = item.events[0];
   const primaryMetric = getPrimaryPerformanceMetric(item, sort);
   const sortMetric = getSortMetric(item, sort);
+  const valuationDisplay = getValuationDisplay(item.valuation, item.currency, { assetType: item.assetType });
+  const shouldShowValuation = valuationDisplay.status === "available" || valuationDisplay.status === "turnover_only";
   const shouldShowSortMetric = Boolean(sortMetric && !primaryMetric.isSortMetric);
   const rankClassName = rank ? `asset-chart-card__rank asset-chart-card__rank--${rank <= 3 ? "top" : "normal"}` : "";
 
@@ -97,6 +99,13 @@ export function AssetChartCard({ item, sort, rank, onSelect, onPin, onCompare }:
         <span>{assetTypeLabel(item.assetType)}</span>
         <span>{item.source ?? item.dataSource ?? "unknown"}</span>
       </div>
+      {shouldShowValuation && (
+        <div className={`asset-chart-card__valuation-row asset-chart-card__valuation-row--${valuationDisplay.status}`} title={valuationDisplay.title}>
+          <span>{valuationDisplay.status === "turnover_only" ? "成交额" : "市值/规模"}</span>
+          <strong>{valuationDisplay.label}</strong>
+          <small>{[valuationDisplay.detail, valuationDisplay.rankLabel].filter(Boolean).join(" / ")}</small>
+        </div>
+      )}
       <DataQualityIndicator item={item} />
 
       <TechnicalChart points={item.sparkline} indicators={item.indicators} />
