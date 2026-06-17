@@ -655,9 +655,10 @@ export function ChartWallPage(): JSX.Element {
           {activeView === "data-health" && data && (
             <DataHealthSection
               data={data}
+              items={filteredItems}
               assetTable={
                 <ExchangeTable
-                  items={data.chartWall.items}
+                  items={filteredItems}
                   sort={data.chartWall.sort}
                   order={data.chartWall.order}
                   onSort={setSortQueryValue}

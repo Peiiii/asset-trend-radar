@@ -1,6 +1,7 @@
 import { Activity, Database, HardDrive, ListChecks } from "lucide-react";
 import type { ReactNode } from "react";
 import { SignalBadge } from "@gold-insights/ui";
+import type { ChartWallItem } from "@gold-insights/market-domain";
 import type { ChartWallPageData } from "@/shared/types/api.types";
 import { formatDateTime } from "@/shared/utils/format-number.utils";
 import { ValuationCoverageSummary } from "../valuation-coverage-summary/valuation-coverage-summary";
@@ -9,10 +10,11 @@ import "./data-health-section.css";
 
 type DataHealthSectionProps = {
   data: ChartWallPageData;
+  items: ChartWallItem[];
   assetTable: ReactNode;
 };
 
-export function DataHealthSection({ data, assetTable }: DataHealthSectionProps): JSX.Element {
+export function DataHealthSection({ data, items, assetTable }: DataHealthSectionProps): JSX.Element {
   const latestJob = data.dataHealth.latestJob ?? null;
   const latestJobTime = latestJob?.finishedAt ?? latestJob?.startedAt ?? null;
   const rawFileCount = data.dataHealth.rawFileCount ?? 0;
@@ -56,7 +58,7 @@ export function DataHealthSection({ data, assetTable }: DataHealthSectionProps):
           </article>
         ))}
       </div>
-      <ValuationCoverageSummary items={data.chartWall.items} />
+      <ValuationCoverageSummary items={items} />
       <div className="data-health-split">
         <MiniCountTable title="按周期" rows={barsByTimeframe.map((row) => ({ label: timeframeLabel(row.timeframe), count: row.count }))} />
         <MiniCountTable title="按来源" rows={barsBySource.map((row) => ({ label: row.source, count: row.count }))} />
