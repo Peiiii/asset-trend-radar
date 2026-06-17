@@ -597,6 +597,7 @@ export function ChartWallPage(): JSX.Element {
                 onValuationStatusChange={(value) => setQueryValue("valuationStatus", value, "all")}
                 onStatusChange={(value) => setQueryValue("status", value, "all")}
                 onSortChange={setSortQueryValue}
+                onSearchChange={(value) => setQueryValue("q", value, "")}
                 onReset={resetFilters}
                 onPageChange={(value) => setQueryValue("directoryPage", String(value), "1")}
                 onImport={(item) => {

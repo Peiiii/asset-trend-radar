@@ -94,6 +94,10 @@
   justify-content: flex-start;
 }
 
+.asset-directory-toolbar .search-control {
+  width: min(420px, 38vw);
+}
+
 .asset-directory-identity {
   display: block;
   width: 100%;
@@ -192,5 +196,9 @@
 
   .asset-directory-workbench {
     position: static;
+  }
+
+  .asset-directory-toolbar .search-control {
+    width: 100%;
   }
 }

@@ -1,4 +1,5 @@
-import { ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ChevronLeft, ChevronRight, Search, X } from "lucide-react";
 import { Button, EmptyState, Select } from "@gold-insights/ui";
 import type { ControlOption } from "@gold-insights/ui";
 import type { AssetDirectoryAssetTypeFilter, AssetDirectoryDataStateFilter, AssetDirectoryItem, AssetDirectoryPageResponse, AssetDirectorySortKey, AssetDirectorySortOrder, AssetDirectoryStatusFilter, AssetDirectoryValuationStatusFilter } from "@gold-insights/market-domain";
@@ -42,6 +43,7 @@ type AssetDirectorySectionProps = {
   onValuationStatusChange(valuationStatus: AssetDirectoryValuationStatusFilter): void;
   onStatusChange(status: AssetDirectoryStatusFilter): void;
   onSortChange(sort: AssetDirectorySortKey, order?: AssetDirectorySortOrder): void;
+  onSearchChange(search: string): void;
   onReset(): void;
   onPageChange(page: number): void;
   onImport(item: AssetDirectoryItem): void;
@@ -72,7 +74,8 @@ const directoryOrderOptions: ControlOption[] = [
   { value: "asc", label: "升序" }
 ];
 
-export function AssetDirectorySection({ title, description, items, totalCount, categoryItemCount, categoryInPoolCount, market, assetType, dataState, valuationStatus, status, sort, order, search, statusLabel, marketFacets, assetTypeFacets, dataStateFacets, valuationStatusFacets, statusFacets, page, limit, tableMinWidth, firstColumnMinWidth, lastColumnMinWidth, canImport, importingItemId, message, onMarketChange, onAssetTypeChange, onDataStateChange, onValuationStatusChange, onStatusChange, onSortChange, onReset, onPageChange, onImport, onSelect, onCompare }: AssetDirectorySectionProps): JSX.Element {
+export function AssetDirectorySection({ title, description, items, totalCount, categoryItemCount, categoryInPoolCount, market, assetType, dataState, valuationStatus, status, sort, order, search, statusLabel, marketFacets, assetTypeFacets, dataStateFacets, valuationStatusFacets, statusFacets, page, limit, tableMinWidth, firstColumnMinWidth, lastColumnMinWidth, canImport, importingItemId, message, onMarketChange, onAssetTypeChange, onDataStateChange, onValuationStatusChange, onStatusChange, onSortChange, onSearchChange, onReset, onPageChange, onImport, onSelect, onCompare }: AssetDirectorySectionProps): JSX.Element {
+  const [draftSearch, setDraftSearch] = useState(search);
   const positiveCount = items.filter((item) => (item.returns.return1m ?? item.returns.return1d ?? 0) > 0).length;
   const sourceCount = new Set(items.map((item) => item.provider)).size;
   const totalPages = Math.max(Math.ceil(totalCount / limit), 1);
@@ -86,6 +89,10 @@ export function AssetDirectorySection({ title, description, items, totalCount, c
   const handleHeaderSort = (nextSort: AssetDirectorySortKey): void => {
     onSortChange(nextSort, nextSort === sort ? toggleDirectoryOrder(order) : getDefaultDirectoryOrder(nextSort));
   };
+
+  useEffect(() => {
+    setDraftSearch(search);
+  }, [search]);
 
   return (
     <section className="single-view-section asset-directory-section">
@@ -103,7 +110,31 @@ export function AssetDirectorySection({ title, description, items, totalCount, c
       </div>
 
       <div className="asset-directory-workbench">
-        <div className="asset-directory-toolbar">
+        <form
+          className="asset-directory-toolbar"
+          onSubmit={(event) => {
+            event.preventDefault();
+            onSearchChange(draftSearch.trim());
+          }}
+        >
+          <label className="search-control" htmlFor="asset-directory-search">
+            <Search size={17} aria-hidden="true" />
+            <input id="asset-directory-search" value={draftSearch} onChange={(event) => setDraftSearch(event.target.value)} placeholder="搜索名称、代码、交易所、来源" />
+            {draftSearch.length > 0 && (
+              <button type="button" onClick={() => setDraftSearch("")} aria-label="清空输入">
+                <X size={15} aria-hidden="true" />
+              </button>
+            )}
+          </label>
+          <Button type="submit" variant="secondary">
+            <Search size={15} aria-hidden="true" />
+            搜索
+          </Button>
+          {search.length > 0 && (
+            <Button type="button" variant="ghost" onClick={() => onSearchChange("")}>
+              清空
+            </Button>
+          )}
           <Select id="asset-directory-market" label="市场" value={market} options={marketOptions} onChange={onMarketChange} />
           <Select id="asset-directory-asset-type" label="品种" value={assetType} options={assetTypeOptions} onChange={(value) => onAssetTypeChange(getDirectoryAssetType(value))} />
           <Select id="asset-directory-data-state" label="数据" value={dataState} options={dataStateOptions} onChange={(value) => onDataStateChange(getDirectoryDataState(value))} />
@@ -112,7 +143,7 @@ export function AssetDirectorySection({ title, description, items, totalCount, c
           <Select id="asset-directory-sort" label="排序" value={sort} options={directorySortOptions} onChange={(value) => onSortChange(getDirectorySort(value), getDefaultDirectoryOrder(value))} />
           <Select id="asset-directory-order" label="方向" value={order} options={directoryOrderOptions} onChange={(value) => onSortChange(sort, getDirectoryOrder(value))} />
           <Button type="button" variant="ghost" onClick={onReset}>重置</Button>
-        </div>
+        </form>
 
         {message && <p className="asset-directory-message">{message}</p>}
 
