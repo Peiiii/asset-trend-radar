@@ -4,6 +4,7 @@ import {
   BarChart3,
   BookOpen,
   Database,
+  Gauge,
   LineChart,
   ListChecks,
   Network,
@@ -15,9 +16,9 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { NavLink, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { AppShell, Button, EmptyState, ErrorState, IconButton, LoadingState, RangePicker, TimeframePicker } from "@gold-insights/ui";
+import { AppShell, Button, ErrorState, IconButton, LoadingState, RangePicker, TimeframePicker } from "@gold-insights/ui";
 import type { ControlOption } from "@gold-insights/ui";
-import type { ChartWallSortOrder, ScannerEventsResponse } from "@gold-insights/market-domain";
+import type { ChartWallSortOrder } from "@gold-insights/market-domain";
 import type { ChartWallFilters, ChartWallPageData } from "@/shared/types/api.types";
 import { formatDateTime } from "@/shared/utils/format-number.utils";
 import { assetTypeFallbackOptions, defaultFilters, levelFallbackOptions, marketFallbackOptions, signalFallbackOptions, sortOptions, sortOrderOptions, tagFallbackOptions } from "../configs/chart-wall-page.config";
@@ -25,16 +26,13 @@ import { ActiveFilterChips } from "./active-filter-chips/active-filter-chips";
 import { AssetDetailSection } from "./asset-detail-section/asset-detail-section";
 import { ChartGrid } from "./chart-grid/chart-grid";
 import { ComparePanel } from "./compare-panel/compare-panel";
-import { BreadthStrip, SummaryStrip } from "./dashboard-strips";
 import { ChartWallControls, type ChartWallViewMode } from "./chart-wall-controls/chart-wall-controls";
 import { DataHealthSection } from "./data-health-section/data-health-section";
 import { ExchangeTable } from "./exchange-table/exchange-table";
 import { FundDirectorySection } from "./fund-directory-section";
-import { MarketPulseBoard } from "./market-pulse-board/market-pulse-board";
 import "./market-chart-primitives.css";
-import { OpportunityLeaderboard } from "./opportunity-leaderboard/opportunity-leaderboard";
+import { OverviewSection } from "./overview-section/overview-section";
 import { ScannerSection } from "./scanner-section/scanner-section";
-import { SortAwareMoversStrip } from "./sort-aware-movers-strip/sort-aware-movers-strip";
 import { StrategyPresetStrip, type StrategyPresetFilters } from "./strategy-preset-strip/strategy-preset-strip";
 import { TaskActivityNotice } from "./task-center/task-activity-notice";
 import { TaskCenterSection } from "./task-center/task-center-section";
@@ -50,9 +48,10 @@ import { useFundDirectoryUrlState } from "../hooks/use-fund-directory-url-state"
 import { useTaskActions } from "../hooks/use-task-actions";
 import { useTaskCenterQuery } from "../hooks/use-task-center-query";
 
-type ActiveView = "chart-wall" | "fund-directory" | "universe" | "scanner" | "asset-detail" | "watchlist" | "tasks" | "data-health";
+type ActiveView = "overview" | "chart-wall" | "fund-directory" | "universe" | "scanner" | "asset-detail" | "watchlist" | "tasks" | "data-health";
 
 const viewTitles: Record<ActiveView, string> = {
+  overview: "全市场概览",
   "chart-wall": "全市场图表墙",
   "fund-directory": "基金目录",
   universe: "资产宇宙",
@@ -269,6 +268,9 @@ export function ChartWallPage(): JSX.Element {
             </div>
           </div>
           <nav className="sidebar-nav" aria-label="主导航">
+            <SidebarButton active={activeView === "overview"} label="概览" title="全市场概览" to={`/overview${currentSearch}`}>
+              <Gauge size={18} aria-hidden="true" />
+            </SidebarButton>
             <SidebarButton active={activeView === "chart-wall"} label="图表墙" title="全市场图表墙" to={`/chart-wall${currentSearch}`}>
               <BarChart3 size={18} aria-hidden="true" />
             </SidebarButton>
@@ -371,7 +373,7 @@ export function ChartWallPage(): JSX.Element {
             }}
           />
 
-          {activeView === "chart-wall" && (
+          {(activeView === "overview" || activeView === "chart-wall") && (
             <StrategyPresetStrip currentFilters={{ market, assetType, tag, signal, sort, order, range, timeframe }} onApply={applyStrategyPreset} />
           )}
 
@@ -391,38 +393,33 @@ export function ChartWallPage(): JSX.Element {
 
       {!isLoading && !error && data && (
         <>
-          {activeView !== "asset-detail" && activeView !== "fund-directory" && activeView !== "tasks" && (
-            <>
-              <SummaryStrip data={data} visibleSearchCount={filteredItems.length} />
-              <BreadthStrip data={data} />
-              {activeView === "chart-wall" && (
-                <>
-                  <MarketPulseBoard items={filteredItems} activeMarket={market} onMarketSelect={(value) => setQueryValue("market", value, defaultFilters.market)} />
-                  <SortAwareMoversStrip items={filteredItems} sort={sort} order={order} onSelect={selectAsset} onCompare={compareSelection.toggleCompare} />
-                  <OpportunityLeaderboard items={filteredItems} onSelect={selectAsset} onCompare={compareSelection.toggleCompare} />
-                </>
-              )}
-            </>
+          {activeView === "overview" && (
+            <OverviewSection
+              data={data}
+              items={filteredItems}
+              visibleSearchCount={filteredItems.length}
+              market={market}
+              sort={sort}
+              order={order}
+              onMarketSelect={(value) => setQueryValue("market", value, defaultFilters.market)}
+              onSelectAsset={selectAsset}
+              onCompare={compareSelection.toggleCompare}
+            />
           )}
 
           {activeView === "chart-wall" && (
-            <section className="market-layout">
-              <section className="chart-wall-section">
-                <SectionHeader
-                  title="走势总览"
-                  description={`${rangeLabel(data.chartWall.range)} / ${timeframeLabel(data.chartWall.timeframe)} / ${sortDisplayLabel(sort)} ${sortOrderLabel(order)} / ${filteredItems.length} 个资产`}
-                  generatedAt={data.chartWall.generatedAt}
-                />
-                <ComparePanel compareData={compareSelection.compareData} compareAssetIds={compareSelection.compareAssetIds} allItems={chartItems} onRemove={compareSelection.toggleCompare} onClear={compareSelection.clearCompare} />
-                {viewMode === "grid" ? (
-                  <ChartGrid items={filteredItems} sort={sort} order={order} onSelect={selectAsset} onPin={handlePin} onCompare={compareSelection.toggleCompare} onResetFilters={resetFilters} />
-                ) : (
-                  <ExchangeTable items={filteredItems} sort={sort} order={order} onSort={setSortQueryValue} onSelect={selectAsset} onPin={handlePin} onCompare={compareSelection.toggleCompare} />
-                )}
-              </section>
-              <aside className="event-rail" aria-label="机会事件">
-                <EventListSection events={data.scannerEvents.events.slice(0, 8)} />
-              </aside>
+            <section className="chart-wall-section">
+              <SectionHeader
+                title="走势列表"
+                description={`${rangeLabel(data.chartWall.range)} / ${timeframeLabel(data.chartWall.timeframe)} / ${sortDisplayLabel(sort)} ${sortOrderLabel(order)} / ${filteredItems.length} 个资产`}
+                generatedAt={data.chartWall.generatedAt}
+              />
+              <ComparePanel compareData={compareSelection.compareData} compareAssetIds={compareSelection.compareAssetIds} allItems={chartItems} onRemove={compareSelection.toggleCompare} onClear={compareSelection.clearCompare} />
+              {viewMode === "grid" ? (
+                <ChartGrid items={filteredItems} sort={sort} order={order} onSelect={selectAsset} onPin={handlePin} onCompare={compareSelection.toggleCompare} onResetFilters={resetFilters} />
+              ) : (
+                <ExchangeTable items={filteredItems} sort={sort} order={order} onSort={setSortQueryValue} onSelect={selectAsset} onPin={handlePin} onCompare={compareSelection.toggleCompare} />
+              )}
             </section>
           )}
 
@@ -602,31 +599,10 @@ function SectionHeader({ title, description, generatedAt }: { title: string; des
   );
 }
 
-function EventListSection({ events }: { events: ScannerEventsResponse["events"] }): JSX.Element {
-  return (
-    <>
-      <SectionHeader title="机会事件" description="MACD、突破、多周期共振" />
-      {events.length === 0 ? (
-        <EmptyState title="暂无事件" description="当前采集结果没有触发突破或 MACD 事件。" />
-      ) : (
-        <div className="event-list">
-          {events.map((event) => (
-            <article key={event.id} className="event-card">
-              <div>
-                <strong>{event.asset?.name ?? event.asset?.symbol ?? event.assetId}</strong>
-                <span>{event.severity}</span>
-              </div>
-              <h3>{event.title}</h3>
-              <p>{event.summary}</p>
-            </article>
-          ))}
-        </div>
-      )}
-    </>
-  );
-}
-
 function getActiveView(pathname: string): ActiveView {
+  if (pathname.startsWith("/overview")) {
+    return "overview";
+  }
   if (pathname.startsWith("/funds")) {
     return "fund-directory";
   }
@@ -658,10 +634,14 @@ function getAssetDetailReturnPath(searchParams: URLSearchParams): string {
     return from;
   }
 
-  return `/chart-wall${getSearchWithout(searchParams, ["from"])}`;
+  return `/overview${getSearchWithout(searchParams, ["from"])}`;
 }
 
 function getAssetDetailReturnLabel(path: string): string {
+  if (path.startsWith("/overview")) {
+    return "概览";
+  }
+
   if (path.startsWith("/funds")) {
     return "基金目录";
   }
@@ -710,7 +690,7 @@ function isSafeWorkspacePath(path: string): boolean {
     return false;
   }
 
-  return ["/chart-wall", "/funds", "/universe", "/scanner", "/watchlist", "/tasks", "/data-health"].some((prefix) => path === prefix || path.startsWith(`${prefix}?`));
+  return ["/overview", "/chart-wall", "/funds", "/universe", "/scanner", "/watchlist", "/tasks", "/data-health"].some((prefix) => path === prefix || path.startsWith(`${prefix}?`));
 }
 
 function getSearchValue(searchParams: URLSearchParams, name: string, fallback: string): string {

@@ -73,6 +73,19 @@ packages/market-domain
 - URL 是页面状态的来源，但不是业务事实来源。
 - 如果需要新接口字段，先在 `market-domain` 定义 response contract，再在 app 使用。
 
+### 概览页与图表墙
+
+`/overview` 和 `/chart-wall` 可以共用同一套筛选、排序、搜索与时间范围 query；这些 query 表达“当前观察口径”，不是某个页面私有状态。两个页面的区别在信息任务：
+
+- `/overview`：市场驾驶舱。展示筛选口径下的市场宽度、板块强弱、排序异动、机会榜单和扫描事件，帮助用户先判断机会集中在哪里。
+- `/chart-wall`：交易所式走势列表。展示筛选口径下的资产卡片/表格、排名质量、对比和单资产入口，帮助用户批量浏览具体走势。
+
+约束：
+
+- 不要把概览型模块继续塞进图表墙列表区；概览型组件优先进入 `overview-section`。
+- 不要为了概览页复制一套筛选状态；筛选控件应复用同一套 URL query 和 API 口径。
+- 只要概览指标来自已有 `ChartWallResponse`，就留在 app 展示层编排；如果需要新的权威聚合字段，先扩展 `market-domain` response contract，再由 `local-runtime` 计算。
+
 ## apps/local-shell
 
 职责：
