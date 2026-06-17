@@ -1,0 +1,38 @@
+.gi-data-table-frame.directory-table-wrapper table {
+  width: max-content;
+  table-layout: fixed;
+}
+
+.gi-data-table-frame.directory-table-wrapper th,
+.gi-data-table-frame.directory-table-wrapper td {
+  padding: 9px 10px;
+  vertical-align: middle;
+}
+
+.directory-table-column--identity {
+  width: var(--gi-data-table-first-column-min-width);
+}
+
+.directory-table-column--type {
+  width: 104px;
+}
+
+.directory-table-column--status {
+  width: 122px;
+}
+
+.directory-table-column--latest {
+  width: 124px;
+}
+
+.directory-table-column--return {
+  width: 104px;
+}
+
+.directory-table-column--data {
+  width: 132px;
+}
+
+.directory-table-column--actions {
+  width: var(--gi-data-table-last-column-min-width);
+}

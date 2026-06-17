@@ -4,6 +4,8 @@ import { Button, DataTableFrame, EmptyState, ErrorState, LoadingState, Select } 
 import type { ControlOption } from "@gold-insights/ui";
 import type { FundCatalogImportStatus, FundCatalogPageResponse, FundCatalogSortKey, SortOrder } from "@gold-insights/market-domain";
 import { formatDateTime } from "@/shared/utils/format-number.utils";
+import { DirectoryTableColumns } from "./directory-table/directory-table-columns";
+import { fundDirectoryTableSizing } from "./directory-table/directory-table-sizing.config";
 import { DirectorySortableHeader } from "./directory-table/directory-sortable-header";
 import { FundDirectoryRow } from "./fund-directory-row";
 import "./fund-directory-section.css";
@@ -126,7 +128,14 @@ export function FundDirectorySection({
           {data.items.length === 0 ? (
             <EmptyState title="没有匹配基金" description="换一个关键词、类型或入库状态试试。" />
           ) : (
-            <DataTableFrame rowCount={data.items.length} className="fund-directory-table-wrapper" minWidth={1220} firstColumnMinWidth={274} lastColumnMinWidth={206}>
+            <DataTableFrame
+              rowCount={data.items.length}
+              className="directory-table-wrapper fund-directory-table-wrapper"
+              minWidth={fundDirectoryTableSizing.tableMinWidth}
+              firstColumnMinWidth={fundDirectoryTableSizing.firstColumnMinWidth}
+              lastColumnMinWidth={fundDirectoryTableSizing.lastColumnMinWidth}
+            >
+              <DirectoryTableColumns />
               <thead>
                 <tr>
                   <DirectorySortableHeader label="基金" sortValue="name" currentSort={sort} order={order} onSort={onSortChange} />

@@ -31,6 +31,7 @@ import { ChartGrid } from "./chart-grid/chart-grid";
 import { ComparePanel } from "./compare-panel/compare-panel";
 import { ChartWallControls, type ChartWallViewMode } from "./chart-wall-controls/chart-wall-controls";
 import { DataHealthSection } from "./data-health-section/data-health-section";
+import { getAssetDirectoryTableSizing } from "./directory-table/directory-table-sizing.config";
 import { ExchangeTable } from "./exchange-table/exchange-table";
 import { FundDirectorySection } from "./fund-directory-section";
 import "./market-chart-primitives.css";
@@ -941,22 +942,6 @@ function getDirectoryChartFilters(categoryId: AssetDirectoryCategoryId | null): 
     macro: { market: "all", assetType: "macro" }
   };
   return filters[categoryId ?? "crypto"] ?? { market: "all", assetType: "all" };
-}
-
-function getAssetDirectoryTableSizing(categoryId: AssetDirectoryCategoryId | null): { tableMinWidth: number; firstColumnMinWidth: number; lastColumnMinWidth: number } {
-  if (categoryId === "crypto") {
-    return {
-      tableMinWidth: 1060,
-      firstColumnMinWidth: 124,
-      lastColumnMinWidth: 118
-    };
-  }
-
-  return {
-    tableMinWidth: 1100,
-    firstColumnMinWidth: 160,
-    lastColumnMinWidth: 118
-  };
 }
 
 function toSearchString(searchParams: URLSearchParams): string {

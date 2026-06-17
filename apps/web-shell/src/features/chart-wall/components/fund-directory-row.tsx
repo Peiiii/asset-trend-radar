@@ -1,7 +1,6 @@
 import { ExternalLink, Plus, RefreshCcw } from "lucide-react";
 import type { FundCatalogPageItem, FundCatalogSortKey } from "@gold-insights/market-domain";
-import "./directory-table/directory-active-sort.css";
-import { DirectoryReturnPill } from "./directory-table/directory-return-pill";
+import { DirectoryReturnCell, getDirectoryActiveSortCellClassName } from "./directory-table/directory-return-pill";
 
 type FundDirectoryRowProps = {
   item: FundCatalogPageItem;
@@ -16,7 +15,7 @@ export function FundDirectoryRow({ item, importingCode, sort, onImport, onSelect
 
   return (
     <tr>
-      <td className={activeSortCellClassName(sort === "name" || sort === "code" || sort === "relevance")}>
+      <td>
         <strong>{item.name}</strong>
         <small>{item.code}{item.pinyin ? ` / ${item.pinyin}` : ""}</small>
       </td>
@@ -26,7 +25,7 @@ export function FundDirectoryRow({ item, importingCode, sort, onImport, onSelect
           {item.isImported ? "已加入走势池" : "待加入走势池"}
         </span>
       </td>
-      <td className={activeSortCellClassName(sort === "latest_nav")}>
+      <td className={getDirectoryActiveSortCellClassName(sort === "latest_nav")}>
         {item.latestNav === null ? (
           <span className="fund-directory-null">暂无快照</span>
         ) : (
@@ -36,12 +35,12 @@ export function FundDirectoryRow({ item, importingCode, sort, onImport, onSelect
           </span>
         )}
       </td>
-      <FundPercentCell value={item.return1d} active={sort === "return_1d"} />
-      <FundPercentCell value={item.return1m} active={sort === "return_1m"} />
-      <FundPercentCell value={item.return3m} active={sort === "return_3m"} />
-      <FundPercentCell value={item.return6m} active={sort === "return_6m"} />
-      <FundPercentCell value={item.return1y} active={sort === "return_1y"} />
-      <td className={activeSortCellClassName(sort === "data_point_count")}>
+      <DirectoryReturnCell value={item.return1d} active={sort === "return_1d"} />
+      <DirectoryReturnCell value={item.return1m} active={sort === "return_1m"} />
+      <DirectoryReturnCell value={item.return3m} active={sort === "return_3m"} />
+      <DirectoryReturnCell value={item.return6m} active={sort === "return_6m"} />
+      <DirectoryReturnCell value={item.return1y} active={sort === "return_1y"} />
+      <td className={getDirectoryActiveSortCellClassName(sort === "data_point_count")}>
         {item.dataPointCount > 0 ? (
           <span className="fund-directory-source fund-directory-source--local">{item.dataPointCount.toLocaleString("en-US")} 点</span>
         ) : item.metricSource === "catalog_snapshot" ? (
@@ -66,16 +65,4 @@ export function FundDirectoryRow({ item, importingCode, sort, onImport, onSelect
       </td>
     </tr>
   );
-}
-
-function FundPercentCell({ value, active }: { value: number | null; active: boolean }): JSX.Element {
-  return (
-    <td className={activeSortCellClassName(active)}>
-      <DirectoryReturnPill value={value} />
-    </td>
-  );
-}
-
-function activeSortCellClassName(active: boolean): string | undefined {
-  return active ? "directory-table-cell--active-sort" : undefined;
 }

@@ -3,8 +3,8 @@ import { Button, DataTableFrame, EmptyState, Select, SignalBadge } from "@gold-i
 import type { ControlOption } from "@gold-insights/ui";
 import type { AssetDirectoryItem, AssetDirectoryPageResponse, AssetDirectorySortKey, AssetDirectorySortOrder, AssetDirectoryStatusFilter } from "@gold-insights/market-domain";
 import { formatPrice } from "@/shared/utils/format-number.utils";
-import "../directory-table/directory-active-sort.css";
-import { DirectoryReturnPill } from "../directory-table/directory-return-pill";
+import { DirectoryReturnCell, getDirectoryActiveSortCellClassName } from "../directory-table/directory-return-pill";
+import { DirectoryTableColumns } from "../directory-table/directory-table-columns";
 import { DirectorySortableHeader } from "../directory-table/directory-sortable-header";
 import "./asset-directory-section.css";
 
@@ -111,7 +111,8 @@ export function AssetDirectorySection({ title, description, items, totalCount, c
       {items.length === 0 ? (
         <EmptyState title="没有匹配资产" description="换一个关键词或回到图表墙调整筛选条件。" />
       ) : (
-        <DataTableFrame rowCount={items.length} className="asset-directory-table-wrapper" minWidth={tableMinWidth} firstColumnMinWidth={firstColumnMinWidth} lastColumnMinWidth={lastColumnMinWidth}>
+        <DataTableFrame rowCount={items.length} className="directory-table-wrapper asset-directory-table-wrapper" minWidth={tableMinWidth} firstColumnMinWidth={firstColumnMinWidth} lastColumnMinWidth={lastColumnMinWidth}>
+          <DirectoryTableColumns />
           <thead>
             <tr>
               <DirectorySortableHeader label="资产" sortValue="label" currentSort={sort} order={order} onSort={handleHeaderSort} />
@@ -130,7 +131,7 @@ export function AssetDirectorySection({ title, description, items, totalCount, c
           <tbody>
             {items.map((item) => (
               <tr key={item.id}>
-                <td className={activeSortCellClassName(sort === "label" || sort === "relevance")}>
+                <td>
                   <div className="asset-directory-identity" title={`${item.label} / ${item.symbol} / ${item.exchange}`}>
                     <strong>{item.label}</strong>
                     <small>{item.symbol}</small>
@@ -143,13 +144,13 @@ export function AssetDirectorySection({ title, description, items, totalCount, c
                   </div>
                 </td>
                 <td><SignalBadge label={poolStateLabel(item.poolState)} tone={item.poolState === "in_pool" ? "positive" : "amber"} /></td>
-                <td className={activeSortCellClassName(sort === "latest_value")}>{formatPrice(item.latestValue, item.currency)}</td>
-                <AssetDirectoryReturnCell value={item.returns.return1d} active={sort === "return_1d"} />
-                <AssetDirectoryReturnCell value={item.returns.return1m} active={sort === "return_1m"} />
-                <AssetDirectoryReturnCell value={item.returns.return3m} active={sort === "return_3m"} />
-                <AssetDirectoryReturnCell value={item.returns.return6m} active={sort === "return_6m"} />
-                <AssetDirectoryReturnCell value={item.returns.return1y} active={sort === "return_1y"} />
-                <td className={activeSortCellClassName(sort === "data_point_count")}>
+                <td className={getDirectoryActiveSortCellClassName(sort === "latest_value")}>{formatPrice(item.latestValue, item.currency)}</td>
+                <DirectoryReturnCell value={item.returns.return1d} active={sort === "return_1d"} />
+                <DirectoryReturnCell value={item.returns.return1m} active={sort === "return_1m"} />
+                <DirectoryReturnCell value={item.returns.return3m} active={sort === "return_3m"} />
+                <DirectoryReturnCell value={item.returns.return6m} active={sort === "return_6m"} />
+                <DirectoryReturnCell value={item.returns.return1y} active={sort === "return_1y"} />
+                <td className={getDirectoryActiveSortCellClassName(sort === "data_point_count")}>
                   <div className="asset-directory-data-stack" title={`${item.dataPointCount.toLocaleString("en-US")} 点 / ${dataStateLabel(item.dataState)} / ${item.provider}`}>
                     <SignalBadge label={`${item.dataPointCount.toLocaleString("en-US")} 点`} tone="neutral" />
                     <small>{dataStateLabel(item.dataState)} / {item.provider}</small>
@@ -160,7 +161,7 @@ export function AssetDirectorySection({ title, description, items, totalCount, c
                     {canImport && item.poolState !== "in_pool" && (
                       <Button type="button" variant="secondary" title="加入走势池" disabled={importingItemId !== null} onClick={() => onImport(item)}>
                         <Plus size={14} aria-hidden="true" />
-                        {importingItemId === item.id ? "导入中" : "加入"}
+                        {importingItemId === item.id ? "导入中" : "加入走势池"}
                       </Button>
                     )}
                     {item.assetId && (
@@ -215,14 +216,6 @@ function dataStateLabel(value: AssetDirectoryItem["dataState"]): string {
   return labels[value];
 }
 
-function AssetDirectoryReturnCell({ value, active }: { value: number | null; active: boolean }): JSX.Element {
-  return (
-    <td className={activeSortCellClassName(active)}>
-      <DirectoryReturnPill value={value} />
-    </td>
-  );
-}
-
 function assetTypeLabel(value: AssetDirectoryItem["assetType"]): string {
   const labels: Record<AssetDirectoryItem["assetType"], string> = {
     crypto: "币种",
@@ -262,8 +255,4 @@ function toggleDirectoryOrder(value: AssetDirectorySortOrder): AssetDirectorySor
 
 function getDefaultDirectoryOrder(sort: string): AssetDirectorySortOrder {
   return sort === "label" ? "asc" : "desc";
-}
-
-function activeSortCellClassName(active: boolean): string | undefined {
-  return active ? "directory-table-cell--active-sort" : undefined;
 }

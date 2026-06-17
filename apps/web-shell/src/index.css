@@ -408,7 +408,7 @@ h3 {
   min-width: var(--gi-data-table-first-column-min-width);
   max-width: var(--gi-data-table-first-column-min-width);
   background: #ffffff;
-  box-shadow: 1px 0 0 #e5eaf1;
+  box-shadow: none;
   transition: box-shadow 160ms ease;
 }
 
@@ -433,7 +433,7 @@ h3 {
   min-width: var(--gi-data-table-last-column-min-width);
   max-width: var(--gi-data-table-last-column-min-width);
   background: #ffffff;
-  box-shadow: -1px 0 0 #e5eaf1;
+  box-shadow: none;
   transition: box-shadow 160ms ease;
 }
 
