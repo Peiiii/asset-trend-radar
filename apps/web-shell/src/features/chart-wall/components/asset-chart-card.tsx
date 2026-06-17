@@ -8,6 +8,7 @@ import "./asset-chart-card.css";
 type AssetChartCardProps = {
   item: ChartWallItem;
   sort?: string;
+  rank?: number;
   onSelect?(assetId: string): void;
   onPin?(assetId: string): void;
   onCompare?(assetId: string): void;
@@ -49,19 +50,23 @@ const getBreakoutLabel = (state: string): string => {
   return "区间内";
 };
 
-export function AssetChartCard({ item, sort, onSelect, onPin, onCompare }: AssetChartCardProps): JSX.Element {
+export function AssetChartCard({ item, sort, rank, onSelect, onPin, onCompare }: AssetChartCardProps): JSX.Element {
   const topEvent = item.events[0];
   const primaryMetric = getPrimaryPerformanceMetric(item, sort);
   const sortMetric = getSortMetric(item, sort);
   const shouldShowSortMetric = Boolean(sortMetric && !primaryMetric.isSortMetric);
+  const rankClassName = rank ? `asset-chart-card__rank asset-chart-card__rank--${rank <= 3 ? "top" : "normal"}` : "";
 
   return (
     <ChartCardShell className={`${item.isPinned ? "asset-chart-card--pinned" : ""} ${item.isCompared ? "asset-chart-card--compared" : ""}`}>
       <header className="asset-chart-card__header">
-        <button type="button" className="asset-chart-card__identity" onClick={() => onSelect?.(item.id)} onDoubleClick={() => onSelect?.(item.id)}>
-          <h3>{item.name}</h3>
-          <p>{item.symbol}</p>
-        </button>
+        <div className="asset-chart-card__identity-group">
+          {rank && <span className={rankClassName}>#{rank}</span>}
+          <button type="button" className="asset-chart-card__identity" onClick={() => onSelect?.(item.id)} onDoubleClick={() => onSelect?.(item.id)}>
+            <h3>{item.name}</h3>
+            <p>{item.symbol}</p>
+          </button>
+        </div>
         <TrendBadge label={item.trendLabel} score={item.trendScore} />
       </header>
 

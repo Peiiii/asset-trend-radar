@@ -26,8 +26,8 @@ export function ChartGrid({ items, sort, onSelect, onPin, onCompare, onResetFilt
 
   return (
     <div className="chart-wall-grid">
-      {items.map((item) => (
-        <AssetChartCard key={item.id} item={item} sort={sort} onSelect={onSelect} onPin={onPin} onCompare={onCompare} />
+      {items.map((item, index) => (
+        <AssetChartCard key={item.id} item={item} sort={sort} rank={index + 1} onSelect={onSelect} onPin={onPin} onCompare={onCompare} />
       ))}
     </div>
   );

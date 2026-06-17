@@ -30,6 +30,34 @@
   min-width: 0;
 }
 
+.asset-chart-card__identity-group {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.asset-chart-card__rank {
+  display: inline-grid;
+  min-width: 34px;
+  height: 28px;
+  place-items: center;
+  border: 1px solid #d9e2ec;
+  border-radius: 8px;
+  background: #f5f8fb;
+  color: #5f6d7f;
+  font-size: 12px;
+  font-weight: 950;
+  letter-spacing: 0;
+}
+
+.asset-chart-card__rank--top {
+  border-color: #c6d8ee;
+  background: #eaf3ff;
+  color: #245f9f;
+}
+
 .asset-chart-card__identity {
   min-width: 0;
   margin: -4px;
