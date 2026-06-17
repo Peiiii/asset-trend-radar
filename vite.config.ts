@@ -1,6 +1,14 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
+const toPositiveInteger = (value: string | undefined, fallback: number): number => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+};
+
+const webPort = toPositiveInteger(process.env.GOLD_INSIGHTS_WEB_PORT, 5193);
+const runtimePort = toPositiveInteger(process.env.GOLD_INSIGHTS_PORT, 3193);
+
 export default defineConfig({
   plugins: [react()],
   resolve: {
@@ -11,11 +19,11 @@ export default defineConfig({
   },
   server: {
     host: "127.0.0.1",
-    port: 5193,
+    port: webPort,
     strictPort: true,
     proxy: {
       "/api": {
-        target: "http://127.0.0.1:3193",
+        target: `http://127.0.0.1:${runtimePort}`,
         changeOrigin: true
       }
     }
