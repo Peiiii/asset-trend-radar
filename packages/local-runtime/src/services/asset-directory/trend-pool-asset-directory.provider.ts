@@ -4,6 +4,7 @@ import { toIsoDateTime } from "@gold-insights/market-domain";
 import { AssetDirectoryItemMetricsService } from "./asset-directory-item-metrics.service";
 import { AssetDirectoryPageBuilderService } from "./asset-directory-page-builder.service";
 import type { AssetDirectoryProvider, AssetDirectoryQuery } from "./asset-directory-provider.types";
+import type { TrendPoolAssetValuationService } from "./valuation/trend-pool-asset-valuation.service";
 
 type TrendPoolAssetDirectoryConfig = {
   categoryId: AssetDirectoryCategoryId;
@@ -23,7 +24,8 @@ export class TrendPoolAssetDirectoryProvider implements AssetDirectoryProvider {
   public constructor(
     private readonly config: TrendPoolAssetDirectoryConfig,
     private readonly assetRepository: SqliteAssetRepository,
-    private readonly marketDataRepository: SqliteMarketDataRepository
+    private readonly marketDataRepository: SqliteMarketDataRepository,
+    private readonly valuationService?: TrendPoolAssetValuationService
   ) {
     this.categoryId = this.config.categoryId;
     this.itemMetricsService = new AssetDirectoryItemMetricsService(this.marketDataRepository);
@@ -34,9 +36,9 @@ export class TrendPoolAssetDirectoryProvider implements AssetDirectoryProvider {
     return this.buildCategory(assets);
   };
 
-  public listItems = (query: AssetDirectoryQuery): AssetDirectoryPageResponse => {
+  public listItems = async (query: AssetDirectoryQuery): Promise<AssetDirectoryPageResponse> => {
     const assets = this.listDirectoryAssets();
-    const items = this.toDirectoryItems(assets);
+    const items = await this.toDirectoryItems(assets);
 
     return this.pageBuilderService.buildPage({
       category: this.buildCategory(assets),
@@ -57,8 +59,10 @@ export class TrendPoolAssetDirectoryProvider implements AssetDirectoryProvider {
       .filter((asset) => assetTypeFilters.size === 0 || assetTypeFilters.has(asset.assetType));
   };
 
-  private toDirectoryItems = (assets: AssetSummary[]): AssetDirectoryItem[] =>
-    assets.map((asset) => this.itemMetricsService.toInPoolItem(this.categoryId, asset));
+  private toDirectoryItems = async (assets: AssetSummary[]): Promise<AssetDirectoryItem[]> => {
+    const items = assets.map((asset) => this.itemMetricsService.toInPoolItem(this.categoryId, asset));
+    return this.valuationService ? this.valuationService.enrichItems(items) : items;
+  };
 
   private buildCategory = (assets: AssetSummary[]): AssetDirectoryCategory => {
     const markets = this.getFacetValues(assets, (asset) => asset.market, this.config.markets);

@@ -91,7 +91,7 @@ export class NasdaqUsEquityValuationProvider {
     for (const symbol of normalizedSymbols) {
       const stockItem = stockItemsBySymbol.get(symbol);
 
-      if (stockItem) {
+      if (stockItem && stockItem.marketCap !== null) {
         requestedItemsBySymbol.set(symbol, stockItem);
       } else {
         missingSymbols.push(symbol);

@@ -98,6 +98,7 @@ try {
   const usMarketCapWall = await fetchJson("/api/chart-wall?range=6m&timeframe=1d&universe=global&level=all&market=%E7%BE%8E%E8%82%A1&assetType=equity&sort=market_cap&order=desc");
   const usFundMarketCapWall = await fetchJson("/api/chart-wall?range=6m&timeframe=1d&universe=global&level=all&market=%E7%BE%8E%E8%82%A1&assetType=fund&sort=market_cap&order=desc");
   const globalMarketCapWall = await fetchJson("/api/chart-wall?range=6m&timeframe=1d&universe=global&level=all&market=all&assetType=all&sort=market_cap&order=desc");
+  const commodityFundMarketCapWall = await fetchJson("/api/chart-wall?range=6m&timeframe=1d&universe=global&level=all&market=%E5%95%86%E5%93%81&assetType=fund&sort=market_cap&order=desc");
   const fundWall = await fetchJson("/api/chart-wall?range=6m&timeframe=1d&universe=global&level=all&market=all&assetType=fund&sort=return_1m");
   const commodityWall = await fetchJson("/api/chart-wall?range=6m&timeframe=1d&universe=global&level=all&market=%E5%95%86%E5%93%81&assetType=all&sort=volume_ratio");
   const preciousMetalsWall = await fetchJson("/api/chart-wall?range=6m&timeframe=1d&universe=global&level=all&market=%E5%95%86%E5%93%81&assetType=all&tag=%E8%B4%B5%E9%87%91%E5%B1%9E&sort=return_1m");
@@ -121,6 +122,8 @@ try {
   const fundCatalogPage = await fetchJson("/api/funds/eastmoney/catalog?keyword=%E5%8D%8E%E5%A4%8F&fundType=all&status=all&limit=20&offset=0");
   const sortedFundCatalogPage = await fetchJson("/api/funds/eastmoney/catalog?keyword=%E5%8D%8E%E5%A4%8F&fundType=all&status=not_imported&sort=return_1m&order=desc&limit=20&offset=0");
   const usEquityDirectoryMarketCapPage = await fetchJson("/api/directories/us-equity/items?status=all&sort=market_cap&order=desc&limit=20&offset=0");
+  const commodityDirectoryMarketCapPage = await fetchJson("/api/directories/commodities/items?status=all&sort=market_cap&order=desc&limit=20&offset=0");
+  const macroDirectoryMarketCapPage = await fetchJson("/api/directories/macro/items?status=all&sort=market_cap&order=desc&limit=20&offset=0");
   const fundSearch = await fetchJson("/api/funds/eastmoney/search?keyword=000001&limit=5");
   const importedFund = await fetchJson("/api/funds/eastmoney/import", {
     method: "POST",
@@ -177,7 +180,7 @@ try {
   assert(assetTypes.has("equity") && assetTypes.has("index") && assetTypes.has("fund") && assetTypes.has("commodity") && assetTypes.has("macro") && assetTypes.has("crypto"), "expected multiple asset types");
   assert(levels.has("broad-index") && levels.has("sector-index") && levels.has("company") && levels.has("instrument"), "expected multiple asset levels");
   assert(aShareWall.items.length >= 8 && aShareWall.items.every((item) => item.market === "A 股"), "expected A-share filtered chart wall");
-  assertMarketCapSmoke({ assert, isSortedDesc, globalMarketCapWall, usMarketCapWall, usFundMarketCapWall });
+  assertMarketCapSmoke({ assert, isSortedDesc, globalMarketCapWall, usMarketCapWall, usFundMarketCapWall, commodityFundMarketCapWall, commodityDirectoryMarketCapPage, macroDirectoryMarketCapPage });
   assert(fundWall.items.length >= 60 && fundWall.items.every((item) => item.assetType === "fund"), "expected expanded real fund/ETF chart wall");
   assert(fundWall.items.some((item) => item.market === "基金" && item.source === "eastmoney"), "expected China mutual funds from Eastmoney");
   assert(commodityWall.items.length >= 36 && commodityWall.items.every((item) => item.market === "商品"), "expected expanded commodity chart wall");

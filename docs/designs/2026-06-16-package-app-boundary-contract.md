@@ -110,6 +110,8 @@ packages/market-domain
 - NASDAQ Trader 符号目录和 Yahoo chart 端点不提供 market cap；美股估值必须来自 Nasdaq screener/quote summary 或后续
   新增的真实 fundamentals 源。不得用成交额、价格或本地 K 线估算市值。
 - 其它资产类别在没有全量 catalog API 前，只能展示真实已入库资产，不做假全量；如果需要全量目录，先扩展 `market-domain` contract 和 `local-runtime` catalog service。
+- 商品、债券、宏观等趋势池目录里的 USD ETF/基金代理标的可以复用 Nasdaq quote summary 的真实规模快照；商品期货、宏观指数、
+  外汇等没有适用份额规模语义的资产不得伪造市值。
 - 通用目录表格、状态 badge、详情/对比入口可以在 app 层复用；外部目录同步、导入、去重和走势池写入必须在 runtime 层实现。
 - 目录表格采用统一基础列契约：名称、类别/市场、走势池状态、最新价/净值、规模/市值、1D、1M、3M、6M、1Y、数据状态、操作。各资产类别可以通过 adapter 提供不同字段取值和类别特有动作，但不要为同义字段另起一套布局、颜色或交互。
 - 表格横向滚动、首列/操作列 fixed、收益颜色语义、hover/focus 等基础体验应复用公共组件；除非某类资产有明确业务差异，否则不要复制一套近似 CSS 或列结构。

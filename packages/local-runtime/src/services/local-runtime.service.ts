@@ -24,6 +24,7 @@ import { FundAssetDirectoryProvider } from "./asset-directory/fund-asset-directo
 import { NasdaqUsEquityDirectoryProvider } from "./asset-directory/nasdaq-us-equity-directory.provider";
 import { NasdaqUsEquityImportService } from "./asset-directory/nasdaq-us-equity-import.service";
 import { TrendPoolAssetDirectoryProvider } from "./asset-directory/trend-pool-asset-directory.provider";
+import { TrendPoolAssetValuationService } from "./asset-directory/valuation/trend-pool-asset-valuation.service";
 import { ChartWallQueryService } from "./chart-wall-query.service";
 import { ChartWallValuationService } from "./chart-wall-valuation.service";
 import { FundDiscoveryService } from "./fund-discovery.service";
@@ -31,6 +32,7 @@ import { IngestionWorkerService } from "./ingestion-worker.service";
 import { LocalApiServerService } from "./local-api-server.service";
 import { RuntimeTaskRecoveryService } from "./runtime-task-recovery.service";
 import { TaskCenterService } from "./task-center.service";
+import { NasdaqAssetValuationService } from "./valuation/nasdaq-asset-valuation.service";
 
 export class LocalRuntimeService {
   private readonly databaseService: SqliteDatabaseService;
@@ -69,7 +71,9 @@ export class LocalRuntimeService {
     const eastmoneyAshareCatalogProvider = new EastmoneyAshareCatalogProvider();
     const exchangeRateProvider = new OpenExchangeRateProvider();
     const valuationNormalizationService = new AssetValuationNormalizationService(exchangeRateProvider);
-    const chartWallValuationService = new ChartWallValuationService(cryptoMarketsProvider, eastmoneyAshareCatalogProvider, nasdaqUsEquityValuationProvider, valuationNormalizationService);
+    const nasdaqAssetValuationService = new NasdaqAssetValuationService(nasdaqUsEquityValuationProvider);
+    const trendPoolAssetValuationService = new TrendPoolAssetValuationService(nasdaqAssetValuationService, valuationNormalizationService);
+    const chartWallValuationService = new ChartWallValuationService(cryptoMarketsProvider, eastmoneyAshareCatalogProvider, nasdaqAssetValuationService, valuationNormalizationService);
     const queryService = new ChartWallQueryService(
       this.options,
       assetRepository,
@@ -118,11 +122,11 @@ export class LocalRuntimeService {
       new TrendPoolAssetDirectoryProvider({
         categoryId: "commodities",
         label: "商品目录",
-        description: "真实已入库商品期货与商品 ETF 目录，先覆盖本地走势池。",
+        description: "真实已入库商品期货与商品 ETF 目录；ETF 规模来自 Nasdaq 快照，期货只展示走势。",
         assetTypes: ["commodity", "fund"],
         markets: ["商品"],
         marketFilters: ["商品"]
-      }, assetRepository, marketDataRepository),
+      }, assetRepository, marketDataRepository, trendPoolAssetValuationService),
       new NasdaqUsEquityDirectoryProvider(nasdaqUsEquityCatalogProvider, nasdaqUsEquityValuationProvider, assetRepository, marketDataRepository, nasdaqUsEquityImportService),
       new EastmoneyAshareDirectoryProvider(eastmoneyAshareCatalogProvider, assetRepository, marketDataRepository, eastmoneyAshareImportService),
       new TrendPoolAssetDirectoryProvider({
@@ -136,11 +140,11 @@ export class LocalRuntimeService {
       new TrendPoolAssetDirectoryProvider({
         categoryId: "macro",
         label: "宏观目录",
-        description: "真实已入库宏观、外汇与债券代理指标目录。",
+        description: "真实已入库宏观、外汇与债券代理指标目录；USD 债券 ETF 规模来自 Nasdaq 快照。",
         assetTypes: ["macro", "fund"],
         markets: ["宏观", "外汇", "债券"],
         marketFilters: ["宏观", "外汇", "债券"]
-      }, assetRepository, marketDataRepository)
+      }, assetRepository, marketDataRepository, trendPoolAssetValuationService)
     ]);
     const taskCenterService = new TaskCenterService(ingestionJobRepository);
 
