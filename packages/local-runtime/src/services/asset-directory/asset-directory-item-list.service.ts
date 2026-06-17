@@ -6,7 +6,8 @@ export class AssetDirectoryItemListService {
       return this.sortByText(items, (item) => item.label, order);
     }
 
-    return this.sortByNullableNumber(items, (item) => this.getSortValue(item, sort), order);
+    const canUseRawMarketCap = sort === "market_cap" ? this.canUseRawMarketCap(items) : true;
+    return this.sortByNullableNumber(items, (item) => this.getSortValue(item, sort, canUseRawMarketCap), order);
   };
 
   public toFacets = (items: AssetDirectoryItem[], getValue: (item: AssetDirectoryItem) => string): AssetDirectoryFacet[] =>
@@ -18,12 +19,12 @@ export class AssetDirectoryItemListService {
       .map(([value, count]) => ({ value, label: value, count }))
       .sort((left, right) => right.count - left.count || left.label.localeCompare(right.label, "zh-Hans-CN"));
 
-  private getSortValue = (item: AssetDirectoryItem, sort: AssetDirectorySortKey): number | null => {
+  private getSortValue = (item: AssetDirectoryItem, sort: AssetDirectorySortKey, canUseRawMarketCap: boolean): number | null => {
     switch (sort) {
       case "latest_value":
         return item.latestValue;
       case "market_cap":
-        return item.valuation.marketCap;
+        return this.getComparableMarketCap(item, canUseRawMarketCap);
       case "return_1d":
         return item.returns.return1d;
       case "return_1m":
@@ -68,4 +69,41 @@ export class AssetDirectoryItemListService {
       const primary = getValue(left).localeCompare(getValue(right), "zh-Hans-CN");
       return order === "asc" ? primary : -primary;
     });
+
+  private getComparableMarketCap = (item: AssetDirectoryItem, canUseRawMarketCap: boolean): number | null => {
+    const normalizedValue = item.valuation.normalized?.marketCap ?? item.valuation.normalized?.floatMarketCap ?? item.valuation.normalized?.fullyDilutedValuation ?? null;
+
+    if (normalizedValue !== null) {
+      return normalizedValue;
+    }
+
+    const rawValue = item.valuation.marketCap ?? item.valuation.floatMarketCap ?? item.valuation.fullyDilutedValuation ?? null;
+
+    if (canUseRawMarketCap || this.isUsdLikeCurrency(item.valuation.currency)) {
+      return rawValue;
+    }
+
+    return null;
+  };
+
+  private canUseRawMarketCap = (items: AssetDirectoryItem[]): boolean => {
+    const currencies = new Set(
+      items
+        .filter((item) => (item.valuation.marketCap ?? item.valuation.floatMarketCap ?? item.valuation.fullyDilutedValuation) !== null)
+        .map((item) => this.normalizeCurrency(item.valuation.currency))
+        .filter((currency): currency is string => currency !== null)
+    );
+
+    return currencies.size <= 1;
+  };
+
+  private normalizeCurrency = (value: string | null): string | null => {
+    const currency = value?.trim().toUpperCase() ?? "";
+    return currency.length > 0 ? currency : null;
+  };
+
+  private isUsdLikeCurrency = (value: string | null): boolean => {
+    const currency = this.normalizeCurrency(value);
+    return currency === "USD" || currency === "USDT" || currency === "USDC";
+  };
 }

@@ -18,7 +18,7 @@ export function getValuationDisplay(valuation: AssetValuation, fallbackCurrency:
   if (primaryValue !== null) {
     return {
       label: formatLargeMoney(primaryValue, currency),
-      detail: getValuationPrimaryLabel(valuation),
+      detail: getValuationDetail(valuation, currency),
       title: getValuationTitle(valuation, currency),
       rankLabel,
       value: primaryValue
@@ -45,7 +45,7 @@ export function getValuationDisplay(valuation: AssetValuation, fallbackCurrency:
 }
 
 export function getValuationSortableValue(valuation: AssetValuation): number | null {
-  return valuation.marketCap ?? valuation.floatMarketCap ?? valuation.fullyDilutedValuation ?? null;
+  return valuation.normalized?.marketCap ?? valuation.normalized?.floatMarketCap ?? valuation.normalized?.fullyDilutedValuation ?? valuation.marketCap ?? valuation.floatMarketCap ?? valuation.fullyDilutedValuation ?? null;
 }
 
 export function formatLargeMoney(value: number | null, currency: string): string {
@@ -94,16 +94,36 @@ function getValuationPrimaryLabel(valuation: AssetValuation): string {
   return "完全稀释估值";
 }
 
+function getValuationDetail(valuation: AssetValuation, currency: string): string {
+  const normalizedValue = valuation.normalized?.marketCap ?? valuation.normalized?.floatMarketCap ?? valuation.normalized?.fullyDilutedValuation ?? null;
+  const primaryLabel = getValuationPrimaryLabel(valuation);
+
+  if (normalizedValue === null || currency === "USD" || currency === "USDT" || currency === "USDC") {
+    return primaryLabel;
+  }
+
+  return `${primaryLabel} / 约 ${formatLargeMoney(normalizedValue, "USD")}`;
+}
+
 function getValuationTitle(valuation: AssetValuation, currency: string): string {
+  const normalized = valuation.normalized;
+  const normalizedMarketCap = normalized?.marketCap ?? null;
+  const shouldShowNormalized = normalized !== null && !isUsdLikeCurrency(currency);
   const parts = [
     valuation.marketCap !== null ? `总市值 ${formatLargeMoney(valuation.marketCap, currency)}` : null,
     valuation.floatMarketCap !== null ? `流通市值 ${formatLargeMoney(valuation.floatMarketCap, currency)}` : null,
     valuation.fullyDilutedValuation !== null ? `完全稀释估值 ${formatLargeMoney(valuation.fullyDilutedValuation, currency)}` : null,
     valuation.turnover24h !== null ? `24h 成交额 ${formatLargeMoney(valuation.turnover24h, currency)}` : null,
+    shouldShowNormalized && normalizedMarketCap !== null ? `折算市值 ${formatLargeMoney(normalizedMarketCap, "USD")}` : null,
+    shouldShowNormalized ? `汇率来源 ${normalized.source}` : null,
     valuation.source ? `来源 ${valuation.source}` : null
   ].filter(Boolean);
 
   return parts.length > 0 ? parts.join(" / ") : "暂无规模快照";
+}
+
+function isUsdLikeCurrency(currency: string): boolean {
+  return currency === "USD" || currency === "USDT" || currency === "USDC";
 }
 
 function formatCompactNumber(value: number): string {

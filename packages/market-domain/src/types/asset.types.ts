@@ -20,6 +20,17 @@ export type AssetSummary = {
   tags?: string[];
 };
 
+export type AssetValuationNormalization = {
+  currency: "USD";
+  marketCap: number | null;
+  floatMarketCap: number | null;
+  fullyDilutedValuation: number | null;
+  turnover24h: number | null;
+  rateToUsd: number;
+  source: string;
+  updatedAt: string | null;
+};
+
 export type AssetValuation = {
   marketCap: number | null;
   floatMarketCap: number | null;
@@ -29,4 +40,5 @@ export type AssetValuation = {
   currency: string | null;
   source: string | null;
   updatedAt: string | null;
+  normalized: AssetValuationNormalization | null;
 };

@@ -1,5 +1,6 @@
 import type { CoinGeckoCryptoMarketItem, CoinGeckoCryptoMarketsProvider, EastmoneyAshareCatalogItem, EastmoneyAshareCatalogProvider, NasdaqUsEquityValuationItem, NasdaqUsEquityValuationProvider } from "@gold-insights/data-adapters";
 import type { AssetSummary, AssetValuation, ChartWallItem } from "@gold-insights/market-domain";
+import type { AssetValuationNormalizationService } from "./asset-valuation-normalization.service";
 
 type ValuationLookup = {
   cryptoMarketsBySymbol: Map<string, CoinGeckoCryptoMarketItem>;
@@ -11,7 +12,8 @@ export class ChartWallValuationService {
   public constructor(
     private readonly cryptoMarketsProvider: CoinGeckoCryptoMarketsProvider,
     private readonly aShareCatalogProvider: EastmoneyAshareCatalogProvider,
-    private readonly usEquityValuationProvider: NasdaqUsEquityValuationProvider
+    private readonly usEquityValuationProvider: NasdaqUsEquityValuationProvider,
+    private readonly normalizationService: AssetValuationNormalizationService
   ) {}
 
   public enrichForSort = async (items: ChartWallItem[], sort: string): Promise<ChartWallItem[]> => {
@@ -21,10 +23,12 @@ export class ChartWallValuationService {
 
     const lookup = await this.loadLookup(items);
 
-    return items.map((item) => ({
+    const valuationEnrichedItems = items.map((item) => ({
       ...item,
       valuation: this.getValuation(item, lookup) ?? item.valuation
     }));
+
+    return this.normalizationService.normalizeItems(valuationEnrichedItems);
   };
 
   public empty = (): AssetValuation => ({
@@ -35,7 +39,8 @@ export class ChartWallValuationService {
     marketCapRank: null,
     currency: null,
     source: null,
-    updatedAt: null
+    updatedAt: null,
+    normalized: null
   });
 
   private hasSupportedAssets = (items: ChartWallItem[]): boolean =>
@@ -97,7 +102,8 @@ export class ChartWallValuationService {
     marketCapRank: item.marketCapRank,
     currency: item.currency,
     source: item.source,
-    updatedAt: item.latestAt
+    updatedAt: item.latestAt,
+    normalized: null
   });
 
   private toAshareValuation = (item: EastmoneyAshareCatalogItem): AssetValuation => ({
@@ -108,7 +114,8 @@ export class ChartWallValuationService {
     marketCapRank: null,
     currency: item.currency,
     source: item.source,
-    updatedAt: item.latestAt
+    updatedAt: item.latestAt,
+    normalized: null
   });
 
   private toUsValuation = (item: NasdaqUsEquityValuationItem): AssetValuation => ({
@@ -119,7 +126,8 @@ export class ChartWallValuationService {
     marketCapRank: null,
     currency: item.currency,
     source: item.source,
-    updatedAt: item.latestAt
+    updatedAt: item.latestAt,
+    normalized: null
   });
 
   private toAshareItemsBySymbol = (items: EastmoneyAshareCatalogItem[]): Map<string, EastmoneyAshareCatalogItem> =>

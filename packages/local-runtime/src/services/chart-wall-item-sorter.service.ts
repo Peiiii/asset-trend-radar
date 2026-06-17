@@ -26,7 +26,7 @@ export class ChartWallItemSorter {
       case "data_point_count":
         return this.sortByNullableNumber(items, (item) => item.dataPointCount, order);
       case "market_cap":
-        return this.sortByNullableNumber(items, (item) => item.valuation.marketCap ?? item.valuation.floatMarketCap ?? item.valuation.fullyDilutedValuation, order);
+        return this.sortByNullableNumber(items, (item) => this.getComparableMarketCap(item, this.canUseRawMarketCap(items)), order);
       case "market":
         return this.sortByText(items, (item) => item.market, order);
       case "asset_type":
@@ -67,4 +67,44 @@ export class ChartWallItemSorter {
       const primary = getValue(left).localeCompare(getValue(right), "zh-Hans-CN");
       return (order === "asc" ? primary : -primary) || right.trendScore - left.trendScore;
     });
+
+  private getComparableMarketCap = (item: ChartWallItem, canUseRawMarketCap: boolean): number | null => {
+    const normalizedValue = item.valuation.normalized?.marketCap ?? item.valuation.normalized?.floatMarketCap ?? item.valuation.normalized?.fullyDilutedValuation ?? null;
+
+    if (normalizedValue !== null) {
+      return normalizedValue;
+    }
+
+    const rawValue = this.getRawMarketCap(item);
+
+    if (canUseRawMarketCap || this.isUsdLikeCurrency(item.valuation.currency)) {
+      return rawValue;
+    }
+
+    return null;
+  };
+
+  private canUseRawMarketCap = (items: ChartWallItem[]): boolean => {
+    const currencies = new Set(
+      items
+        .filter((item) => this.getRawMarketCap(item) !== null)
+        .map((item) => this.normalizeCurrency(item.valuation.currency))
+        .filter((currency): currency is string => currency !== null)
+    );
+
+    return currencies.size <= 1;
+  };
+
+  private getRawMarketCap = (item: ChartWallItem): number | null =>
+    item.valuation.marketCap ?? item.valuation.floatMarketCap ?? item.valuation.fullyDilutedValuation ?? null;
+
+  private normalizeCurrency = (value: string | null): string | null => {
+    const currency = value?.trim().toUpperCase() ?? "";
+    return currency.length > 0 ? currency : null;
+  };
+
+  private isUsdLikeCurrency = (value: string | null): boolean => {
+    const currency = this.normalizeCurrency(value);
+    return currency === "USD" || currency === "USDT" || currency === "USDC";
+  };
 }

@@ -9,6 +9,7 @@ export class AssetDirectoryValuationFactory {
     marketCapRank: null,
     currency: null,
     source: null,
-    updatedAt: null
+    updatedAt: null,
+    normalized: null
   });
 }

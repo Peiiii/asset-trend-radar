@@ -88,8 +88,9 @@ packages/market-domain
 - 不要把概览型模块继续塞进图表墙列表区；概览型组件优先进入 `overview-section`。
 - 不要为了概览页复制一套筛选状态；筛选控件应复用同一套 URL query 和 API 口径。
 - 只要概览指标来自已有 `ChartWallResponse`，就留在 app 展示层编排；如果需要新的权威聚合字段，先扩展 `market-domain` response contract，再由 `local-runtime` 计算。
-- 图表墙只在 runtime 中按需补全真实 `AssetValuation` 后再做 `market_cap` 排序。前端不得用成交量、价格或其它展示字段
-  伪造规模排序；没有估值来源的资产应作为缺值排到后面。
+- 图表墙只在 runtime 中按需补全真实 `AssetValuation` 后再做 `market_cap` 排序。跨币种场景必须由
+  `data-adapters` 的真实汇率快照和 `local-runtime` 的 USD 归一化字段提供可比排序值；前端不得用成交量、价格、
+  固定汇率或其它展示字段伪造规模排序。没有估值来源或汇率来源的资产应作为缺值排到后面，只有同币种列表可以回退原币种数值排序。
 
 ### 资产目录
 

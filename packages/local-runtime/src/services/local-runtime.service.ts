@@ -1,4 +1,4 @@
-import { BinanceCryptoCatalogProvider, CoinGeckoCryptoMarketsProvider, EastmoneyAshareCatalogProvider, NasdaqUsEquityCatalogProvider, NasdaqUsEquityValuationProvider } from "@gold-insights/data-adapters";
+import { BinanceCryptoCatalogProvider, CoinGeckoCryptoMarketsProvider, EastmoneyAshareCatalogProvider, NasdaqUsEquityCatalogProvider, NasdaqUsEquityValuationProvider, OpenExchangeRateProvider } from "@gold-insights/data-adapters";
 import { LocalRawFileRepository, SqliteAssetRepository, SqliteDatabaseService, SqliteFundCatalogRepository, SqliteIngestionJobRepository, SqliteMarketDataRepository, SqliteScannerEventRepository, SqliteWatchlistRepository } from "@gold-insights/data-storage";
 import { AssetDirectoryController } from "../controllers/asset-directory.controller";
 import { AssetsController } from "../controllers/assets.controller";
@@ -14,6 +14,7 @@ import { WatchlistsController } from "../controllers/watchlists.controller";
 import { assetUniverse, tradableAssetUniverse } from "../configs/asset-universe.config";
 import type { LocalRuntimeOptions, LocalRuntimeStartResult } from "../types/local-runtime-options.types";
 import { AssetDirectoryService } from "./asset-directory.service";
+import { AssetValuationNormalizationService } from "./asset-valuation-normalization.service";
 import { AssetDirectoryHistoryImportService } from "./asset-directory/asset-directory-history-import.service";
 import { CryptoAssetDirectoryProvider } from "./asset-directory/crypto-asset-directory.provider";
 import { CryptoAssetImportService } from "./asset-directory/crypto-asset-import.service";
@@ -66,7 +67,9 @@ export class LocalRuntimeService {
     const nasdaqUsEquityCatalogProvider = new NasdaqUsEquityCatalogProvider();
     const nasdaqUsEquityValuationProvider = new NasdaqUsEquityValuationProvider();
     const eastmoneyAshareCatalogProvider = new EastmoneyAshareCatalogProvider();
-    const chartWallValuationService = new ChartWallValuationService(cryptoMarketsProvider, eastmoneyAshareCatalogProvider, nasdaqUsEquityValuationProvider);
+    const exchangeRateProvider = new OpenExchangeRateProvider();
+    const valuationNormalizationService = new AssetValuationNormalizationService(exchangeRateProvider);
+    const chartWallValuationService = new ChartWallValuationService(cryptoMarketsProvider, eastmoneyAshareCatalogProvider, nasdaqUsEquityValuationProvider, valuationNormalizationService);
     const queryService = new ChartWallQueryService(
       this.options,
       assetRepository,
