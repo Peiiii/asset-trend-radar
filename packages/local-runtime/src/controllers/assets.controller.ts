@@ -33,8 +33,8 @@ export class AssetsController {
     return true;
   };
 
-  public handleDetail = (assetId: string, url: URL, response: ServerResponse): boolean => {
-    const payload = this.queryService.getAssetDetail({
+  public handleDetail = async (assetId: string, url: URL, response: ServerResponse): Promise<boolean> => {
+    const payload = await this.queryService.getAssetDetail({
       assetId,
       range: getRangeQueryParam(url),
       timeframe: getTimeframeQueryParam(url)

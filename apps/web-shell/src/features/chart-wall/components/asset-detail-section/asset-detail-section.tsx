@@ -3,6 +3,7 @@ import { Button, EmptyState, SignalBadge, TechnicalChart } from "@gold-insights/
 import type { ChartWallItem } from "@gold-insights/market-domain";
 import { formatDateTime, formatPrice } from "@/shared/utils/format-number.utils";
 import { AssetChartCard } from "../asset-chart-card";
+import { getValuationDisplay, type ValuationDisplayStatus } from "../../utils/valuation-format.utils";
 import { assetTypeLabel, breakoutLabel, breakoutTone, buildReturnMetrics, drawdownTone, formatNumber, formatPercent, macdLabel, macdTone, returnTone } from "./asset-detail-section.utils";
 import "./asset-detail-section.css";
 
@@ -14,12 +15,21 @@ type AssetDetailSectionProps = {
   onCompare(assetId: string): void;
 };
 
+type DetailMetricProps = {
+  label: string;
+  value: string | JSX.Element;
+  detail?: string;
+  title?: string;
+  tone?: "positive" | "negative" | "neutral" | "amber" | "blue";
+};
+
 export function AssetDetailSection({ item, relatedItems, onSelect, onPin, onCompare }: AssetDetailSectionProps): JSX.Element {
   if (!item) {
     return <EmptyState title="没有可查看资产" description="当前筛选条件下没有资产。" />;
   }
 
   const topEvents = [...item.events].sort((left, right) => right.severity - left.severity).slice(0, 4);
+  const valuationDisplay = getValuationDisplay(item.valuation, item.currency, { assetType: item.assetType });
 
   return (
     <section className="single-view-section asset-detail-section">
@@ -36,6 +46,13 @@ export function AssetDetailSection({ item, relatedItems, onSelect, onPin, onComp
         </div>
         <div className="asset-detail-summary__metrics">
           <DetailMetric label="最新价" value={formatPrice(item.lastPrice, item.currency)} />
+          <DetailMetric
+            label="市值/规模"
+            value={valuationDisplay.label}
+            detail={valuationDisplay.detail}
+            title={valuationDisplay.title}
+            tone={valuationMetricTone(valuationDisplay.status)}
+          />
           <DetailMetric label="区间涨幅" value={formatPercent(item.returnPct)} tone={returnTone(item.returnPct)} />
           <DetailMetric label="趋势分" value={String(item.trendScore)} tone={item.trendScore >= 60 ? "positive" : item.trendScore <= 35 ? "negative" : "neutral"} />
           <DetailMetric label="当前回撤" value={formatPercent(item.drawdownPct)} tone={drawdownTone(item.drawdownPct)} />
@@ -122,11 +139,12 @@ export function AssetDetailSection({ item, relatedItems, onSelect, onPin, onComp
   );
 }
 
-function DetailMetric({ label, value, tone = "neutral" }: { label: string; value: string | JSX.Element; tone?: "positive" | "negative" | "neutral" | "amber" | "blue" }): JSX.Element {
+function DetailMetric({ label, value, detail, title, tone = "neutral" }: DetailMetricProps): JSX.Element {
   return (
-    <div className={`asset-detail-metric asset-detail-metric--${tone}`}>
+    <div className={`asset-detail-metric asset-detail-metric--${tone}`} title={title}>
       <span>{label}</span>
       <strong>{value}</strong>
+      {detail && <small>{detail}</small>}
     </div>
   );
 }
@@ -138,4 +156,16 @@ function DetailRow({ label, value }: { label: string; value: string }): JSX.Elem
       <dd>{value}</dd>
     </div>
   );
+}
+
+function valuationMetricTone(status: ValuationDisplayStatus): "positive" | "negative" | "neutral" | "amber" | "blue" {
+  if (status === "available") {
+    return "blue";
+  }
+
+  if (status === "turnover_only") {
+    return "amber";
+  }
+
+  return "neutral";
 }

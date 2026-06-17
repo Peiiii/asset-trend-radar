@@ -112,7 +112,7 @@ export class ChartWallQueryService {
     };
   };
 
-  public getAssetDetail = (query: AssetBarsQuery): AssetDetailResponse | null => {
+  public getAssetDetail = async (query: AssetBarsQuery): Promise<AssetDetailResponse | null> => {
     const asset = this.assetRepository.getAsset(query.assetId);
 
     if (!asset) {
@@ -120,12 +120,27 @@ export class ChartWallQueryService {
     }
 
     const pinnedIds = new Set(this.watchlistRepository.listWatchlists().flatMap((watchlist) => watchlist.assets.map((watchlistAsset) => watchlistAsset.id)));
+    const detailQuery = {
+      range: query.range,
+      timeframe: query.timeframe,
+      universe: "global",
+      level: "all",
+      market: "all",
+      assetType: "all",
+      sort: "trend_score",
+      order: "desc" as const,
+      signal: "all",
+      tag: "all",
+      includeValuations: true
+    };
+    const item = this.getChartWallItem(asset, detailQuery, pinnedIds, new Set());
+    const [valuationEnrichedItem] = await this.valuationService.enrichForSort([item], "trend_score", true);
 
     return {
       generatedAt: new Date().toISOString(),
       timeframe: query.timeframe,
       range: query.range,
-      item: this.getChartWallItem(asset, { range: query.range, timeframe: query.timeframe, universe: "global", level: "all", market: "all", assetType: "all", sort: "trend_score", order: "desc", signal: "all", tag: "all", includeValuations: false }, pinnedIds, new Set())
+      item: valuationEnrichedItem ?? item
     };
   };
 

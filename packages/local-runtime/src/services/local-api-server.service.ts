@@ -192,7 +192,7 @@ export class LocalApiServerService {
 
       const assetDetailMatch = /^\/api\/assets\/([^/]+)\/detail$/.exec(url.pathname);
       if (request.method === "GET" && assetDetailMatch) {
-        const handled = this.assetsController.handleDetail(assetDetailMatch[1], url, response);
+        const handled = await this.assetsController.handleDetail(assetDetailMatch[1], url, response);
 
         if (!handled) {
           this.errorResponseProvider.writeNotFound(response);

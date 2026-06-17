@@ -63,7 +63,7 @@
 
 .asset-detail-summary__metrics {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 10px;
 }
 
@@ -127,6 +127,17 @@
   overflow-wrap: anywhere;
   color: #172033;
   font-size: 18px;
+}
+
+.asset-detail-metric small {
+  display: block;
+  margin-top: 4px;
+  overflow: hidden;
+  color: #667386;
+  font-size: 11px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .return-matrix {

@@ -219,7 +219,7 @@ try {
   );
   assert(chartWall.items.some((item) => item.return1m !== null && item.return6m !== null && item.drawdownPct !== null), "expected fixed-window return and drawdown metrics");
   assert(assetDetail.asset.symbol === "NVDA", "expected asset detail response");
-  assert(assetDrilldownDetail.item.id === "us-nvda" && assetDrilldownDetail.item.symbol === "NVDA" && assetDrilldownDetail.item.dataPointCount >= 15, "expected independent asset drilldown detail response");
+  assert(assetDrilldownDetail.item.id === "us-nvda" && assetDrilldownDetail.item.symbol === "NVDA" && assetDrilldownDetail.item.dataPointCount >= 15 && assetDrilldownDetail.item.valuation.source === "nasdaq" && assetDrilldownDetail.item.valuation.marketCap > 0, "expected independent asset drilldown detail response with Nasdaq valuation");
   assert(assetBars.bars.length >= 60, "expected 3M asset bars");
   assert(assetIndicators.indicators.length >= 60, "expected 3M indicators");
   assert(mutualFundBars.source === "eastmoney" && mutualFundBars.bars.length >= 180, "expected Eastmoney mutual fund daily NAV history");
