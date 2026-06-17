@@ -18,6 +18,15 @@
   text-overflow: ellipsis;
 }
 
+.directory-valuation-cell--source_missing_value strong {
+  color: #986211;
+}
+
+.directory-valuation-cell--source_unavailable strong,
+.directory-valuation-cell--not_applicable strong {
+  color: #687386;
+}
+
 .directory-valuation-cell small {
   max-width: 100%;
   min-width: 0;
@@ -27,4 +36,8 @@
   font-weight: 850;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.directory-valuation-cell--source_missing_value small {
+  color: #986211;
 }

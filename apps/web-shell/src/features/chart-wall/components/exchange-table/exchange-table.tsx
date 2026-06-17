@@ -170,10 +170,10 @@ function ExchangeTableRow({ rank, item, sort, showValuationColumn, onSelect, onP
 }
 
 function ValuationCell({ item, active }: { item: ChartWallItem; active: boolean }): JSX.Element {
-  const display = getValuationDisplay(item.valuation, item.currency);
+  const display = getValuationDisplay(item.valuation, item.currency, { assetType: item.assetType });
 
   return (
-    <td className={activeSortCellClassName(active, "exchange-table__valuation")} title={display.title}>
+    <td className={`${activeSortCellClassName(active, "exchange-table__valuation")} exchange-table__valuation--${display.status}`} title={display.title}>
       <strong>{display.label}</strong>
       <small>{[display.detail, display.rankLabel].filter(Boolean).join(" / ")}</small>
     </td>

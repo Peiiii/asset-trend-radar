@@ -227,11 +227,11 @@ function getSortMetric(item: ChartWallItem, sort: string | undefined): { label: 
 }
 
 function valuationSortMetric(item: ChartWallItem): { label: string; value: string; tone: "positive" | "negative" | "neutral" } {
-  const display = getValuationDisplay(item.valuation, item.currency);
+  const display = getValuationDisplay(item.valuation, item.currency, { assetType: item.assetType });
   return {
     label: "市值",
     value: display.label,
-    tone: display.value === null ? "negative" : "neutral"
+    tone: "neutral"
   };
 }
 

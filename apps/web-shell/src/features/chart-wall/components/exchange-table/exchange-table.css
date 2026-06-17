@@ -282,6 +282,14 @@
   font-weight: 850;
 }
 
+.exchange-table__valuation--source_missing_value :is(strong, small) {
+  color: #986211;
+}
+
+.exchange-table__valuation:is(.exchange-table__valuation--source_unavailable, .exchange-table__valuation--not_applicable) :is(strong, small) {
+  color: #687386;
+}
+
 .exchange-table__metric .gi-price-change,
 .exchange-table .gi-signal-badge,
 .exchange-table .gi-trend-badge {

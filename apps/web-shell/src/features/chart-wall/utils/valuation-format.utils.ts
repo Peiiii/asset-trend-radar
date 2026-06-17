@@ -1,4 +1,6 @@
-import type { AssetValuation } from "@gold-insights/market-domain";
+import type { AssetType, AssetValuation } from "@gold-insights/market-domain";
+
+export type ValuationDisplayStatus = "available" | "turnover_only" | "not_applicable" | "source_missing_value" | "source_unavailable";
 
 export type ValuationDisplay = {
   label: string;
@@ -6,9 +8,10 @@ export type ValuationDisplay = {
   title: string;
   rankLabel: string | null;
   value: number | null;
+  status: ValuationDisplayStatus;
 };
 
-export function getValuationDisplay(valuation: AssetValuation, fallbackCurrency: string): ValuationDisplay {
+export function getValuationDisplay(valuation: AssetValuation, fallbackCurrency: string, context: { assetType?: AssetType } = {}): ValuationDisplay {
   const currency = valuation.currency ?? fallbackCurrency;
   const primaryValue = valuation.marketCap ?? valuation.floatMarketCap ?? valuation.fullyDilutedValuation;
   const fallbackValue = valuation.turnover24h;
@@ -21,7 +24,8 @@ export function getValuationDisplay(valuation: AssetValuation, fallbackCurrency:
       detail: getValuationDetail(valuation, currency),
       title: getValuationTitle(valuation, currency),
       rankLabel,
-      value: primaryValue
+      value: primaryValue,
+      status: "available"
     };
   }
 
@@ -31,16 +35,29 @@ export function getValuationDisplay(valuation: AssetValuation, fallbackCurrency:
       detail: "24h 成交额",
       title: getValuationTitle(valuation, currency),
       rankLabel,
-      value: fallbackValue
+      value: fallbackValue,
+      status: "turnover_only"
+    };
+  }
+
+  if (isNonValuationAssetType(context.assetType) && valuation.source === null) {
+    return {
+      label: "不适用",
+      detail: getNotApplicableDetail(context.assetType),
+      title: `${getNotApplicableDetail(context.assetType)}，不是后台加载中`,
+      rankLabel: null,
+      value,
+      status: "not_applicable"
     };
   }
 
   return {
-    label: valuation.source ? "暂无" : "未接入",
-    detail: valuation.source ? "暂无规模" : "源未提供",
-    title: valuation.source ? "当前来源暂未返回规模/市值快照" : "当前目录源未提供规模/市值快照，不是后台加载中",
+    label: valuation.source ? "无规模" : "未覆盖",
+    detail: valuation.source ? `${valuation.source} 未返回` : "无规模源",
+    title: valuation.source ? "当前来源已返回快照，但没有提供规模/市值字段，不是后台加载中" : "当前目录源未覆盖规模/市值快照，不是后台加载中",
     rankLabel: null,
-    value
+    value,
+    status: valuation.source ? "source_missing_value" : "source_unavailable"
   };
 }
 
@@ -124,6 +141,22 @@ function getValuationTitle(valuation: AssetValuation, currency: string): string 
 
 function isUsdLikeCurrency(currency: string): boolean {
   return currency === "USD" || currency === "USDT" || currency === "USDC";
+}
+
+function isNonValuationAssetType(assetType: AssetType | undefined): boolean {
+  return assetType === "index" || assetType === "commodity" || assetType === "macro";
+}
+
+function getNotApplicableDetail(assetType: AssetType | undefined): string {
+  if (assetType === "commodity") {
+    return "商品无市值";
+  }
+
+  if (assetType === "macro") {
+    return "宏观无市值";
+  }
+
+  return "指数无市值";
 }
 
 function formatCompactNumber(value: number): string {
