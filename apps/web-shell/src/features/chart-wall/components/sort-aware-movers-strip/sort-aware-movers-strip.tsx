@@ -27,8 +27,8 @@ type MoverEntry = {
 
 type MoversSnapshot = {
   metricLabel: string;
-  leaders: MoverEntry[];
-  laggards: MoverEntry[];
+  highEntries: MoverEntry[];
+  lowEntries: MoverEntry[];
   median: SortMetric | null;
   coverageLabel: string;
 };
@@ -54,14 +54,18 @@ export function SortAwareMoversStrip({ items, sort, order, onSelect, onCompare }
     );
   }
 
-  const primary = order === "asc" ? snapshot.laggards[0] : snapshot.leaders[0];
+  const orderedEntries = order === "asc" ? snapshot.lowEntries : snapshot.highEntries;
+  const oppositeEntries = order === "asc" ? snapshot.highEntries : snapshot.lowEntries;
+  const primary = orderedEntries[0];
+  const primaryIcon = order === "desc" ? "up" : "down";
+  const oppositeIcon = order === "desc" ? "down" : "up";
 
   return (
     <section className="sort-aware-movers" aria-label="排序异动">
       <div className="sort-aware-movers__header">
         <div>
           <h2>排序异动</h2>
-          <p>按当前排序指标提炼领涨、承压和中位数，先看分布再进具体图表。</p>
+          <p>按当前排序方向提炼前列、另一端和中位数，先看分布再进具体图表。</p>
         </div>
         <span>
           {snapshot.metricLabel}
@@ -70,9 +74,9 @@ export function SortAwareMoversStrip({ items, sort, order, onSelect, onCompare }
       </div>
 
       <div className="sort-aware-movers__grid">
-        <FeaturedMover entry={primary} title="当前榜首" description="按当前排序方向最靠前" icon={order === "desc" ? "up" : "down"} onSelect={onSelect} onCompare={onCompare} />
-        <MoverList title="领涨/高值" entries={snapshot.leaders} icon="up" onSelect={onSelect} />
-        <MoverList title="承压/低值" entries={snapshot.laggards} icon="down" onSelect={onSelect} />
+        <FeaturedMover entry={primary} title="当前榜首" description={order === "desc" ? "降序高值最靠前" : "升序低值最靠前"} icon={primaryIcon} onSelect={onSelect} onCompare={onCompare} />
+        <MoverList title={order === "desc" ? "当前前列 / 高值" : "当前前列 / 低值"} entries={orderedEntries} icon={primaryIcon} onSelect={onSelect} />
+        <MoverList title={order === "desc" ? "另一端 / 低值" : "另一端 / 高值"} entries={oppositeEntries} icon={oppositeIcon} onSelect={onSelect} />
         <DistributionCard median={snapshot.median} coverageLabel={snapshot.coverageLabel} totalCount={items.length} />
       </div>
     </section>
@@ -181,8 +185,8 @@ function buildMoversSnapshot(items: ChartWallItem[], sort: string): MoversSnapsh
 
   return {
     metricLabel: entries[0]?.metric.label ?? "当前指标",
-    leaders: sorted.slice(0, 3),
-    laggards: [...sorted].reverse().slice(0, 3),
+    highEntries: sorted.slice(0, 3),
+    lowEntries: [...sorted].reverse().slice(0, 3),
     median: medianMetric,
     coverageLabel: `${entries.length.toLocaleString("en-US")} / ${items.length.toLocaleString("en-US")}`
   };
