@@ -1,5 +1,6 @@
 import type { AssetSummary, ChartWallFacet, ChartWallFacets, ChartWallItem } from "@gold-insights/market-domain";
 import { getDataQualityStatus } from "@gold-insights/market-domain";
+import { getAssetLevelLabel, getAssetTypeLabel } from "../utils/asset-label.utils";
 
 export class ChartWallFacetBuilderService {
   public buildFacets = (assets: AssetSummary[], items: ChartWallItem[]): ChartWallFacets => ({
@@ -14,10 +15,10 @@ export class ChartWallFacetBuilderService {
   public buildMarketFacets = (assets: AssetSummary[]): ChartWallFacet[] => this.withAllFacet("全部市场", assets.length, this.toFacetCounts(assets, (asset) => asset.market));
 
   public buildAssetTypeFacets = (assets: AssetSummary[]): ChartWallFacet[] =>
-    this.withAllFacet("全部品种", assets.length, this.toFacetCounts(assets, (asset) => asset.assetType, this.getAssetTypeLabel));
+    this.withAllFacet("全部品种", assets.length, this.toFacetCounts(assets, (asset) => asset.assetType, getAssetTypeLabel));
 
   public buildLevelFacets = (assets: AssetSummary[]): ChartWallFacet[] =>
-    this.withAllFacet("全部层级", assets.length, this.toFacetCounts(assets, (asset) => asset.level ?? "instrument", this.getLevelLabel));
+    this.withAllFacet("全部层级", assets.length, this.toFacetCounts(assets, (asset) => asset.level ?? "instrument", getAssetLevelLabel));
 
   public buildTagFacets = (assets: AssetSummary[]): ChartWallFacet[] => this.withAllFacet("全部主题", assets.length, this.toTagFacetCounts(assets));
 
@@ -110,41 +111,4 @@ export class ChartWallFacetBuilderService {
       .sort((left, right) => right.count - left.count || left.label.localeCompare(right.label, "zh-Hans-CN"));
   };
 
-  private getAssetTypeLabel = (assetType: string): string => {
-    switch (assetType) {
-      case "index":
-        return "指数";
-      case "fund":
-        return "基金/ETF";
-      case "equity":
-        return "公司";
-      case "commodity":
-        return "商品";
-      case "macro":
-        return "宏观/外汇/债券";
-      case "crypto":
-        return "加密";
-      default:
-        return assetType;
-    }
-  };
-
-  private getLevelLabel = (level: string): string => {
-    switch (level) {
-      case "broad-index":
-        return "宽基";
-      case "sector-index":
-        return "行业";
-      case "theme-basket":
-        return "主题";
-      case "company":
-        return "公司";
-      case "instrument":
-        return "工具/合约";
-      case "macro-indicator":
-        return "宏观";
-      default:
-        return level;
-    }
-  };
 }

@@ -1,4 +1,5 @@
 import type { AssetDirectoryCategory, AssetDirectoryItem, AssetDirectoryPageResponse } from "@gold-insights/market-domain";
+import { getAssetTypeLabel } from "../../utils/asset-label.utils";
 import { AssetDirectoryItemListService } from "./asset-directory-item-list.service";
 import type { AssetDirectoryQuery } from "./asset-directory-provider.types";
 
@@ -31,7 +32,7 @@ export class AssetDirectoryPageBuilderService {
       items: sortedItems.slice(query.offset, query.offset + query.limit),
       facets: {
         markets: this.itemListService.toFacets(keywordItems, (item) => item.market),
-        assetTypes: this.itemListService.toFacets(keywordItems, (item) => item.assetType),
+        assetTypes: this.itemListService.toFacets(keywordItems, (item) => item.assetType, getAssetTypeLabel),
         statuses: [
           { value: "all", label: "全部状态", count: keywordItems.length },
           { value: "in_pool", label: "已加入走势池", count: keywordItems.filter((item) => item.poolState === "in_pool").length },

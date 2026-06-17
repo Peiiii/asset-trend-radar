@@ -10,13 +10,13 @@ export class AssetDirectoryItemListService {
     return this.sortByNullableNumber(items, (item) => this.getSortValue(item, sort, canUseRawMarketCap), order);
   };
 
-  public toFacets = (items: AssetDirectoryItem[], getValue: (item: AssetDirectoryItem) => string): AssetDirectoryFacet[] =>
+  public toFacets = (items: AssetDirectoryItem[], getValue: (item: AssetDirectoryItem) => string, getLabel: (value: string) => string = (value) => value): AssetDirectoryFacet[] =>
     [...items.reduce((facets, item) => {
       const value = getValue(item);
       facets.set(value, (facets.get(value) ?? 0) + 1);
       return facets;
     }, new Map<string, number>())]
-      .map(([value, count]) => ({ value, label: value, count }))
+      .map(([value, count]) => ({ value, label: getLabel(value), count }))
       .sort((left, right) => right.count - left.count || left.label.localeCompare(right.label, "zh-Hans-CN"));
 
   private getSortValue = (item: AssetDirectoryItem, sort: AssetDirectorySortKey, canUseRawMarketCap: boolean): number | null => {
