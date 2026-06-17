@@ -1,4 +1,4 @@
-import { BinanceCryptoCatalogProvider, NasdaqUsEquityCatalogProvider } from "@gold-insights/data-adapters";
+import { BinanceCryptoCatalogProvider, EastmoneyAshareCatalogProvider, NasdaqUsEquityCatalogProvider } from "@gold-insights/data-adapters";
 import { LocalRawFileRepository, SqliteAssetRepository, SqliteDatabaseService, SqliteFundCatalogRepository, SqliteIngestionJobRepository, SqliteMarketDataRepository, SqliteScannerEventRepository, SqliteWatchlistRepository } from "@gold-insights/data-storage";
 import { AssetDirectoryController } from "../controllers/asset-directory.controller";
 import { AssetsController } from "../controllers/assets.controller";
@@ -17,6 +17,8 @@ import { AssetDirectoryService } from "./asset-directory.service";
 import { AssetDirectoryHistoryImportService } from "./asset-directory/asset-directory-history-import.service";
 import { CryptoAssetDirectoryProvider } from "./asset-directory/crypto-asset-directory.provider";
 import { CryptoAssetImportService } from "./asset-directory/crypto-asset-import.service";
+import { EastmoneyAshareDirectoryProvider } from "./asset-directory/a-share/eastmoney-a-share-directory.provider";
+import { EastmoneyAshareImportService } from "./asset-directory/a-share/eastmoney-a-share-import.service";
 import { FundAssetDirectoryProvider } from "./asset-directory/fund-asset-directory.provider";
 import { NasdaqUsEquityDirectoryProvider } from "./asset-directory/nasdaq-us-equity-directory.provider";
 import { NasdaqUsEquityImportService } from "./asset-directory/nasdaq-us-equity-import.service";
@@ -77,6 +79,7 @@ export class LocalRuntimeService {
     );
     const cryptoCatalogProvider = new BinanceCryptoCatalogProvider();
     const nasdaqUsEquityCatalogProvider = new NasdaqUsEquityCatalogProvider();
+    const eastmoneyAshareCatalogProvider = new EastmoneyAshareCatalogProvider();
     const assetDirectoryHistoryImportService = new AssetDirectoryHistoryImportService(
       assetRepository,
       marketDataRepository,
@@ -95,6 +98,12 @@ export class LocalRuntimeService {
       ingestionJobRepository,
       assetDirectoryHistoryImportService
     );
+    const eastmoneyAshareImportService = new EastmoneyAshareImportService(
+      this.options.historyLimit,
+      eastmoneyAshareCatalogProvider,
+      ingestionJobRepository,
+      assetDirectoryHistoryImportService
+    );
     const assetDirectoryService = new AssetDirectoryService([
       new FundAssetDirectoryProvider(this.fundDiscoveryService),
       new CryptoAssetDirectoryProvider(cryptoCatalogProvider, assetRepository, marketDataRepository, cryptoAssetImportService),
@@ -107,14 +116,7 @@ export class LocalRuntimeService {
         marketFilters: ["商品"]
       }, assetRepository, marketDataRepository),
       new NasdaqUsEquityDirectoryProvider(nasdaqUsEquityCatalogProvider, assetRepository, marketDataRepository, nasdaqUsEquityImportService),
-      new TrendPoolAssetDirectoryProvider({
-        categoryId: "a-share",
-        label: "A 股目录",
-        description: "真实已入库 A 股指数、ETF 与重点公司目录。",
-        assetTypes: ["index", "fund", "equity"],
-        markets: ["A 股"],
-        marketFilters: ["A 股"]
-      }, assetRepository, marketDataRepository),
+      new EastmoneyAshareDirectoryProvider(eastmoneyAshareCatalogProvider, assetRepository, marketDataRepository, eastmoneyAshareImportService),
       new TrendPoolAssetDirectoryProvider({
         categoryId: "hk-equity",
         label: "港股目录",

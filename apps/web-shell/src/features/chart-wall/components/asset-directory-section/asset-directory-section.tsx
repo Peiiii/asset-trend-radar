@@ -132,9 +132,9 @@ export function AssetDirectorySection({ title, description, items, totalCount, c
                   </div>
                 </td>
                 <td>
-                  <div className="asset-directory-type-stack">
-                    <SignalBadge label={item.market} tone="blue" />
-                    <small>{item.assetType}</small>
+                  <div className="asset-directory-type-stack" title={`${assetTypeLabel(item.assetType)} / ${item.market} / ${item.exchange}`}>
+                    <SignalBadge label={assetTypeLabel(item.assetType)} tone="blue" />
+                    <small>{item.market}</small>
                   </div>
                 </td>
                 <td><SignalBadge label={poolStateLabel(item.poolState)} tone={item.poolState === "in_pool" ? "positive" : "amber"} /></td>
@@ -145,7 +145,7 @@ export function AssetDirectorySection({ title, description, items, totalCount, c
                 <td><DirectoryReturnPill value={item.returns.return6m} /></td>
                 <td><DirectoryReturnPill value={item.returns.return1y} /></td>
                 <td>
-                  <div className="asset-directory-data-stack">
+                  <div className="asset-directory-data-stack" title={`${item.dataPointCount.toLocaleString("en-US")} 点 / ${dataStateLabel(item.dataState)} / ${item.provider}`}>
                     <SignalBadge label={`${item.dataPointCount.toLocaleString("en-US")} 点`} tone="neutral" />
                     <small>{dataStateLabel(item.dataState)} / {item.provider}</small>
                   </div>
@@ -206,6 +206,18 @@ function dataStateLabel(value: AssetDirectoryItem["dataState"]): string {
     snapshot: "目录快照",
     missing: "待拉取",
     stale: "待更新"
+  };
+  return labels[value];
+}
+
+function assetTypeLabel(value: AssetDirectoryItem["assetType"]): string {
+  const labels: Record<AssetDirectoryItem["assetType"], string> = {
+    crypto: "币种",
+    equity: "股票",
+    index: "指数",
+    fund: "基金",
+    commodity: "商品",
+    macro: "宏观"
   };
   return labels[value];
 }

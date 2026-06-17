@@ -168,6 +168,11 @@ export class TaskCenterService {
       return `美股走势导入 ${symbol}`;
     }
 
+    if (job.vendor === "eastmoney" && job.dataset.startsWith("a-share-import")) {
+      const symbol = typeof job.metadata.symbol === "string" ? job.metadata.symbol : job.dataset.replace("a-share-import:", "");
+      return `A 股走势导入 ${symbol}`;
+    }
+
     return `${job.vendor} / ${job.dataset}`;
   };
 }
