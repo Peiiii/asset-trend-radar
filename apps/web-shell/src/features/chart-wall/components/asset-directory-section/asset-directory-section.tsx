@@ -4,6 +4,7 @@ import type { ControlOption } from "@gold-insights/ui";
 import type { AssetDirectoryItem, AssetDirectoryPageResponse, AssetDirectorySortKey, AssetDirectorySortOrder, AssetDirectoryStatusFilter } from "@gold-insights/market-domain";
 import { formatPrice } from "@/shared/utils/format-number.utils";
 import { DirectoryReturnCell, getDirectoryActiveSortCellClassName } from "../directory-table/directory-return-pill";
+import { DirectoryRankingSummary } from "../directory-ranking-summary/directory-ranking-summary";
 import { DirectoryTableColumns } from "../directory-table/directory-table-columns";
 import { DirectorySortableHeader } from "../directory-table/directory-sortable-header";
 import { DirectoryValuationCell } from "../directory-table/directory-valuation-cell";
@@ -109,6 +110,8 @@ export function AssetDirectorySection({ title, description, items, totalCount, c
         )}
         <span>{statusLabel}</span>
       </div>
+
+      <DirectoryRankingSummary items={items} totalCount={totalCount} sort={sort} order={order} />
 
       {items.length === 0 ? (
         <EmptyState title="没有匹配资产" description="换一个关键词或回到图表墙调整筛选条件。" />

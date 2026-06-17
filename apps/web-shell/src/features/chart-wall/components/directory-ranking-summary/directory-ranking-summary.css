@@ -1,0 +1,120 @@
+.directory-ranking-summary {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(360px, 1.2fr);
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid #d7dde7;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.directory-ranking-summary__heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.directory-ranking-summary__heading > svg {
+  flex: 0 0 auto;
+  color: #516077;
+}
+
+.directory-ranking-summary__heading > div {
+  min-width: 0;
+}
+
+.directory-ranking-summary__heading strong {
+  display: block;
+  color: #172033;
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.directory-ranking-summary__heading p {
+  margin: 3px 0 0;
+  overflow: hidden;
+  color: #657184;
+  font-size: 12px;
+  font-weight: 780;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.directory-ranking-summary__heading .gi-signal-badge {
+  flex: 0 0 auto;
+}
+
+.directory-ranking-summary__metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.directory-ranking-summary__metric {
+  min-width: 0;
+  padding: 7px 8px;
+  border-radius: 8px;
+  background: #f2f5f9;
+  color: #5f6d7f;
+}
+
+.directory-ranking-summary__metric dt,
+.directory-ranking-summary__metric dd {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.directory-ranking-summary__metric dt {
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.directory-ranking-summary__metric dd {
+  margin: 3px 0 0;
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.directory-ranking-summary__metric--positive {
+  background: #e9f7f2;
+  color: #146a58;
+}
+
+.directory-ranking-summary__metric--negative {
+  background: #fff0f0;
+  color: #a43131;
+}
+
+.directory-ranking-summary__metric--amber {
+  background: #fff6df;
+  color: #986211;
+}
+
+.directory-ranking-summary__metric--blue {
+  background: #edf5ff;
+  color: #245f9f;
+}
+
+@media (max-width: 1080px) {
+  .directory-ranking-summary {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .directory-ranking-summary__heading {
+    align-items: flex-start;
+  }
+
+  .directory-ranking-summary__heading p {
+    white-space: normal;
+  }
+
+  .directory-ranking-summary__metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
