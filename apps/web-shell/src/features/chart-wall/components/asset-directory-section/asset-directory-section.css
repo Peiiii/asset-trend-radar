@@ -5,7 +5,8 @@
 
 .asset-directory-hero,
 .asset-directory-toolbar,
-.asset-directory-result-bar {
+.asset-directory-result-bar,
+.asset-directory-pagination {
   display: flex;
   align-items: center;
 }
@@ -50,6 +51,16 @@
   font-weight: 850;
 }
 
+.asset-directory-pagination span {
+  min-height: 26px;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: #eef3f8;
+  color: #516077;
+  font-size: 12px;
+  font-weight: 850;
+}
+
 .asset-directory-result-bar {
   justify-content: space-between;
 }
@@ -74,48 +85,32 @@
 }
 
 .asset-directory-identity {
-  display: grid;
-  gap: 4px;
+  display: block;
   width: 100%;
-  border: 0;
-  background: transparent;
   color: inherit;
-  cursor: pointer;
   text-align: left;
-}
-
-.asset-directory-identity:hover strong,
-.asset-directory-identity:focus-visible strong {
-  color: #1f6f5f;
-}
-
-.asset-directory-identity:disabled {
-  cursor: not-allowed;
-  opacity: 0.68;
-}
-
-.asset-directory-identity:disabled:hover strong {
-  color: inherit;
-}
-
-.asset-directory-identity:focus-visible {
-  outline: 2px solid #8fc9bd;
-  outline-offset: 2px;
 }
 
 .asset-directory-identity strong,
 .asset-directory-identity small {
   display: block;
-  max-width: 260px;
+  min-width: 0;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.asset-directory-identity strong {
+  color: #1d293b;
+}
+
 .asset-directory-identity small {
+  margin-top: 3px;
   color: #687386;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
 }
 
 .asset-directory-type-stack,
@@ -140,10 +135,64 @@
   gap: 5px;
 }
 
+.asset-directory-table-wrapper table {
+  table-layout: fixed;
+}
+
+.asset-directory-table-wrapper th:nth-child(2),
+.asset-directory-table-wrapper td:nth-child(2) {
+  width: 78px;
+}
+
+.asset-directory-table-wrapper th:nth-child(3),
+.asset-directory-table-wrapper td:nth-child(3) {
+  width: 110px;
+}
+
+.asset-directory-table-wrapper th:nth-child(4),
+.asset-directory-table-wrapper td:nth-child(4) {
+  width: 110px;
+}
+
+.asset-directory-table-wrapper th:nth-child(5),
+.asset-directory-table-wrapper td:nth-child(5),
+.asset-directory-table-wrapper th:nth-child(6),
+.asset-directory-table-wrapper td:nth-child(6),
+.asset-directory-table-wrapper th:nth-child(7),
+.asset-directory-table-wrapper td:nth-child(7),
+.asset-directory-table-wrapper th:nth-child(8),
+.asset-directory-table-wrapper td:nth-child(8),
+.asset-directory-table-wrapper th:nth-child(9),
+.asset-directory-table-wrapper td:nth-child(9) {
+  width: 76px;
+}
+
+.asset-directory-table-wrapper th:nth-child(10),
+.asset-directory-table-wrapper td:nth-child(10) {
+  width: 124px;
+}
+
+.asset-directory-table-wrapper th:nth-child(11),
+.asset-directory-table-wrapper td:nth-child(11) {
+  width: 118px;
+}
+
+.asset-directory-pagination {
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.asset-directory-pagination .gi-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 @media (max-width: 760px) {
   .asset-directory-hero,
   .asset-directory-toolbar,
-  .asset-directory-result-bar {
+  .asset-directory-result-bar,
+  .asset-directory-pagination {
     align-items: stretch;
     flex-direction: column;
   }

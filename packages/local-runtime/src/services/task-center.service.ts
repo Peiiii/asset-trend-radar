@@ -163,6 +163,11 @@ export class TaskCenterService {
       return `加密走势导入 ${symbol}`;
     }
 
+    if (job.vendor === "nasdaq-trader" && job.dataset.startsWith("us-equity-import")) {
+      const symbol = typeof job.metadata.symbol === "string" ? job.metadata.symbol : job.dataset.replace("us-equity-import:", "");
+      return `美股走势导入 ${symbol}`;
+    }
+
     return `${job.vendor} / ${job.dataset}`;
   };
 }

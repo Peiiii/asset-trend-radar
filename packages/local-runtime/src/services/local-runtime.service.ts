@@ -1,4 +1,4 @@
-import { BinanceCryptoCatalogProvider } from "@gold-insights/data-adapters";
+import { BinanceCryptoCatalogProvider, NasdaqUsEquityCatalogProvider } from "@gold-insights/data-adapters";
 import { LocalRawFileRepository, SqliteAssetRepository, SqliteDatabaseService, SqliteFundCatalogRepository, SqliteIngestionJobRepository, SqliteMarketDataRepository, SqliteScannerEventRepository, SqliteWatchlistRepository } from "@gold-insights/data-storage";
 import { AssetDirectoryController } from "../controllers/asset-directory.controller";
 import { AssetsController } from "../controllers/assets.controller";
@@ -14,9 +14,12 @@ import { WatchlistsController } from "../controllers/watchlists.controller";
 import { assetUniverse, tradableAssetUniverse } from "../configs/asset-universe.config";
 import type { LocalRuntimeOptions, LocalRuntimeStartResult } from "../types/local-runtime-options.types";
 import { AssetDirectoryService } from "./asset-directory.service";
+import { AssetDirectoryHistoryImportService } from "./asset-directory/asset-directory-history-import.service";
 import { CryptoAssetDirectoryProvider } from "./asset-directory/crypto-asset-directory.provider";
 import { CryptoAssetImportService } from "./asset-directory/crypto-asset-import.service";
 import { FundAssetDirectoryProvider } from "./asset-directory/fund-asset-directory.provider";
+import { NasdaqUsEquityDirectoryProvider } from "./asset-directory/nasdaq-us-equity-directory.provider";
+import { NasdaqUsEquityImportService } from "./asset-directory/nasdaq-us-equity-import.service";
 import { TrendPoolAssetDirectoryProvider } from "./asset-directory/trend-pool-asset-directory.provider";
 import { ChartWallQueryService } from "./chart-wall-query.service";
 import { FundDiscoveryService } from "./fund-discovery.service";
@@ -73,14 +76,24 @@ export class LocalRuntimeService {
       rawFileRepository
     );
     const cryptoCatalogProvider = new BinanceCryptoCatalogProvider();
-    const cryptoAssetImportService = new CryptoAssetImportService(
-      this.options.historyLimit,
-      cryptoCatalogProvider,
+    const nasdaqUsEquityCatalogProvider = new NasdaqUsEquityCatalogProvider();
+    const assetDirectoryHistoryImportService = new AssetDirectoryHistoryImportService(
       assetRepository,
       marketDataRepository,
       scannerEventRepository,
-      ingestionJobRepository,
       rawFileRepository
+    );
+    const cryptoAssetImportService = new CryptoAssetImportService(
+      this.options.historyLimit,
+      cryptoCatalogProvider,
+      ingestionJobRepository,
+      assetDirectoryHistoryImportService
+    );
+    const nasdaqUsEquityImportService = new NasdaqUsEquityImportService(
+      this.options.historyLimit,
+      nasdaqUsEquityCatalogProvider,
+      ingestionJobRepository,
+      assetDirectoryHistoryImportService
     );
     const assetDirectoryService = new AssetDirectoryService([
       new FundAssetDirectoryProvider(this.fundDiscoveryService),
@@ -93,14 +106,7 @@ export class LocalRuntimeService {
         markets: ["商品"],
         marketFilters: ["商品"]
       }, assetRepository, marketDataRepository),
-      new TrendPoolAssetDirectoryProvider({
-        categoryId: "us-equity",
-        label: "美股目录",
-        description: "真实已入库美股指数、ETF 与重点公司目录。",
-        assetTypes: ["index", "fund", "equity"],
-        markets: ["美股"],
-        marketFilters: ["美股"]
-      }, assetRepository, marketDataRepository),
+      new NasdaqUsEquityDirectoryProvider(nasdaqUsEquityCatalogProvider, assetRepository, marketDataRepository, nasdaqUsEquityImportService),
       new TrendPoolAssetDirectoryProvider({
         categoryId: "a-share",
         label: "A 股目录",

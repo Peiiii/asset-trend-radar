@@ -67,6 +67,8 @@ const viewTitles: Record<ActiveView, string> = {
   "data-health": "数据源与任务状态"
 };
 
+const assetDirectoryLimit = 50;
+
 export function ChartWallPage(): JSX.Element {
   const location = useLocation();
   const navigate = useNavigate();
@@ -102,6 +104,8 @@ export function ChartWallPage(): JSX.Element {
   const effectiveSort = activeView === "asset-directory" && !searchParams.has("sort") ? "return_1m" : sort;
   const effectiveOrder = activeView === "asset-directory" && !searchParams.has("order") ? "desc" : order;
   const assetDirectoryStatus = getAssetDirectoryStatus(getSearchValue(searchParams, "status", "all"));
+  const assetDirectoryPage = getPositiveIntegerSearchValue(searchParams, "directoryPage", 1);
+  const assetDirectoryTableSizing = getAssetDirectoryTableSizing(directoryCategoryId);
   const needsChartWallData = !isAssetDirectoryView && activeView !== "tasks";
 
   const setQueryValue = useCallback((name: string, value: string, fallback = ""): void => {
@@ -111,8 +115,13 @@ export function ChartWallPage(): JSX.Element {
     } else {
       next.set(name, value);
     }
+
+    if (activeView === "asset-directory" && name !== "directoryPage") {
+      next.delete("directoryPage");
+    }
+
     setSearchParams(next);
-  }, [searchParams, setSearchParams]);
+  }, [activeView, searchParams, setSearchParams]);
 
   const setSortQueryValue = useCallback((nextSort: string, nextOrder?: ChartWallSortOrder): void => {
     const resolvedOrder = nextOrder ?? (nextSort === sort ? toggleSortOrder(order) : defaultOrderForSort(nextSort));
@@ -130,8 +139,12 @@ export function ChartWallPage(): JSX.Element {
       next.set("order", resolvedOrder);
     }
 
+    if (activeView === "asset-directory") {
+      next.delete("directoryPage");
+    }
+
     setSearchParams(next);
-  }, [order, searchParams, setSearchParams, sort]);
+  }, [activeView, order, searchParams, setSearchParams, sort]);
 
   useEffect(() => {
     if ((timeframe === "15m" || timeframe === "1h" || timeframe === "4h") && (range === "1y" || range === "3y" || range === "5y")) {
@@ -163,10 +176,10 @@ export function ChartWallPage(): JSX.Element {
       status: assetDirectoryStatus,
       sort: getAssetDirectorySort(effectiveSort),
       order: effectiveOrder,
-      limit: 1000,
-      offset: 0
+      limit: assetDirectoryLimit,
+      offset: (assetDirectoryPage - 1) * assetDirectoryLimit
     }) as const,
-    [assetDirectoryStatus, directoryCategoryId, effectiveOrder, effectiveSort, search]
+    [assetDirectoryPage, assetDirectoryStatus, directoryCategoryId, effectiveOrder, effectiveSort, search]
   );
   const assetDirectoryQuery = useAssetDirectoryQuery(assetDirectoryFilters, activeView === "asset-directory");
   const taskCenterQuery = useTaskCenterQuery(true);
@@ -542,12 +555,18 @@ export function ChartWallPage(): JSX.Element {
                 order={effectiveOrder}
                 search={search}
                 statusLabel={assetDirectoryQuery.data ? coverageLabel(assetDirectoryQuery.data.category.coverage) : "真实已入库 / 走势池"}
+                page={assetDirectoryPage}
+                limit={assetDirectoryLimit}
+                tableMinWidth={assetDirectoryTableSizing.tableMinWidth}
+                firstColumnMinWidth={assetDirectoryTableSizing.firstColumnMinWidth}
+                lastColumnMinWidth={assetDirectoryTableSizing.lastColumnMinWidth}
                 canImport={Boolean(assetDirectoryQuery.data?.category.capabilities.includes("import_to_pool"))}
                 importingItemId={importingDirectoryItemId}
                 message={assetDirectoryMessage}
                 onStatusChange={(value) => setQueryValue("status", value, "all")}
                 onSortChange={setSortQueryValue}
                 onReset={resetFilters}
+                onPageChange={(value) => setQueryValue("directoryPage", String(value), "1")}
                 onImport={(item) => {
                   void handleAssetDirectoryImport(item);
                 }}
@@ -873,7 +892,7 @@ function getFundDirectorySearch(searchParams: URLSearchParams): string {
 function getAssetDirectorySearch(searchParams: URLSearchParams): string {
   const next = new URLSearchParams();
 
-  for (const name of ["range", "timeframe", "q", "status", "sort", "order"]) {
+  for (const name of ["range", "timeframe", "q", "status", "sort", "order", "directoryPage"]) {
     const value = searchParams.get(name);
     if (value) {
       next.set(name, value);
@@ -923,6 +942,22 @@ function getDirectoryChartFilters(categoryId: AssetDirectoryCategoryId | null): 
   return filters[categoryId ?? "crypto"] ?? { market: "all", assetType: "all" };
 }
 
+function getAssetDirectoryTableSizing(categoryId: AssetDirectoryCategoryId | null): { tableMinWidth: number; firstColumnMinWidth: number; lastColumnMinWidth: number } {
+  if (categoryId === "crypto") {
+    return {
+      tableMinWidth: 1060,
+      firstColumnMinWidth: 124,
+      lastColumnMinWidth: 118
+    };
+  }
+
+  return {
+    tableMinWidth: 1100,
+    firstColumnMinWidth: 160,
+    lastColumnMinWidth: 118
+  };
+}
+
 function toSearchString(searchParams: URLSearchParams): string {
   const value = searchParams.toString();
   return value.length > 0 ? `?${value}` : "";
@@ -930,6 +965,11 @@ function toSearchString(searchParams: URLSearchParams): string {
 
 function getSearchValue(searchParams: URLSearchParams, name: string, fallback: string): string {
   return searchParams.get(name) ?? fallback;
+}
+
+function getPositiveIntegerSearchValue(searchParams: URLSearchParams, name: string, fallback: number): number {
+  const value = Number(searchParams.get(name));
+  return Number.isInteger(value) && value > 0 ? value : fallback;
 }
 
 function getViewMode(value: string): ChartWallViewMode {

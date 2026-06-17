@@ -1,26 +1,25 @@
-import { BinanceMarketDataProvider, type BinanceCryptoCatalogItem, type BinanceCryptoCatalogProvider } from "@gold-insights/data-adapters";
+import { YahooMarketDataProvider, type NasdaqUsEquityCatalogItem, type NasdaqUsEquityCatalogProvider } from "@gold-insights/data-adapters";
 import type { SqliteIngestionJobRepository } from "@gold-insights/data-storage";
 import type { AssetDirectoryImportResponse, AssetSummary, Timeframe } from "@gold-insights/market-domain";
 import type { AssetDirectoryHistoryImportService } from "./asset-directory-history-import.service";
-import { getCryptoAssetLabel } from "./crypto-asset-labels.config";
 
-export class CryptoAssetImportService {
-  private readonly dataProvider = new BinanceMarketDataProvider();
+export class NasdaqUsEquityImportService {
+  private readonly dataProvider = new YahooMarketDataProvider();
   private readonly timeframes: Timeframe[] = ["1d", "15m", "1h", "4h"];
 
   public constructor(
     private readonly historyLimit: number,
-    private readonly catalogProvider: BinanceCryptoCatalogProvider,
+    private readonly catalogProvider: NasdaqUsEquityCatalogProvider,
     private readonly ingestionJobRepository: SqliteIngestionJobRepository,
     private readonly historyImportService: AssetDirectoryHistoryImportService
   ) {}
 
   public importItem = async (itemId: string): Promise<AssetDirectoryImportResponse> => {
-    const symbol = this.getCatalogSymbol(itemId);
-    const jobId = `crypto-import-${symbol.toLowerCase()}-${Date.now()}`;
+    const yahooSymbol = this.getCatalogSymbol(itemId);
+    const jobId = `us-equity-import-${this.toAssetIdToken(yahooSymbol)}-${Date.now()}`;
 
-    return this.runTrackedTask(jobId, "binance", `crypto-import:${symbol}`, { symbol, itemId }, async () => {
-      const catalogItem = await this.findCatalogItem(symbol);
+    return this.runTrackedTask(jobId, "nasdaq-trader", `us-equity-import:${yahooSymbol}`, { symbol: yahooSymbol, itemId }, async () => {
+      const catalogItem = await this.findCatalogItem(yahooSymbol);
       const asset = this.toAsset(catalogItem);
       const result = await this.historyImportService.importAssetHistory({
         asset,
@@ -31,23 +30,23 @@ export class CryptoAssetImportService {
 
       return {
         generatedAt: new Date().toISOString(),
-        categoryId: "crypto",
+        categoryId: "us-equity",
         itemId,
         asset,
         barsImported: result.barsImported,
         firstBarAt: result.firstBarAt,
         latestBarAt: result.latestBarAt,
-        source: "binance",
+        source: "yahoo",
         failures: result.failures
       };
     });
   };
 
-  private findCatalogItem = async (symbol: string): Promise<BinanceCryptoCatalogItem> => {
-    const catalogItem = (await this.catalogProvider.listUsdtSpotCatalog()).find((item) => item.symbol === symbol);
+  private findCatalogItem = async (yahooSymbol: string): Promise<NasdaqUsEquityCatalogItem> => {
+    const catalogItem = (await this.catalogProvider.listCatalog()).find((item) => item.yahooSymbol === yahooSymbol);
 
     if (!catalogItem) {
-      throw new Error(`未找到 Binance 交易对 ${symbol}`);
+      throw new Error(`未找到 NASDAQ 美股目录条目 ${yahooSymbol}`);
     }
 
     return catalogItem;
@@ -57,28 +56,30 @@ export class CryptoAssetImportService {
     const parts = itemId.split(":");
     const symbol = parts.at(-1)?.toUpperCase() ?? "";
 
-    if (!/^[A-Z0-9]+USDT$/.test(symbol)) {
-      throw new Error(`不支持的加密目录条目: ${itemId}`);
+    if (!/^[A-Z0-9-]{1,16}$/.test(symbol)) {
+      throw new Error(`不支持的美股目录条目: ${itemId}`);
     }
 
     return symbol;
   };
 
-  private toAsset = (item: BinanceCryptoCatalogItem): AssetSummary => ({
-    id: `crypto-binance-${item.symbol.toLowerCase()}`,
-    symbol: item.displaySymbol,
-    name: getCryptoAssetLabel(item.baseAsset),
-    assetType: "crypto",
-    market: "加密",
+  private toAsset = (item: NasdaqUsEquityCatalogItem): AssetSummary => ({
+    id: `us-${this.toAssetIdToken(item.yahooSymbol)}`,
+    symbol: item.yahooSymbol,
+    name: item.label,
+    assetType: item.assetType,
+    market: "美股",
     exchange: item.exchange,
-    currency: item.quoteAsset,
+    currency: item.currency,
     universe: "global",
-    level: "instrument",
-    parentId: "market-crypto",
-    dataSource: "binance",
-    vendorSymbol: item.symbol,
-    tags: [item.baseAsset, item.quoteAsset, "Binance", "用户导入"]
+    level: item.assetType === "fund" ? "instrument" : "company",
+    parentId: item.assetType === "fund" ? "market-us-fund" : "market-us-equity",
+    dataSource: "yahoo",
+    vendorSymbol: item.yahooSymbol,
+    tags: [...item.tags, "用户导入"]
   });
+
+  private toAssetIdToken = (symbol: string): string => symbol.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
   private runTrackedTask = async <Result,>(id: string, vendor: string, dataset: string, metadata: Record<string, unknown>, handler: () => Promise<Result>): Promise<Result> => {
     this.ingestionJobRepository.startJob(id, vendor, dataset, metadata);

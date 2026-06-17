@@ -98,6 +98,7 @@ packages/market-domain
 - `资产目录` 是导航父级，默认展开；子目录按资产类别扩展，例如基金、加密、商品。
 - 已有基金目录继续由 `local-runtime` 的基金 catalog API 提供权威目录与导入动作。
 - 加密目录由 `data-adapters` 的交易所轻量 catalog 提供候选池，`local-runtime` 合并本地走势池状态；候选池完整性不等于默认全量导入走势池。
+- 美股目录由 `data-adapters` 的 NASDAQ Trader 官方符号目录提供股票/ETF 候选池，`local-runtime` 合并本地走势池状态；未入池条目可以按需拉取 Yahoo 历史走势后进入走势池。
 - 其它资产类别在没有全量 catalog API 前，只能展示真实已入库资产，不做假全量；如果需要全量目录，先扩展 `market-domain` contract 和 `local-runtime` catalog service。
 - 通用目录表格、状态 badge、详情/对比入口可以在 app 层复用；外部目录同步、导入、去重和走势池写入必须在 runtime 层实现。
 - 目录表格采用统一基础列契约：名称、类别/市场、走势池状态、最新价/净值、1D、1M、3M、6M、1Y、数据状态、操作。各资产类别可以通过 adapter 提供不同字段取值和类别特有动作，但不要为同义字段另起一套布局、颜色或交互。
