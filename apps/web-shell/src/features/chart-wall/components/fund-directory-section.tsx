@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, RefreshCcw, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, RefreshCcw, Search } from "lucide-react";
 import { Button, DataTableFrame, EmptyState, ErrorState, LoadingState, Select } from "@gold-insights/ui";
 import type { ControlOption } from "@gold-insights/ui";
 import type { FundCatalogImportStatus, FundCatalogPageResponse, FundCatalogSortKey, SortOrder } from "@gold-insights/market-domain";
 import { formatDateTime } from "@/shared/utils/format-number.utils";
+import { DirectorySortableHeader } from "./directory-table/directory-sortable-header";
 import { FundDirectoryRow } from "./fund-directory-row";
 import "./fund-directory-section.css";
 
@@ -128,16 +129,16 @@ export function FundDirectorySection({
             <DataTableFrame rowCount={data.items.length} className="fund-directory-table-wrapper" minWidth={1220} firstColumnMinWidth={274} lastColumnMinWidth={206}>
               <thead>
                 <tr>
-                  <SortableFundHeader label="基金" sortValue="name" currentSort={sort} order={order} onSort={onSortChange} />
+                  <DirectorySortableHeader label="基金" sortValue="name" currentSort={sort} order={order} onSort={onSortChange} />
                   <th>类型</th>
                   <th>状态</th>
-                  <SortableFundHeader label="最新净值" sortValue="latest_nav" currentSort={sort} order={order} onSort={onSortChange} />
-                  <SortableFundHeader label="1D" sortValue="return_1d" currentSort={sort} order={order} onSort={onSortChange} />
-                  <SortableFundHeader label="1M" sortValue="return_1m" currentSort={sort} order={order} onSort={onSortChange} />
-                  <SortableFundHeader label="3M" sortValue="return_3m" currentSort={sort} order={order} onSort={onSortChange} />
-                  <SortableFundHeader label="6M" sortValue="return_6m" currentSort={sort} order={order} onSort={onSortChange} />
-                  <SortableFundHeader label="1Y" sortValue="return_1y" currentSort={sort} order={order} onSort={onSortChange} />
-                  <SortableFundHeader label="数据" sortValue="data_point_count" currentSort={sort} order={order} onSort={onSortChange} />
+                  <DirectorySortableHeader label="最新净值" sortValue="latest_nav" currentSort={sort} order={order} onSort={onSortChange} />
+                  <DirectorySortableHeader label="1D" sortValue="return_1d" currentSort={sort} order={order} onSort={onSortChange} />
+                  <DirectorySortableHeader label="1M" sortValue="return_1m" currentSort={sort} order={order} onSort={onSortChange} />
+                  <DirectorySortableHeader label="3M" sortValue="return_3m" currentSort={sort} order={order} onSort={onSortChange} />
+                  <DirectorySortableHeader label="6M" sortValue="return_6m" currentSort={sort} order={order} onSort={onSortChange} />
+                  <DirectorySortableHeader label="1Y" sortValue="return_1y" currentSort={sort} order={order} onSort={onSortChange} />
+                  <DirectorySortableHeader label="数据" sortValue="data_point_count" currentSort={sort} order={order} onSort={onSortChange} />
                   <th>操作</th>
                 </tr>
               </thead>
@@ -163,19 +164,6 @@ export function FundDirectorySection({
         </>
       )}
     </section>
-  );
-}
-
-function SortableFundHeader({ label, sortValue, currentSort, order, onSort }: { label: string; sortValue: FundCatalogSortKey; currentSort: FundCatalogSortKey; order: SortOrder; onSort(value: FundCatalogSortKey): void }): JSX.Element {
-  const isActive = currentSort === sortValue;
-
-  return (
-    <th>
-      <button type="button" className={isActive ? "fund-directory-sort fund-directory-sort--active" : "fund-directory-sort"} onClick={() => onSort(sortValue)}>
-        {label}
-        {isActive && (order === "desc" ? <ArrowDown size={12} aria-hidden="true" /> : <ArrowUp size={12} aria-hidden="true" />)}
-      </button>
-    </th>
   );
 }
 

@@ -1,7 +1,7 @@
 import { ExternalLink, Plus, RefreshCcw } from "lucide-react";
 import type { FundCatalogPageItem, FundCatalogSortKey } from "@gold-insights/market-domain";
+import "./directory-table/directory-active-sort.css";
 import { DirectoryReturnPill } from "./directory-table/directory-return-pill";
-import "./fund-directory-active-sort.css";
 
 type FundDirectoryRowProps = {
   item: FundCatalogPageItem;
@@ -77,5 +77,5 @@ function FundPercentCell({ value, active }: { value: number | null; active: bool
 }
 
 function activeSortCellClassName(active: boolean): string | undefined {
-  return active ? "fund-directory-cell--active-sort" : undefined;
+  return active ? "directory-table-cell--active-sort" : undefined;
 }

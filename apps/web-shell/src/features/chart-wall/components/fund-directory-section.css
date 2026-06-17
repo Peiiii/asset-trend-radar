@@ -77,31 +77,6 @@
   justify-content: space-between;
 }
 
-.fund-directory-sort {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin: -4px -6px;
-  padding: 4px 6px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-  font-weight: 950;
-}
-
-.fund-directory-sort:hover,
-.fund-directory-sort:focus-visible {
-  background: #eef3f8;
-  color: #1f6f5f;
-  outline: 0;
-}
-
-.fund-directory-sort--active {
-  color: #1f6f5f;
-}
-
 .fund-directory-table-wrapper td strong,
 .fund-directory-table-wrapper td small {
   display: block;

@@ -3,7 +3,9 @@ import { Button, DataTableFrame, EmptyState, Select, SignalBadge } from "@gold-i
 import type { ControlOption } from "@gold-insights/ui";
 import type { AssetDirectoryItem, AssetDirectoryPageResponse, AssetDirectorySortKey, AssetDirectorySortOrder, AssetDirectoryStatusFilter } from "@gold-insights/market-domain";
 import { formatPrice } from "@/shared/utils/format-number.utils";
+import "../directory-table/directory-active-sort.css";
 import { DirectoryReturnPill } from "../directory-table/directory-return-pill";
+import { DirectorySortableHeader } from "../directory-table/directory-sortable-header";
 import "./asset-directory-section.css";
 
 type AssetDirectorySectionProps = {
@@ -65,6 +67,9 @@ export function AssetDirectorySection({ title, description, items, totalCount, c
   const fromIndex = totalCount === 0 ? 0 : (page - 1) * limit + 1;
   const toIndex = Math.min(page * limit, totalCount);
   const statusOptions = getDirectoryStatusOptions(statusFacets);
+  const handleHeaderSort = (nextSort: AssetDirectorySortKey): void => {
+    onSortChange(nextSort, nextSort === sort ? toggleDirectoryOrder(order) : getDefaultDirectoryOrder(nextSort));
+  };
 
   return (
     <section className="single-view-section asset-directory-section">
@@ -109,23 +114,23 @@ export function AssetDirectorySection({ title, description, items, totalCount, c
         <DataTableFrame rowCount={items.length} className="asset-directory-table-wrapper" minWidth={tableMinWidth} firstColumnMinWidth={firstColumnMinWidth} lastColumnMinWidth={lastColumnMinWidth}>
           <thead>
             <tr>
-              <th>资产</th>
+              <DirectorySortableHeader label="资产" sortValue="label" currentSort={sort} order={order} onSort={handleHeaderSort} />
               <th>类型</th>
               <th>状态</th>
-              <th>最新价</th>
-              <th>1D</th>
-              <th>1M</th>
-              <th>3M</th>
-              <th>6M</th>
-              <th>1Y</th>
-              <th>数据</th>
+              <DirectorySortableHeader label="最新价" sortValue="latest_value" currentSort={sort} order={order} onSort={handleHeaderSort} />
+              <DirectorySortableHeader label="1D" sortValue="return_1d" currentSort={sort} order={order} onSort={handleHeaderSort} />
+              <DirectorySortableHeader label="1M" sortValue="return_1m" currentSort={sort} order={order} onSort={handleHeaderSort} />
+              <DirectorySortableHeader label="3M" sortValue="return_3m" currentSort={sort} order={order} onSort={handleHeaderSort} />
+              <DirectorySortableHeader label="6M" sortValue="return_6m" currentSort={sort} order={order} onSort={handleHeaderSort} />
+              <DirectorySortableHeader label="1Y" sortValue="return_1y" currentSort={sort} order={order} onSort={handleHeaderSort} />
+              <DirectorySortableHeader label="数据" sortValue="data_point_count" currentSort={sort} order={order} onSort={handleHeaderSort} />
               <th>操作</th>
             </tr>
           </thead>
           <tbody>
             {items.map((item) => (
               <tr key={item.id}>
-                <td>
+                <td className={activeSortCellClassName(sort === "label" || sort === "relevance")}>
                   <div className="asset-directory-identity" title={`${item.label} / ${item.symbol} / ${item.exchange}`}>
                     <strong>{item.label}</strong>
                     <small>{item.symbol}</small>
@@ -138,13 +143,13 @@ export function AssetDirectorySection({ title, description, items, totalCount, c
                   </div>
                 </td>
                 <td><SignalBadge label={poolStateLabel(item.poolState)} tone={item.poolState === "in_pool" ? "positive" : "amber"} /></td>
-                <td>{formatPrice(item.latestValue, item.currency)}</td>
-                <td><DirectoryReturnPill value={item.returns.return1d} /></td>
-                <td><DirectoryReturnPill value={item.returns.return1m} /></td>
-                <td><DirectoryReturnPill value={item.returns.return3m} /></td>
-                <td><DirectoryReturnPill value={item.returns.return6m} /></td>
-                <td><DirectoryReturnPill value={item.returns.return1y} /></td>
-                <td>
+                <td className={activeSortCellClassName(sort === "latest_value")}>{formatPrice(item.latestValue, item.currency)}</td>
+                <AssetDirectoryReturnCell value={item.returns.return1d} active={sort === "return_1d"} />
+                <AssetDirectoryReturnCell value={item.returns.return1m} active={sort === "return_1m"} />
+                <AssetDirectoryReturnCell value={item.returns.return3m} active={sort === "return_3m"} />
+                <AssetDirectoryReturnCell value={item.returns.return6m} active={sort === "return_6m"} />
+                <AssetDirectoryReturnCell value={item.returns.return1y} active={sort === "return_1y"} />
+                <td className={activeSortCellClassName(sort === "data_point_count")}>
                   <div className="asset-directory-data-stack" title={`${item.dataPointCount.toLocaleString("en-US")} 点 / ${dataStateLabel(item.dataState)} / ${item.provider}`}>
                     <SignalBadge label={`${item.dataPointCount.toLocaleString("en-US")} 点`} tone="neutral" />
                     <small>{dataStateLabel(item.dataState)} / {item.provider}</small>
@@ -210,6 +215,14 @@ function dataStateLabel(value: AssetDirectoryItem["dataState"]): string {
   return labels[value];
 }
 
+function AssetDirectoryReturnCell({ value, active }: { value: number | null; active: boolean }): JSX.Element {
+  return (
+    <td className={activeSortCellClassName(active)}>
+      <DirectoryReturnPill value={value} />
+    </td>
+  );
+}
+
 function assetTypeLabel(value: AssetDirectoryItem["assetType"]): string {
   const labels: Record<AssetDirectoryItem["assetType"], string> = {
     crypto: "币种",
@@ -243,6 +256,14 @@ function getDirectoryOrder(value: string): AssetDirectorySortOrder {
   return value === "asc" ? "asc" : "desc";
 }
 
+function toggleDirectoryOrder(value: AssetDirectorySortOrder): AssetDirectorySortOrder {
+  return value === "desc" ? "asc" : "desc";
+}
+
 function getDefaultDirectoryOrder(sort: string): AssetDirectorySortOrder {
   return sort === "label" ? "asc" : "desc";
+}
+
+function activeSortCellClassName(active: boolean): string | undefined {
+  return active ? "directory-table-cell--active-sort" : undefined;
 }
