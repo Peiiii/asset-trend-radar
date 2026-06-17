@@ -1,12 +1,16 @@
-import type { ChartWallItem, ChartWallSortOrder, ScannerEventsResponse } from "@gold-insights/market-domain";
-import { EmptyState } from "@gold-insights/ui";
+import type { ChartWallItem, ChartWallSortOrder } from "@gold-insights/market-domain";
+import { EmptyState, SignalBadge } from "@gold-insights/ui";
 import type { ChartWallPageData } from "@/shared/types/api.types";
 import { formatDateTime } from "@/shared/utils/format-number.utils";
 import { BreadthStrip, SummaryStrip } from "../dashboard-strips";
 import { MarketPulseBoard } from "../market-pulse-board/market-pulse-board";
 import { OpportunityLeaderboard } from "../opportunity-leaderboard/opportunity-leaderboard";
+import { eventTone, eventTypeLabel, severityTone } from "../scanner-section/scanner-section.utils";
 import { SortAwareMoversStrip } from "../sort-aware-movers-strip/sort-aware-movers-strip";
+import { OverviewEventGroupBuilder, type OverviewEventGroup } from "./overview-event-groups";
 import "./overview-section.css";
+
+const overviewEventGroupBuilder = new OverviewEventGroupBuilder();
 
 type OverviewSectionProps = {
   data: ChartWallPageData;
@@ -21,7 +25,8 @@ type OverviewSectionProps = {
 
 export function OverviewSection({ data, items, market, sort, order, onMarketSelect, onSelectAsset, onCompare }: OverviewSectionProps): JSX.Element {
   const visibleAssetIds = new Set(items.map((item) => item.id));
-  const visibleEvents = data.scannerEvents.events.filter((event) => visibleAssetIds.has(event.assetId)).slice(0, 12);
+  const visibleEvents = data.scannerEvents.events.filter((event) => visibleAssetIds.has(event.assetId));
+  const visibleEventGroups = overviewEventGroupBuilder.build(visibleEvents, 12);
 
   return (
     <section className="overview-section" aria-label="市场概览">
@@ -31,7 +36,7 @@ export function OverviewSection({ data, items, market, sort, order, onMarketSele
       <MarketPulseBoard items={items} activeMarket={market} onMarketSelect={onMarketSelect} />
       <SortAwareMoversStrip items={items} sort={sort} order={order} onSelect={onSelectAsset} onCompare={onCompare} />
       <OpportunityLeaderboard items={items} onSelect={onSelectAsset} onCompare={onCompare} />
-      <EventListSection events={visibleEvents} />
+      <EventListSection groups={visibleEventGroups} eventCount={visibleEvents.length} onSelectAsset={onSelectAsset} />
     </section>
   );
 }
@@ -48,7 +53,7 @@ function OverviewHeading({ generatedAt }: { generatedAt: string }): JSX.Element 
   );
 }
 
-function EventListSection({ events }: { events: ScannerEventsResponse["events"] }): JSX.Element {
+function EventListSection({ groups, eventCount, onSelectAsset }: { groups: OverviewEventGroup[]; eventCount: number; onSelectAsset(assetId: string): void }): JSX.Element {
   return (
     <section className="overview-event-section" aria-label="机会事件">
       <div className="overview-section__heading">
@@ -56,21 +61,37 @@ function EventListSection({ events }: { events: ScannerEventsResponse["events"] 
           <h2>机会事件</h2>
           <p>MACD、突破、多周期共振等扫描事件，用来发现值得进一步打开详情的资产。</p>
         </div>
-        <span>{events.length.toLocaleString("en-US")} 条</span>
+        <span>{groups.length.toLocaleString("en-US")} 个资产 / {eventCount.toLocaleString("en-US")} 条事件</span>
       </div>
-      {events.length === 0 ? (
+      {groups.length === 0 ? (
         <EmptyState title="暂无事件" description="当前筛选结果没有触发突破或 MACD 事件。" />
       ) : (
         <div className="overview-event-list">
-          {events.map((event) => (
-            <article key={event.id} className="event-card">
-              <div>
-                <strong>{event.asset?.name ?? event.asset?.symbol ?? event.assetId}</strong>
-                <span>{event.severity}</span>
+          {groups.map((group) => (
+            <button key={group.assetId} type="button" className="overview-event-card" aria-label={`查看 ${group.assetName} 详情`} onClick={() => onSelectAsset(group.assetId)}>
+              <header>
+                <span className="overview-event-card__asset">
+                  <strong>{group.assetName}</strong>
+                  <small>{group.assetSymbol} · {group.market}</small>
+                </span>
+                <span className="overview-event-card__badges">
+                  <SignalBadge label={`强度 ${group.highestSeverity}`} tone={severityTone(group.highestSeverity)} />
+                  {group.events.length > 1 && <SignalBadge label={`${group.events.length} 条事件`} tone="amber" />}
+                </span>
+              </header>
+              <div className="overview-event-card__primary">
+                <SignalBadge label={eventTypeLabel(group.primaryEvent.eventType)} tone={eventTone(group.primaryEvent.eventType)} />
+                <h3>{group.primaryEvent.title}</h3>
               </div>
-              <h3>{event.title}</h3>
-              <p>{event.summary}</p>
-            </article>
+              <p>{group.primaryEvent.summary}</p>
+              {group.events.length > 1 && (
+                <ul className="overview-event-card__secondary">
+                  {group.events.slice(1, 3).map((event) => (
+                    <li key={event.id}>{event.title}</li>
+                  ))}
+                </ul>
+              )}
+            </button>
           ))}
         </div>
       )}

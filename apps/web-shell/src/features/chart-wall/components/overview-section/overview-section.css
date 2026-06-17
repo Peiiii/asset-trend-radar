@@ -45,6 +45,134 @@
   gap: 12px;
 }
 
+.overview-event-card {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  min-height: 192px;
+  padding: 13px;
+  border: 1px solid #d7dde7;
+  border-radius: 8px;
+  background: #ffffff;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
+}
+
+.overview-event-card:hover,
+.overview-event-card:focus-visible {
+  border-color: #9fb0c7;
+  background: #fbfdff;
+  box-shadow: 0 10px 22px rgba(33, 46, 70, 0.08);
+  outline: 0;
+  transform: translateY(-1px);
+}
+
+.overview-event-card header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.overview-event-card__asset {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.overview-event-card__asset strong,
+.overview-event-card__asset small,
+.overview-event-card__primary h3,
+.overview-event-card p,
+.overview-event-card__secondary li {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.overview-event-card__asset strong {
+  color: #172033;
+  font-size: 15px;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.overview-event-card__asset small {
+  color: #687386;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.overview-event-card__badges {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  max-width: 48%;
+}
+
+.overview-event-card__primary {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.overview-event-card__primary h3 {
+  margin: 0;
+  color: #172033;
+  font-size: 15px;
+  font-weight: 950;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.overview-event-card p {
+  margin: 0;
+  color: #5a6677;
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.55;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.overview-event-card__secondary {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding: 8px 0 0;
+  border-top: 1px dashed #d7dde7;
+  color: #687386;
+  font-size: 12px;
+  font-weight: 850;
+  list-style: none;
+}
+
+.overview-event-card__secondary li {
+  position: relative;
+  padding-left: 12px;
+  white-space: nowrap;
+}
+
+.overview-event-card__secondary li::before {
+  position: absolute;
+  top: 0.62em;
+  left: 0;
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: #9fb0c7;
+  content: "";
+}
+
 @media (max-width: 1180px) {
   .overview-event-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -59,5 +187,9 @@
 
   .overview-event-list {
     grid-template-columns: 1fr;
+  }
+
+  .overview-event-card__badges {
+    max-width: 58%;
   }
 }
