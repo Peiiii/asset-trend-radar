@@ -1,24 +1,26 @@
 import { useMemo } from "react";
-import type { ChartWallItem } from "@gold-insights/market-domain";
-import { ValuationCoverageSummaryBuilder } from "./valuation-coverage-summary.builder";
+import { ValuationCoverageSummaryBuilder, type ValuationCoverageItem } from "./valuation-coverage-summary.builder";
 import "./valuation-coverage-summary.css";
 
 type ValuationCoverageSummaryProps = {
-  items: ChartWallItem[];
+  items: ValuationCoverageItem[];
+  title?: string;
+  description?: string;
+  variant?: "full" | "compact";
 };
 
 const summaryBuilder = new ValuationCoverageSummaryBuilder();
 
-export function ValuationCoverageSummary({ items }: ValuationCoverageSummaryProps): JSX.Element {
+export function ValuationCoverageSummary({ items, title = "估值覆盖", description = "市值空态按当前筛选口径统计；“源未返回 / 未接入源 / 不适用”都不是后台加载中。", variant = "full" }: ValuationCoverageSummaryProps): JSX.Element {
   const summary = useMemo(() => summaryBuilder.build(items), [items]);
   const coverageLabel = `${Math.round(summary.coverageRatio * 100)}%`;
 
   return (
-    <section className="valuation-coverage-summary" aria-label="估值覆盖">
+    <section className={`valuation-coverage-summary valuation-coverage-summary--${variant}`} aria-label={title}>
       <div className="valuation-coverage-summary__header">
         <div>
-          <h3>估值覆盖</h3>
-          <p>市值空态按当前筛选口径统计；“源未返回 / 未接入源 / 不适用”都不是后台加载中。</p>
+          <h3>{title}</h3>
+          <p>{description}</p>
         </div>
         <strong>{coverageLabel}</strong>
       </div>
@@ -33,7 +35,7 @@ export function ValuationCoverageSummary({ items }: ValuationCoverageSummaryProp
         ))}
       </div>
 
-      <div className="valuation-coverage-summary__body">
+      {variant === "full" && <div className="valuation-coverage-summary__body">
         <article className="valuation-coverage-panel">
           <h4>按市场</h4>
           <div className="valuation-coverage-table" role="table" aria-label="按市场估值覆盖">
@@ -66,7 +68,7 @@ export function ValuationCoverageSummary({ items }: ValuationCoverageSummaryProp
             )}
           </div>
         </article>
-      </div>
+      </div>}
     </section>
   );
 }

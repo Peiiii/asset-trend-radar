@@ -8,6 +8,7 @@ import { DirectoryRankingSummary } from "../directory-ranking-summary/directory-
 import { DirectoryTableColumns } from "../directory-table/directory-table-columns";
 import { DirectorySortableHeader } from "../directory-table/directory-sortable-header";
 import { DirectoryValuationCell } from "../directory-table/directory-valuation-cell";
+import { ValuationCoverageSummary } from "../valuation-coverage-summary/valuation-coverage-summary";
 import "./asset-directory-section.css";
 
 type AssetDirectorySectionProps = {
@@ -112,6 +113,14 @@ export function AssetDirectorySection({ title, description, items, totalCount, c
       </div>
 
       <DirectoryRankingSummary items={items} totalCount={totalCount} sort={sort} order={order} />
+      {items.length > 0 && (
+        <ValuationCoverageSummary
+          items={items}
+          title="本页市值覆盖"
+          description="按当前页统计可排序市值、源未返回、未接入源和不适用；这些空态不是后台加载中。"
+          variant="compact"
+        />
+      )}
 
       {items.length === 0 ? (
         <EmptyState title="没有匹配资产" description="换一个关键词或回到图表墙调整筛选条件。" />

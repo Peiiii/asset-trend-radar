@@ -53,6 +53,19 @@
   grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
+.valuation-coverage-summary--compact .valuation-coverage-summary__cards {
+  grid-template-columns: repeat(5, minmax(100px, 1fr));
+}
+
+.valuation-coverage-summary--compact .valuation-coverage-card {
+  min-height: 66px;
+  padding: 8px 10px;
+}
+
+.valuation-coverage-summary--compact .valuation-coverage-card strong {
+  font-size: 18px;
+}
+
 .valuation-coverage-summary__body {
   grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
 }
@@ -161,7 +174,8 @@
 }
 
 @media (max-width: 1180px) {
-  .valuation-coverage-summary__cards {
+  .valuation-coverage-summary__cards,
+  .valuation-coverage-summary--compact .valuation-coverage-summary__cards {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
@@ -176,7 +190,8 @@
     display: grid;
   }
 
-  .valuation-coverage-summary__cards {
+  .valuation-coverage-summary__cards,
+  .valuation-coverage-summary--compact .valuation-coverage-summary__cards {
     grid-template-columns: 1fr;
   }
 }

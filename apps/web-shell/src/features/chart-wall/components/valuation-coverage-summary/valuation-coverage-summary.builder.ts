@@ -1,6 +1,16 @@
-import type { ChartWallItem } from "@gold-insights/market-domain";
+import type { AssetType, AssetValuation } from "@gold-insights/market-domain";
 import { getValuationDisplay, type ValuationDisplayStatus } from "../../utils/valuation-format.utils";
 import type { HealthTone } from "../data-health-section/data-health-section.utils";
+
+export type ValuationCoverageItem = {
+  valuation: AssetValuation;
+  currency: string;
+  assetType: AssetType;
+  market: string;
+  symbol: string;
+  name?: string;
+  label?: string;
+};
 
 export type ValuationCoverageStatusCard = {
   status: ValuationDisplayStatus;
@@ -71,7 +81,7 @@ const statusDefinitions: Record<ValuationDisplayStatus, Omit<ValuationCoverageSt
 const statusOrder: ValuationDisplayStatus[] = ["available", "turnover_only", "source_missing_value", "source_unavailable", "not_applicable"];
 
 export class ValuationCoverageSummaryBuilder {
-  public build = (items: ChartWallItem[]): ValuationCoverageSummary => {
+  public build = (items: ValuationCoverageItem[]): ValuationCoverageSummary => {
     const statusCounts = this.createStatusCounts();
     const marketBuckets = new Map<string, ValuationCoverageMarketRow>();
     const sourceBuckets = new Map<string, ValuationCoverageSourceRow>();
@@ -132,7 +142,7 @@ export class ValuationCoverageSummaryBuilder {
     marketBuckets.set(market, row);
   };
 
-  private addSourceRow = (sourceBuckets: Map<string, ValuationCoverageSourceRow>, item: ChartWallItem, status: ValuationDisplayStatus): void => {
+  private addSourceRow = (sourceBuckets: Map<string, ValuationCoverageSourceRow>, item: ValuationCoverageItem, status: ValuationDisplayStatus): void => {
     if (status === "available" || status === "turnover_only") {
       return;
     }
@@ -149,13 +159,13 @@ export class ValuationCoverageSummaryBuilder {
     row.count += 1;
 
     if (row.examples.length < 3) {
-      row.examples.push(item.name || item.symbol);
+      row.examples.push(item.name ?? item.label ?? item.symbol);
     }
 
     sourceBuckets.set(sourceLabel, row);
   };
 
-  private sourceBucketLabel = (item: ChartWallItem, status: ValuationDisplayStatus): string => {
+  private sourceBucketLabel = (item: ValuationCoverageItem, status: ValuationDisplayStatus): string => {
     if (status === "not_applicable") {
       return "资产类型不适用";
     }
