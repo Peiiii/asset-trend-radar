@@ -3,6 +3,7 @@ import { ChartCardShell, IconButton, PriceChange, SignalBadge, TechnicalChart, T
 import type { ChartWallItem, MacdState } from "@gold-insights/market-domain";
 import { formatPrice } from "@/shared/utils/format-number.utils";
 import { getValuationDisplay } from "../utils/valuation-format.utils";
+import { AssetChartCardMetricsBuilder } from "./asset-chart-card/asset-chart-card-metrics.builder";
 import { DataQualityIndicator } from "./data-quality/data-quality-indicator";
 import "./asset-chart-card.css";
 import "./asset-chart-card/asset-chart-card-identity.css";
@@ -53,10 +54,12 @@ const getBreakoutLabel = (state: string): string => {
   return "区间内";
 };
 
+const metricsBuilder = new AssetChartCardMetricsBuilder();
+
 export function AssetChartCard({ item, sort, rank, onSelect, onPin, onCompare }: AssetChartCardProps): JSX.Element {
   const topEvent = item.events[0];
-  const primaryMetric = getPrimaryPerformanceMetric(item, sort);
-  const sortMetric = getSortMetric(item, sort);
+  const primaryMetric = metricsBuilder.buildPrimaryMetric(item, sort);
+  const sortMetric = metricsBuilder.buildSortMetric(item, sort);
   const valuationDisplay = getValuationDisplay(item.valuation, item.currency, { assetType: item.assetType });
   const shouldShowValuation = valuationDisplay.status === "available" || valuationDisplay.status === "turnover_only";
   const shouldShowSortMetric = Boolean(sortMetric && !primaryMetric.isSortMetric);
@@ -81,7 +84,7 @@ export function AssetChartCard({ item, sort, rank, onSelect, onPin, onCompare }:
 
       <div className={`asset-chart-card__primary-metric asset-chart-card__primary-metric--${primaryMetric.tone}`}>
         <span>{primaryMetric.isSortMetric ? `排序 ${primaryMetric.label}` : primaryMetric.label}</span>
-        <strong>{formatPercentWithSign(primaryMetric.value)}</strong>
+        <strong>{primaryMetric.valueLabel}</strong>
       </div>
 
       <div className="asset-chart-card__range-return">
@@ -148,8 +151,6 @@ export function AssetChartCard({ item, sort, rank, onSelect, onPin, onCompare }:
   );
 }
 
-type PerformanceMetricKey = "return" | "return_1d" | "return_1w" | "return_1m" | "return_3m" | "return_6m" | "return_1y";
-
 function ReturnCell({ label, value, active = false }: { label: string; value: number | null | undefined; active?: boolean }): JSX.Element {
   const tone = value === null || value === undefined ? "neutral" : value >= 0 ? "positive" : "negative";
   return (
@@ -160,106 +161,8 @@ function ReturnCell({ label, value, active = false }: { label: string; value: nu
   );
 }
 
-function getPrimaryPerformanceMetric(
-  item: ChartWallItem,
-  sort: string | undefined
-): {
-  key: PerformanceMetricKey;
-  label: string;
-  value: number | null | undefined;
-  tone: "positive" | "negative" | "neutral";
-  isSortMetric: boolean;
-} {
-  const metric = getReturnMetric(item, sort);
-  const value = metric?.value ?? item.returnPct;
-
-  return {
-    key: metric?.key ?? "return",
-    label: metric?.label ?? "区间涨幅",
-    value,
-    tone: value === null || value === undefined ? "neutral" : value >= 0 ? "positive" : "negative",
-    isSortMetric: Boolean(metric)
-  };
-}
-
-function getReturnMetric(item: ChartWallItem, sort: string | undefined): { key: PerformanceMetricKey; label: string; value: number | null | undefined } | null {
-  switch (sort) {
-    case "return":
-      return { key: "return", label: "区间涨幅", value: item.returnPct };
-    case "return_1d":
-      return { key: "return_1d", label: "1D 涨幅", value: item.return1d };
-    case "return_1w":
-      return { key: "return_1w", label: "1W 涨幅", value: item.return1w };
-    case "return_1m":
-      return { key: "return_1m", label: "1M 涨幅", value: item.return1m };
-    case "return_3m":
-      return { key: "return_3m", label: "3M 涨幅", value: item.return3m };
-    case "return_6m":
-      return { key: "return_6m", label: "6M 涨幅", value: item.return6m };
-    case "return_1y":
-      return { key: "return_1y", label: "1Y 涨幅", value: item.return1y };
-    default:
-      return null;
-  }
-}
-
-function getSortMetric(item: ChartWallItem, sort: string | undefined): { label: string; value: string; tone: "positive" | "negative" | "neutral" } | null {
-  switch (sort) {
-    case "return":
-      return percentSortMetric("区间涨幅", item.returnPct);
-    case "return_1d":
-      return percentSortMetric("1D 涨幅", item.return1d);
-    case "return_1w":
-      return percentSortMetric("1W 涨幅", item.return1w);
-    case "return_1m":
-      return percentSortMetric("1M 涨幅", item.return1m);
-    case "return_3m":
-      return percentSortMetric("3M 涨幅", item.return3m);
-    case "return_6m":
-      return percentSortMetric("6M 涨幅", item.return6m);
-    case "return_1y":
-      return percentSortMetric("1Y 涨幅", item.return1y);
-    case "market_cap":
-      return valuationSortMetric(item);
-    case "volume_ratio":
-      return { label: "量比", value: item.volumeRatio === null ? "暂无" : `${item.volumeRatio.toFixed(2)}x`, tone: "neutral" };
-    case "drawdown":
-      return percentSortMetric("回撤", item.drawdownPct);
-    case "event_count":
-    case "macd":
-      return { label: "事件", value: String(item.events.length), tone: "neutral" };
-    case "data_point_count":
-      return { label: "数据点", value: item.dataPointCount.toLocaleString("en-US"), tone: item.dataPointCount >= 120 ? "positive" : item.dataPointCount >= 20 ? "neutral" : "negative" };
-    case "trend_score":
-      return { label: "趋势分", value: String(item.trendScore), tone: item.trendScore > 0 ? "positive" : item.trendScore < 0 ? "negative" : "neutral" };
-    default:
-      return null;
-  }
-}
-
-function valuationSortMetric(item: ChartWallItem): { label: string; value: string; tone: "positive" | "negative" | "neutral" } {
-  const display = getValuationDisplay(item.valuation, item.currency, { assetType: item.assetType });
-  return {
-    label: "市值",
-    value: display.label,
-    tone: "neutral"
-  };
-}
-
-function percentSortMetric(label: string, value: number | null | undefined): { label: string; value: string; tone: "positive" | "negative" | "neutral" } {
-  return {
-    label,
-    value: formatPercent(value),
-    tone: value === null || value === undefined ? "neutral" : value >= 0 ? "positive" : "negative"
-  };
-}
-
 function formatPercent(value: number | null | undefined): string {
   return value === null || value === undefined ? "暂无" : `${value.toFixed(2)}%`;
-}
-
-function formatPercentWithSign(value: number | null | undefined): string {
-  return value === null || value === undefined ? "暂无" : `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
 }
 
 function assetTypeLabel(assetType: string): string {
