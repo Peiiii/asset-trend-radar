@@ -1,4 +1,4 @@
-import type { AssetDetailResponse, AssetDirectoryAssetTypeFilter, AssetDirectoryCategoryId, AssetDirectoryDataStateFilter, AssetDirectoryPageResponse, AssetDirectorySortKey, AssetDirectorySortOrder, AssetDirectoryStatusFilter, AssetDirectoryValuationStatusFilter, ChartWallResponse, CompareResponse, DataHealthResponse, FundCatalogDataStateFilter, FundCatalogImportStatus, FundCatalogPageResponse, FundCatalogSortKey, FundCatalogSummaryResponse, FundImportResponse, FundSearchResponse, ScannerEventsResponse, SortOrder, TaskCenterResponse, UniverseTreeResponse, WatchlistsResponse } from "@gold-insights/market-domain";
+import type { AssetDetailResponse, AssetDirectoryAssetTypeFilter, AssetDirectoryCategoryId, AssetDirectoryDataStateFilter, AssetDirectoryPageResponse, AssetDirectorySortKey, AssetDirectorySortOrder, AssetDirectoryStatusFilter, AssetDirectoryValuationStatusFilter, ChartWallDataQualityFilter, ChartWallResponse, ChartWallValuationStatusFilter, CompareResponse, DataHealthResponse, FundCatalogDataStateFilter, FundCatalogImportStatus, FundCatalogPageResponse, FundCatalogSortKey, FundCatalogSummaryResponse, FundImportResponse, FundSearchResponse, ScannerEventsResponse, SortOrder, TaskCenterResponse, UniverseTreeResponse, WatchlistsResponse } from "@gold-insights/market-domain";
 import type { ChartWallSortOrder } from "@gold-insights/market-domain";
 
 export type ChartWallPageData = {
@@ -21,6 +21,8 @@ export type ChartWallFilters = {
   order: ChartWallSortOrder;
   signal: string;
   tag: string;
+  dataQuality: ChartWallDataQualityFilter;
+  valuationStatus: ChartWallValuationStatusFilter;
   includeValuations?: boolean;
 };
 

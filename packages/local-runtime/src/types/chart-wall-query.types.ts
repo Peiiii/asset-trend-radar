@@ -1,4 +1,4 @@
-import type { ChartWallSortOrder, Timeframe } from "@gold-insights/market-domain";
+import type { ChartWallDataQualityFilter, ChartWallSortOrder, ChartWallValuationStatusFilter, Timeframe } from "@gold-insights/market-domain";
 
 export type ChartWallQuery = {
   range: string;
@@ -11,6 +11,8 @@ export type ChartWallQuery = {
   order: ChartWallSortOrder;
   signal: string;
   tag: string;
+  dataQuality: ChartWallDataQualityFilter;
+  valuationStatus: ChartWallValuationStatusFilter;
   includeValuations: boolean;
 };
 

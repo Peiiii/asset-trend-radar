@@ -124,7 +124,9 @@ export class ChartWallApiService {
       sort: filters.sort,
       order: filters.order,
       signal: filters.signal,
-      tag: filters.tag
+      tag: filters.tag,
+      dataQuality: filters.dataQuality,
+      valuationStatus: filters.valuationStatus
     });
 
     if (filters.includeValuations) {

@@ -14,6 +14,8 @@ type ChartWallControlsProps = {
     level: string;
     tag: string;
     signal: string;
+    dataQuality: string;
+    valuationStatus: string;
     sort: string;
     order: ChartWallSortOrder;
     range: string;
@@ -26,6 +28,8 @@ type ChartWallControlsProps = {
     level: string;
     tag: string;
     signal: string;
+    dataQuality: string;
+    valuationStatus: string;
     sort: string;
     order: ChartWallSortOrder;
     range: string;
@@ -37,6 +41,8 @@ type ChartWallControlsProps = {
     levels?: ChartWallFacet[];
     tags?: ChartWallFacet[];
     signals?: ChartWallFacet[];
+    dataQualities?: ChartWallFacet[];
+    valuationStatuses?: ChartWallFacet[];
   };
   options: {
     markets: ControlOption[];
@@ -44,6 +50,8 @@ type ChartWallControlsProps = {
     levels: ControlOption[];
     tags: ControlOption[];
     signals: ControlOption[];
+    dataQualities: ControlOption[];
+    valuationStatuses: ControlOption[];
     sorts: ControlOption[];
     orders: ControlOption[];
   };
@@ -73,6 +81,8 @@ export function ChartWallControls({ values, defaults, facets, options, summary, 
         <Select id="level-filter" label="层级" value={values.level} onChange={(value) => onQueryChange("level", value, defaults.level)} options={facetOptions("全部层级", facets?.levels, options.levels)} />
         <Select id="tag-filter" label="主题" value={values.tag} onChange={(value) => onQueryChange("tag", value, defaults.tag)} options={facetOptions("全部主题", facets?.tags, options.tags)} />
         <Select id="signal-filter" label="信号" value={values.signal} onChange={(value) => onQueryChange("signal", value, defaults.signal)} options={facetOptions("全部信号", facets?.signals, options.signals)} />
+        <Select id="data-quality-filter" label="数据" value={values.dataQuality} onChange={(value) => onQueryChange("dataQuality", value, defaults.dataQuality)} options={facetOptions("全部数据", facets?.dataQualities, options.dataQualities)} />
+        <Select id="valuation-status-filter" label="规模" value={values.valuationStatus} onChange={(value) => onQueryChange("valuationStatus", value, defaults.valuationStatus)} options={facetOptions("全部规模", facets?.valuationStatuses, options.valuationStatuses)} />
         <Select id="sort-filter" label="排序" value={values.sort} onChange={(value) => onSortChange(value, onDefaultOrder(value))} options={options.sorts} />
         <Select id="sort-order-filter" label="方向" value={values.order} onChange={(value) => onSortChange(values.sort, onParseOrder(value))} options={options.orders} />
       </div>

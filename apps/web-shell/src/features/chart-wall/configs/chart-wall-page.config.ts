@@ -10,7 +10,9 @@ export const defaultFilters = {
   tag: "all",
   sort: "trend_score",
   order: "desc" as ChartWallSortOrder,
-  signal: "all"
+  signal: "all",
+  dataQuality: "all",
+  valuationStatus: "all"
 };
 
 export const marketFallbackOptions: ControlOption[] = [
@@ -96,4 +98,20 @@ export const signalFallbackOptions: ControlOption[] = [
   { value: "data_thin", label: "样本较少" },
   { value: "data_lagged", label: "数据滞后" },
   { value: "pinned", label: "已自选" }
+];
+
+export const dataQualityFallbackOptions: ControlOption[] = [
+  { value: "fresh", label: "数据新鲜" },
+  { value: "thin", label: "样本较少" },
+  { value: "lagged", label: "数据滞后" },
+  { value: "missing", label: "缺少数据" },
+  { value: "unknown", label: "状态未知" }
+];
+
+export const valuationStatusFallbackOptions: ControlOption[] = [
+  { value: "available", label: "有市值" },
+  { value: "turnover_only", label: "仅成交额" },
+  { value: "source_missing_value", label: "源缺值" },
+  { value: "source_unavailable", label: "未覆盖" },
+  { value: "not_applicable", label: "不适用" }
 ];

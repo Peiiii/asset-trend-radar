@@ -6,6 +6,8 @@ export type StrategyPresetFilters = {
   assetType?: string;
   tag?: string;
   signal?: string;
+  dataQuality?: string;
+  valuationStatus?: string;
   sort?: string;
   order?: string;
   range?: string;

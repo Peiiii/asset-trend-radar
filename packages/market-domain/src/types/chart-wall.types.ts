@@ -1,4 +1,5 @@
-import type { AssetSummary, AssetValuation } from "./asset.types";
+import type { AssetSummary, AssetValuation, AssetValuationStatus } from "./asset.types";
+import type { DataQualityStatus } from "../utils/data-quality.utils";
 import type { MacdState } from "./indicator.types";
 import type { ScannerEvent } from "./scanner-event.types";
 import type { OhlcvBar, SparklinePoint } from "./bar.types";
@@ -41,6 +42,8 @@ export type ChartWallItem = AssetSummary & {
 };
 
 export type ChartWallSortOrder = "asc" | "desc";
+export type ChartWallDataQualityFilter = DataQualityStatus | "all";
+export type ChartWallValuationStatusFilter = AssetValuationStatus | "all";
 
 export type ChartWallFacet = {
   value: string;
@@ -79,6 +82,8 @@ export type ChartWallFacets = {
   tags: ChartWallFacet[];
   sources: ChartWallFacet[];
   signals: ChartWallFacet[];
+  dataQualities: Array<ChartWallFacet & { value: ChartWallDataQualityFilter }>;
+  valuationStatuses: Array<ChartWallFacet & { value: ChartWallValuationStatusFilter }>;
 };
 
 export type ChartWallResponse = {
@@ -90,6 +95,8 @@ export type ChartWallResponse = {
   order: ChartWallSortOrder;
   signal: string;
   tag: string;
+  dataQuality: ChartWallDataQualityFilter;
+  valuationStatus: ChartWallValuationStatusFilter;
   generatedAt: string;
   sources: string[];
   summary: ChartWallSummary;

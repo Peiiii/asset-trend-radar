@@ -27,6 +27,7 @@ import { getBreakoutState, getMacdState, getReturnPct, getTrendScore } from "@go
 import type { AssetBarsQuery, ChartWallQuery, CompareQuery, ScannerEventsQuery } from "../types/chart-wall-query.types";
 import type { LocalRuntimeOptions } from "../types/local-runtime-options.types";
 import { ChartWallFacetBuilderService } from "./chart-wall-facet-builder.service";
+import { ChartWallItemFilterService } from "./chart-wall/chart-wall-item-filter.service";
 import { ChartWallItemSorter } from "./chart-wall-item-sorter.service";
 import type { ChartWallValuationService } from "./chart-wall-valuation.service";
 
@@ -39,6 +40,7 @@ type RangedSeries = {
 export class ChartWallQueryService {
   private readonly itemSorter = new ChartWallItemSorter();
   private readonly facetBuilder = new ChartWallFacetBuilderService();
+  private readonly itemFilter = new ChartWallItemFilterService();
 
   public constructor(
     private readonly options: LocalRuntimeOptions,
@@ -70,8 +72,10 @@ export class ChartWallQueryService {
     const matchedAssets = marketDataAssets.filter((asset) => this.matchesChartWallQuery(asset, query));
     const matchedItems = toPricedItems(matchedAssets);
     const signalFilteredItems = this.facetBuilder.applySignalFilter(matchedItems, query.signal);
-    const valuationEnrichedItems = await this.valuationService.enrichForSort(signalFilteredItems, query.sort, query.includeValuations);
-    const items = this.itemSorter.sort(valuationEnrichedItems, query.sort, query.order);
+    const dataQualityFilteredItems = this.itemFilter.filterByDataQuality(signalFilteredItems, query.dataQuality);
+    const valuationEnrichedItems = await this.valuationService.enrichForSort(dataQualityFilteredItems, query.sort, query.includeValuations || query.valuationStatus !== "all");
+    const valuationFilteredItems = this.itemFilter.filterByValuationStatus(valuationEnrichedItems, query.valuationStatus);
+    const items = this.itemSorter.sort(valuationFilteredItems, query.sort, query.order);
 
     return {
       universe: query.universe,
@@ -82,10 +86,16 @@ export class ChartWallQueryService {
       order: query.order,
       signal: query.signal,
       tag: query.tag,
+      dataQuality: query.dataQuality,
+      valuationStatus: query.valuationStatus,
       generatedAt: new Date().toISOString(),
       sources: [...new Set(items.map((item) => item.source))],
       summary: this.getChartWallSummary(items, marketDataAssets.length),
-      facets: this.getContextualFacets(marketDataAssets, query, toPricedItems),
+      facets: this.getContextualFacets(marketDataAssets, query, toPricedItems, {
+        matchedItems,
+        signalFilteredItems,
+        dataQualityFilteredItems: valuationEnrichedItems
+      }),
       fundScope: this.getFundScope(query, items, marketDataAssets),
       items
     };
@@ -131,6 +141,8 @@ export class ChartWallQueryService {
       order: "desc" as const,
       signal: "all",
       tag: "all",
+      dataQuality: "all" as const,
+      valuationStatus: "all" as const,
       includeValuations: true
     };
     const item = this.getChartWallItem(asset, detailQuery, pinnedIds, new Set());
@@ -483,8 +495,8 @@ export class ChartWallQueryService {
 
   private isMarketDataAsset = (asset: AssetSummary): boolean => asset.level !== "asset-class" && asset.level !== "market";
 
-  private getContextualFacets = (marketDataAssets: AssetSummary[], query: ChartWallQuery, toPricedItems: (assets: AssetSummary[]) => ChartWallItem[]): ChartWallFacets => {
-    const signalItems = toPricedItems(marketDataAssets.filter((asset) => this.matchesChartWallQuery(asset, query)));
+  private getContextualFacets = (marketDataAssets: AssetSummary[], query: ChartWallQuery, toPricedItems: (assets: AssetSummary[]) => ChartWallItem[], context: { matchedItems: ChartWallItem[]; signalFilteredItems: ChartWallItem[]; dataQualityFilteredItems: ChartWallItem[] }): ChartWallFacets => {
+    const signalItems = context.matchedItems;
     const globalItems = this.facetBuilder.applySignalFilter(toPricedItems(marketDataAssets), query.signal);
 
     return {
@@ -493,7 +505,9 @@ export class ChartWallQueryService {
       levels: this.facetBuilder.buildLevelFacets(globalItems),
       tags: this.facetBuilder.buildTagFacets(globalItems),
       sources: this.facetBuilder.buildSourceFacets(globalItems),
-      signals: this.facetBuilder.buildSignalFacets(signalItems)
+      signals: this.facetBuilder.buildSignalFacets(signalItems),
+      dataQualities: this.facetBuilder.buildDataQualityFacets(context.signalFilteredItems),
+      valuationStatuses: this.facetBuilder.buildValuationStatusFacets(context.dataQualityFilteredItems)
     };
   };
 

@@ -1,5 +1,5 @@
-import type { AssetSummary, ChartWallFacet, ChartWallFacets, ChartWallItem } from "@gold-insights/market-domain";
-import { getDataQualityStatus } from "@gold-insights/market-domain";
+import type { AssetSummary, AssetValuationStatus, ChartWallFacet, ChartWallFacets, ChartWallItem, DataQualityStatus } from "@gold-insights/market-domain";
+import { getAssetValuationStatus, getDataQualityStatus } from "@gold-insights/market-domain";
 import { getAssetLevelLabel, getAssetTypeLabel } from "../utils/asset-label.utils";
 
 export class ChartWallFacetBuilderService {
@@ -9,7 +9,9 @@ export class ChartWallFacetBuilderService {
     levels: this.buildLevelFacets(assets),
     tags: this.buildTagFacets(assets),
     sources: this.buildSourceFacets(assets),
-    signals: this.buildSignalFacets(items)
+    signals: this.buildSignalFacets(items),
+    dataQualities: this.buildDataQualityFacets(items),
+    valuationStatuses: this.buildValuationStatusFacets(items)
   });
 
   public buildMarketFacets = (assets: AssetSummary[]): ChartWallFacet[] => this.withAllFacet("全部市场", assets.length, this.toFacetCounts(assets, (asset) => asset.market));
@@ -41,6 +43,41 @@ export class ChartWallFacetBuilderService {
     { value: "data_thin", label: "样本较少", count: this.applySignalFilter(items, "data_thin").length },
     { value: "data_lagged", label: "数据滞后", count: this.applySignalFilter(items, "data_lagged").length }
   ];
+
+  public buildDataQualityFacets = (items: ChartWallItem[]): ChartWallFacets["dataQualities"] => {
+    const referenceTimestamp = Date.now();
+    const counts = items.reduce((entries, item) => {
+      const status = getDataQualityStatus(item, referenceTimestamp);
+      entries.set(status, (entries.get(status) ?? 0) + 1);
+      return entries;
+    }, new Map<DataQualityStatus, number>());
+
+    return [
+      { value: "all", label: "全部数据", count: items.length },
+      { value: "fresh", label: "数据新鲜", count: counts.get("fresh") ?? 0 },
+      { value: "thin", label: "样本较少", count: counts.get("thin") ?? 0 },
+      { value: "lagged", label: "数据滞后", count: counts.get("lagged") ?? 0 },
+      { value: "missing", label: "缺少数据", count: counts.get("missing") ?? 0 },
+      { value: "unknown", label: "状态未知", count: counts.get("unknown") ?? 0 }
+    ];
+  };
+
+  public buildValuationStatusFacets = (items: ChartWallItem[]): ChartWallFacets["valuationStatuses"] => {
+    const counts = items.reduce((entries, item) => {
+      const status = getAssetValuationStatus(item.valuation, { assetType: item.assetType });
+      entries.set(status, (entries.get(status) ?? 0) + 1);
+      return entries;
+    }, new Map<AssetValuationStatus, number>());
+
+    return [
+      { value: "all", label: "全部规模", count: items.length },
+      { value: "available", label: "有市值", count: counts.get("available") ?? 0 },
+      { value: "turnover_only", label: "仅成交额", count: counts.get("turnover_only") ?? 0 },
+      { value: "source_missing_value", label: "源缺值", count: counts.get("source_missing_value") ?? 0 },
+      { value: "source_unavailable", label: "未覆盖", count: counts.get("source_unavailable") ?? 0 },
+      { value: "not_applicable", label: "不适用", count: counts.get("not_applicable") ?? 0 }
+    ];
+  };
 
   public applySignalFilter = (items: ChartWallItem[], signal: string): ChartWallItem[] => {
     const referenceTimestamp = Date.now();

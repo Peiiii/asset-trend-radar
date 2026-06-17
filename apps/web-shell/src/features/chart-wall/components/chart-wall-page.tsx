@@ -20,10 +20,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { NavLink, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { AppShell, Button, ErrorState, IconButton, LoadingState, RangePicker, TimeframePicker } from "@gold-insights/ui";
 import type { ControlOption } from "@gold-insights/ui";
-import type { AssetDirectoryAssetTypeFilter, AssetDirectoryCategoryId, AssetDirectoryCoverage, AssetDirectoryDataStateFilter, AssetDirectoryItem, AssetDirectorySortKey, AssetDirectoryStatusFilter, AssetDirectoryValuationStatusFilter, ChartWallSortOrder } from "@gold-insights/market-domain";
+import type { AssetDirectoryAssetTypeFilter, AssetDirectoryCategoryId, AssetDirectoryCoverage, AssetDirectoryDataStateFilter, AssetDirectoryItem, AssetDirectorySortKey, AssetDirectoryStatusFilter, AssetDirectoryValuationStatusFilter, ChartWallDataQualityFilter, ChartWallSortOrder, ChartWallValuationStatusFilter } from "@gold-insights/market-domain";
 import type { ChartWallFilters, ChartWallPageData } from "@/shared/types/api.types";
 import { formatDateTime } from "@/shared/utils/format-number.utils";
-import { assetTypeFallbackOptions, defaultFilters, levelFallbackOptions, marketFallbackOptions, signalFallbackOptions, sortOptions, sortOrderOptions, tagFallbackOptions } from "../configs/chart-wall-page.config";
+import { assetTypeFallbackOptions, dataQualityFallbackOptions, defaultFilters, levelFallbackOptions, marketFallbackOptions, signalFallbackOptions, sortOptions, sortOrderOptions, tagFallbackOptions, valuationStatusFallbackOptions } from "../configs/chart-wall-page.config";
 import { ActiveFilterChips } from "./active-filter-chips/active-filter-chips";
 import { AssetDetailSection } from "./asset-detail-section/asset-detail-section";
 import { AssetDirectorySection } from "./asset-directory-section/asset-directory-section";
@@ -86,6 +86,8 @@ export function ChartWallPage(): JSX.Element {
   const sort = getSearchValue(searchParams, "sort", defaultFilters.sort);
   const order = getSortOrder(getSearchValue(searchParams, "order", defaultFilters.order));
   const signal = getSearchValue(searchParams, "signal", defaultFilters.signal);
+  const dataQuality = getChartWallDataQuality(getSearchValue(searchParams, "dataQuality", defaultFilters.dataQuality));
+  const valuationStatus = getChartWallValuationStatus(getSearchValue(searchParams, "valuationStatus", defaultFilters.valuationStatus));
   const viewMode = getViewMode(getSearchValue(searchParams, "view", "grid"));
   const search = getSearchValue(searchParams, "q", "");
   const scannerEventType = getSearchValue(searchParams, "eventType", "all");
@@ -169,9 +171,11 @@ export function ChartWallPage(): JSX.Element {
       sort: effectiveSort,
       order: effectiveOrder,
       signal,
-      includeValuations: shouldIncludeValuations(activeView, effectiveMarket, effectiveAssetType, effectiveSort)
+      dataQuality,
+      valuationStatus,
+      includeValuations: shouldIncludeValuations(activeView, effectiveMarket, effectiveAssetType, effectiveSort, valuationStatus)
     }),
-    [activeView, effectiveAssetType, effectiveMarket, effectiveOrder, effectiveSort, level, range, signal, tag, timeframe]
+    [activeView, dataQuality, effectiveAssetType, effectiveMarket, effectiveOrder, effectiveSort, level, range, signal, tag, timeframe, valuationStatus]
   );
   const { data, error, isLoading, reload } = useChartWallQuery(filters, needsChartWallData);
   const fundDirectoryQuery = useFundDirectoryQuery(fundDirectory.filters, activeView === "fund-directory");
@@ -288,6 +292,8 @@ export function ChartWallPage(): JSX.Element {
     next.delete("q");
     next.delete("level");
     next.delete("tag");
+    next.delete("dataQuality");
+    next.delete("valuationStatus");
 
     for (const [key, value] of Object.entries(preset)) {
       const fallback = defaultFilters[key as keyof typeof defaultFilters] ?? "";
@@ -451,18 +457,18 @@ export function ChartWallPage(): JSX.Element {
       ) : isAssetDirectoryView || activeView === "tasks" ? null : (
         <>
           <ChartWallControls
-            values={{ market, assetType, level, tag, signal, sort, order, range, timeframe, viewMode }}
+            values={{ market, assetType, level, tag, signal, dataQuality, valuationStatus, sort, order, range, timeframe, viewMode }}
             defaults={defaultFilters}
             facets={data?.chartWall.facets}
-            options={{ markets: marketFallbackOptions, assetTypes: assetTypeFallbackOptions, levels: levelFallbackOptions, tags: tagFallbackOptions, signals: signalFallbackOptions, sorts: sortOptions, orders: sortOrderOptions }}
+            options={{ markets: marketFallbackOptions, assetTypes: assetTypeFallbackOptions, levels: levelFallbackOptions, tags: tagFallbackOptions, signals: signalFallbackOptions, dataQualities: dataQualityFallbackOptions, valuationStatuses: valuationStatusFallbackOptions, sorts: sortOptions, orders: sortOrderOptions }}
             summary={{ visibleCount: filteredItems.length, apiCount: chartItems.length, sortLabel: sortDisplayLabel(sort), orderLabel: sortOrderLabel(order) }}
             isRefreshing={isGlobalSyncing}
             showViewMode={activeView === "chart-wall"}
             activeFilterSlot={(
               <ActiveFilterChips
-                filters={{ market, assetType, level, tag, signal, sort, order, search }}
+                filters={{ market, assetType, level, tag, signal, dataQuality, valuationStatus, sort, order, search }}
                 defaults={{ sort: defaultFilters.sort, order: defaultFilters.order }}
-                options={{ assetTypes: assetTypeFallbackOptions, levels: levelFallbackOptions, tags: tagFallbackOptions, signals: signalFallbackOptions, sorts: sortOptions, orders: sortOrderOptions }}
+                options={{ assetTypes: assetTypeFallbackOptions, levels: levelFallbackOptions, tags: tagFallbackOptions, signals: signalFallbackOptions, dataQualities: dataQualityFallbackOptions, valuationStatuses: valuationStatusFallbackOptions, sorts: sortOptions, orders: sortOrderOptions }}
                 onRemove={removeFilterChip}
                 onReset={resetFilters}
               />
@@ -478,7 +484,7 @@ export function ChartWallPage(): JSX.Element {
           />
 
           {(activeView === "overview" || activeView === "chart-wall") && (
-            <StrategyPresetStrip currentFilters={{ market, assetType, tag, signal, sort, order, range, timeframe }} onApply={applyStrategyPreset} />
+            <StrategyPresetStrip currentFilters={{ market, assetType, tag, signal, dataQuality, valuationStatus, sort, order, range, timeframe }} onApply={applyStrategyPreset} />
           )}
         </>
       )}
@@ -991,6 +997,16 @@ function getSortOrder(value: string): ChartWallSortOrder {
   return value === "asc" ? "asc" : "desc";
 }
 
+function getChartWallDataQuality(value: string): ChartWallDataQualityFilter {
+  const supported: ChartWallDataQualityFilter[] = ["all", "fresh", "thin", "lagged", "missing", "unknown"];
+  return supported.includes(value as ChartWallDataQualityFilter) ? (value as ChartWallDataQualityFilter) : "all";
+}
+
+function getChartWallValuationStatus(value: string): ChartWallValuationStatusFilter {
+  const supported: ChartWallValuationStatusFilter[] = ["all", "available", "turnover_only", "source_missing_value", "source_unavailable", "not_applicable"];
+  return supported.includes(value as ChartWallValuationStatusFilter) ? (value as ChartWallValuationStatusFilter) : "all";
+}
+
 function toggleSortOrder(value: ChartWallSortOrder): ChartWallSortOrder {
   return value === "desc" ? "asc" : "desc";
 }
@@ -999,8 +1015,8 @@ function defaultOrderForSort(sort: string): ChartWallSortOrder {
   return sort === "symbol" || sort === "market" || sort === "asset_type" ? "asc" : "desc";
 }
 
-function shouldIncludeValuations(activeView: ActiveView, market: string, assetType: string, sort: string): boolean {
-  if (activeView === "data-health" || sort === "market_cap") {
+function shouldIncludeValuations(activeView: ActiveView, market: string, assetType: string, sort: string, valuationStatus: ChartWallValuationStatusFilter): boolean {
+  if (activeView === "data-health" || sort === "market_cap" || valuationStatus !== "all") {
     return true;
   }
 

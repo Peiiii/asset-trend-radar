@@ -3,7 +3,7 @@ import type { ControlOption } from "@gold-insights/ui";
 import type { ChartWallSortOrder } from "@gold-insights/market-domain";
 import "./active-filter-chips.css";
 
-type ActiveFilterKey = "market" | "assetType" | "level" | "tag" | "signal" | "sort" | "order" | "search";
+type ActiveFilterKey = "market" | "assetType" | "level" | "tag" | "signal" | "dataQuality" | "valuationStatus" | "sort" | "order" | "search";
 
 type ActiveFilterValues = Record<ActiveFilterKey, string>;
 
@@ -12,6 +12,8 @@ type ActiveFilterChipOptions = {
   levels: ControlOption[];
   tags: ControlOption[];
   signals: ControlOption[];
+  dataQualities: ControlOption[];
+  valuationStatuses: ControlOption[];
   sorts: ControlOption[];
   orders: ControlOption[];
 };
@@ -58,6 +60,8 @@ function filterLabel(key: ActiveFilterKey): string {
     level: "层级",
     tag: "主题",
     signal: "信号",
+    dataQuality: "数据",
+    valuationStatus: "规模",
     sort: "排序",
     order: "方向",
     search: "搜索"
@@ -80,6 +84,14 @@ function activeFilterValueLabel(key: ActiveFilterKey, value: string, options: Ac
 
   if (key === "signal") {
     return optionLabel(options.signals, value);
+  }
+
+  if (key === "dataQuality") {
+    return optionLabel(options.dataQualities, value);
+  }
+
+  if (key === "valuationStatus") {
+    return optionLabel(options.valuationStatuses, value);
   }
 
   if (key === "tag") {
