@@ -555,6 +555,7 @@ export function ChartWallPage(): JSX.Element {
                 order={effectiveOrder}
                 search={search}
                 statusLabel={assetDirectoryQuery.data ? coverageLabel(assetDirectoryQuery.data.category.coverage) : "真实已入库 / 走势池"}
+                statusFacets={assetDirectoryQuery.data?.facets.statuses ?? []}
                 page={assetDirectoryPage}
                 limit={assetDirectoryLimit}
                 tableMinWidth={assetDirectoryTableSizing.tableMinWidth}

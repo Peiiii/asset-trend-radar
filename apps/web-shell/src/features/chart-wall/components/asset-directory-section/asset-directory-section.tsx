@@ -1,7 +1,7 @@
 import { ChevronLeft, ChevronRight, GitCompare, Plus, Search } from "lucide-react";
 import { Button, DataTableFrame, EmptyState, Select, SignalBadge } from "@gold-insights/ui";
 import type { ControlOption } from "@gold-insights/ui";
-import type { AssetDirectoryItem, AssetDirectorySortKey, AssetDirectorySortOrder, AssetDirectoryStatusFilter } from "@gold-insights/market-domain";
+import type { AssetDirectoryItem, AssetDirectoryPageResponse, AssetDirectorySortKey, AssetDirectorySortOrder, AssetDirectoryStatusFilter } from "@gold-insights/market-domain";
 import { formatPrice } from "@/shared/utils/format-number.utils";
 import { DirectoryReturnPill } from "../directory-table/directory-return-pill";
 import "./asset-directory-section.css";
@@ -18,6 +18,7 @@ type AssetDirectorySectionProps = {
   order: AssetDirectorySortOrder;
   search: string;
   statusLabel: string;
+  statusFacets: AssetDirectoryPageResponse["facets"]["statuses"];
   page: number;
   limit: number;
   tableMinWidth: number;
@@ -57,12 +58,13 @@ const directoryOrderOptions: ControlOption[] = [
   { value: "asc", label: "升序" }
 ];
 
-export function AssetDirectorySection({ title, description, items, totalCount, categoryItemCount, categoryInPoolCount, status, sort, order, search, statusLabel, page, limit, tableMinWidth, firstColumnMinWidth, lastColumnMinWidth, canImport, importingItemId, message, onStatusChange, onSortChange, onReset, onPageChange, onImport, onSelect, onCompare }: AssetDirectorySectionProps): JSX.Element {
+export function AssetDirectorySection({ title, description, items, totalCount, categoryItemCount, categoryInPoolCount, status, sort, order, search, statusLabel, statusFacets, page, limit, tableMinWidth, firstColumnMinWidth, lastColumnMinWidth, canImport, importingItemId, message, onStatusChange, onSortChange, onReset, onPageChange, onImport, onSelect, onCompare }: AssetDirectorySectionProps): JSX.Element {
   const positiveCount = items.filter((item) => (item.returns.return1m ?? item.returns.return1d ?? 0) > 0).length;
   const sourceCount = new Set(items.map((item) => item.provider)).size;
   const totalPages = Math.max(Math.ceil(totalCount / limit), 1);
   const fromIndex = totalCount === 0 ? 0 : (page - 1) * limit + 1;
   const toIndex = Math.min(page * limit, totalCount);
+  const statusOptions = getDirectoryStatusOptions(statusFacets);
 
   return (
     <section className="single-view-section asset-directory-section">
@@ -80,7 +82,7 @@ export function AssetDirectorySection({ title, description, items, totalCount, c
       </div>
 
       <div className="asset-directory-toolbar">
-        <Select id="asset-directory-status" label="状态" value={status} options={directoryStatusOptions} onChange={(value) => onStatusChange(getDirectoryStatus(value))} />
+        <Select id="asset-directory-status" label="状态" value={status} options={statusOptions} onChange={(value) => onStatusChange(getDirectoryStatus(value))} />
         <Select id="asset-directory-sort" label="排序" value={sort} options={directorySortOptions} onChange={(value) => onSortChange(getDirectorySort(value), getDefaultDirectoryOrder(value))} />
         <Select id="asset-directory-order" label="方向" value={order} options={directoryOrderOptions} onChange={(value) => onSortChange(sort, getDirectoryOrder(value))} />
         <Button type="button" variant="ghost" onClick={onReset}>重置</Button>
@@ -210,6 +212,14 @@ function dataStateLabel(value: AssetDirectoryItem["dataState"]): string {
 
 function getDirectoryStatus(value: string): AssetDirectoryStatusFilter {
   return value === "in_pool" || value === "not_in_pool" ? value : "all";
+}
+
+function getDirectoryStatusOptions(statusFacets: AssetDirectoryPageResponse["facets"]["statuses"]): ControlOption[] {
+  const counts = new Map(statusFacets.map((facet) => [facet.value, facet.count]));
+  return directoryStatusOptions.map((option) => ({
+    ...option,
+    count: counts.get(getDirectoryStatus(option.value))
+  }));
 }
 
 function getDirectorySort(value: string): AssetDirectorySortKey {
