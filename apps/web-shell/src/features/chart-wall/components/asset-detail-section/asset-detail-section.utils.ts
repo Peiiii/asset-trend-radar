@@ -7,6 +7,16 @@ export type DetailReturnMetric = {
   value: number | null;
 };
 
+export type PriceRangeStats = {
+  high: number;
+  low: number;
+  positionPct: number;
+  distanceToHighPct: number | null;
+  distanceFromLowPct: number | null;
+  label: string;
+  tone: Tone;
+};
+
 export function assetTypeLabel(type: AssetType): string {
   const labels: Record<AssetType, string> = {
     index: "指数",
@@ -151,6 +161,34 @@ export function volumeActivityLabel(value: number | null | undefined): string {
   return "接近均量";
 }
 
+export function buildPriceRangeStats(item: ChartWallItem): PriceRangeStats | null {
+  const points = item.sparkline.filter((point) => Number.isFinite(point.h) && Number.isFinite(point.l));
+  const latest = item.lastPrice ?? item.sparkline.at(-1)?.c ?? null;
+
+  if (points.length === 0 || latest === null || !Number.isFinite(latest)) {
+    return null;
+  }
+
+  const high = Math.max(...points.map((point) => point.h));
+  const low = Math.min(...points.map((point) => point.l));
+
+  if (!Number.isFinite(high) || !Number.isFinite(low) || high <= low) {
+    return null;
+  }
+
+  const positionPct = clampPercent(((latest - low) / (high - low)) * 100);
+
+  return {
+    high,
+    low,
+    positionPct,
+    distanceToHighPct: high > 0 ? ((latest - high) / high) * 100 : null,
+    distanceFromLowPct: low > 0 ? ((latest - low) / low) * 100 : null,
+    label: priceRangePositionLabel(positionPct),
+    tone: priceRangePositionTone(positionPct)
+  };
+}
+
 export function buildReturnMetrics(item: ChartWallItem): DetailReturnMetric[] {
   return [
     { label: "1D", value: item.return1d },
@@ -160,4 +198,48 @@ export function buildReturnMetrics(item: ChartWallItem): DetailReturnMetric[] {
     { label: "6M", value: item.return6m },
     { label: "1Y", value: item.return1y }
   ];
+}
+
+function clampPercent(value: number): number {
+  return Math.min(100, Math.max(0, value));
+}
+
+function priceRangePositionLabel(positionPct: number): string {
+  if (positionPct >= 85) {
+    return "接近区间高位";
+  }
+
+  if (positionPct >= 65) {
+    return "区间上沿";
+  }
+
+  if (positionPct > 35) {
+    return "区间中部";
+  }
+
+  if (positionPct > 15) {
+    return "区间下沿";
+  }
+
+  return "接近区间低位";
+}
+
+function priceRangePositionTone(positionPct: number): Tone {
+  if (positionPct >= 85) {
+    return "blue";
+  }
+
+  if (positionPct >= 65) {
+    return "positive";
+  }
+
+  if (positionPct > 35) {
+    return "neutral";
+  }
+
+  if (positionPct > 15) {
+    return "amber";
+  }
+
+  return "negative";
 }

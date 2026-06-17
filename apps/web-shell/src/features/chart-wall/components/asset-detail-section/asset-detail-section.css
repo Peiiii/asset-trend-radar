@@ -172,6 +172,23 @@
   margin: 0;
 }
 
+.asset-detail-range-meter {
+  height: 10px;
+  margin-bottom: 12px;
+  overflow: hidden;
+  border: 1px solid #d7dde7;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ffe8e8 0%, #f8fafc 48%, #e9f4ff 100%);
+}
+
+.asset-detail-range-meter span {
+  display: block;
+  height: 100%;
+  min-width: 4px;
+  border-radius: inherit;
+  background: #2f78c4;
+}
+
 .asset-detail-side dl div {
   padding-bottom: 10px;
   border-bottom: 1px solid #e5eaf1;

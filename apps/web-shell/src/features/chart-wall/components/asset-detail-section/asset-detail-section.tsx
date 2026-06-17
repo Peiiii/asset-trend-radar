@@ -4,7 +4,7 @@ import type { ChartWallItem } from "@gold-insights/market-domain";
 import { formatDateTime, formatPrice } from "@/shared/utils/format-number.utils";
 import { AssetChartCard } from "../asset-chart-card";
 import { getValuationDisplay, type ValuationDisplayStatus } from "../../utils/valuation-format.utils";
-import { assetTypeLabel, breakoutLabel, breakoutTone, buildReturnMetrics, drawdownTone, formatCompactQuantity, formatNumber, formatPercent, formatRatio, macdLabel, macdTone, returnTone, volumeActivityLabel, volumeRatioTone } from "./asset-detail-section.utils";
+import { assetTypeLabel, breakoutLabel, breakoutTone, buildPriceRangeStats, buildReturnMetrics, drawdownTone, formatCompactQuantity, formatNumber, formatPercent, formatRatio, macdLabel, macdTone, returnTone, type PriceRangeStats, volumeActivityLabel, volumeRatioTone } from "./asset-detail-section.utils";
 import "./asset-detail-section.css";
 
 type AssetDetailSectionProps = {
@@ -30,6 +30,7 @@ export function AssetDetailSection({ item, relatedItems, onSelect, onPin, onComp
 
   const topEvents = [...item.events].sort((left, right) => right.severity - left.severity).slice(0, 4);
   const valuationDisplay = getValuationDisplay(item.valuation, item.currency, { assetType: item.assetType });
+  const priceRangeStats = buildPriceRangeStats(item);
 
   return (
     <section className="single-view-section asset-detail-section">
@@ -55,6 +56,7 @@ export function AssetDetailSection({ item, relatedItems, onSelect, onPin, onComp
           />
           <DetailMetric label="区间涨幅" value={formatPercent(item.returnPct)} tone={returnTone(item.returnPct)} />
           <DetailMetric label="量比" value={formatRatio(item.volumeRatio)} detail="最新量 / 20 日均量" tone={volumeRatioTone(item.volumeRatio)} />
+          {priceRangeStats && <DetailMetric label="区间位置" value={`${priceRangeStats.positionPct.toFixed(0)}%`} detail={priceRangeStats.label} tone={priceRangeStats.tone} />}
           <DetailMetric label="趋势分" value={String(item.trendScore)} tone={item.trendScore >= 60 ? "positive" : item.trendScore <= 35 ? "negative" : "neutral"} />
           <DetailMetric label="当前回撤" value={formatPercent(item.drawdownPct)} tone={drawdownTone(item.drawdownPct)} />
         </div>
@@ -98,6 +100,7 @@ export function AssetDetailSection({ item, relatedItems, onSelect, onPin, onComp
               <DetailRow label="突破状态" value={breakoutLabel(item.breakoutState)} />
             </dl>
           </section>
+          {priceRangeStats && <PriceRangePanel stats={priceRangeStats} currency={item.currency} />}
           <section>
             <h2>成交活跃度</h2>
             <dl>
@@ -165,6 +168,23 @@ function DetailRow({ label, value }: { label: string; value: string }): JSX.Elem
       <dt>{label}</dt>
       <dd>{value}</dd>
     </div>
+  );
+}
+
+function PriceRangePanel({ stats, currency }: { stats: PriceRangeStats; currency: string }): JSX.Element {
+  return (
+    <section>
+      <h2>价格区间</h2>
+      <div className="asset-detail-range-meter" role="meter" aria-label="当前价所处区间位置" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(stats.positionPct)}>
+        <span style={{ width: `${stats.positionPct}%` }} />
+      </div>
+      <dl>
+        <DetailRow label="区间高点" value={formatPrice(stats.high, currency)} />
+        <DetailRow label="区间低点" value={formatPrice(stats.low, currency)} />
+        <DetailRow label="距高点" value={formatPercent(stats.distanceToHighPct)} />
+        <DetailRow label="离低点" value={formatPercent(stats.distanceFromLowPct)} />
+      </dl>
+    </section>
   );
 }
 
