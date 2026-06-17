@@ -1,0 +1,66 @@
+.exchange-table__rank {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  width: 52px;
+  min-width: 52px;
+  color: #7a8595;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.exchange-table th.exchange-table__rank {
+  z-index: 6;
+}
+
+.exchange-table__asset-heading,
+.exchange-table__asset-cell {
+  position: sticky;
+  left: 52px;
+  min-width: 238px;
+  box-shadow: 1px 0 0 #e5eaf1;
+  transition: box-shadow 160ms ease;
+}
+
+.exchange-table__asset-heading {
+  z-index: 6;
+}
+
+.exchange-table__asset-cell {
+  z-index: 3;
+}
+
+.exchange-table-wrapper--left-shadow .exchange-table__asset-heading,
+.exchange-table-wrapper--left-shadow .exchange-table__asset-cell {
+  box-shadow: 1px 0 0 #e5eaf1, 12px 0 18px -18px rgba(15, 23, 42, 0.58);
+}
+
+.exchange-table__actions-heading,
+.exchange-table__actions-cell {
+  position: sticky;
+  right: 0;
+  min-width: 214px;
+  box-shadow: -1px 0 0 #e5eaf1;
+  transition: box-shadow 160ms ease;
+}
+
+.exchange-table__actions-heading {
+  z-index: 7;
+}
+
+.exchange-table__actions-cell {
+  z-index: 4;
+}
+
+.exchange-table-wrapper--right-shadow .exchange-table__actions-heading,
+.exchange-table-wrapper--right-shadow .exchange-table__actions-cell {
+  box-shadow: -1px 0 0 #e5eaf1, -12px 0 18px -18px rgba(15, 23, 42, 0.58);
+}
+
+.exchange-table__actions {
+  justify-content: flex-end;
+}
+
+.exchange-table__actions button {
+  gap: 5px;
+}

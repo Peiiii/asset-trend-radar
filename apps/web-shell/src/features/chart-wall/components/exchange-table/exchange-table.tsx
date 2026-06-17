@@ -6,6 +6,8 @@ import { getValuationDisplay } from "../../utils/valuation-format.utils";
 import { DataQualityIndicator } from "../data-quality/data-quality-indicator";
 import { RankingQualitySummary } from "../ranking-quality-summary/ranking-quality-summary";
 import "./exchange-table-active-sort.css";
+import "./exchange-table-toolbar.css";
+import "./exchange-table-sticky.css";
 import "./exchange-table.css";
 
 type ExchangeTableProps = {
