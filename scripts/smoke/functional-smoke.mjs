@@ -1,7 +1,7 @@
 import { rmSync } from "node:fs";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
-import { assertMarketCapSmoke } from "./market-cap-smoke-assertions.mjs";
+import { assertMarketCapSmoke, fetchMarketCapSmokeData } from "./market-cap-smoke-assertions.mjs";
 
 const rootDir = process.cwd();
 const dataDir = join(rootDir, ".tmp", "functional-smoke-data");
@@ -95,11 +95,8 @@ try {
   const initialHealth = await waitForRuntime();
   const chartWall = await fetchJson("/api/chart-wall?range=6m&timeframe=1d&universe=global&level=all&market=all&assetType=all&sort=trend_score");
   const aShareWall = await fetchJson("/api/chart-wall?range=6m&timeframe=1d&universe=global&level=all&market=A%20%E8%82%A1&assetType=all&sort=trend_score");
-  const usMarketCapWall = await fetchJson("/api/chart-wall?range=6m&timeframe=1d&universe=global&level=all&market=%E7%BE%8E%E8%82%A1&assetType=equity&sort=market_cap&order=desc");
   const usTrendValuationWall = await fetchJson("/api/chart-wall?range=6m&timeframe=1d&universe=global&level=all&market=%E7%BE%8E%E8%82%A1&assetType=equity&sort=trend_score&order=desc&includeValuations=true");
-  const usFundMarketCapWall = await fetchJson("/api/chart-wall?range=6m&timeframe=1d&universe=global&level=all&market=%E7%BE%8E%E8%82%A1&assetType=fund&sort=market_cap&order=desc");
-  const globalMarketCapWall = await fetchJson("/api/chart-wall?range=6m&timeframe=1d&universe=global&level=all&market=all&assetType=all&sort=market_cap&order=desc");
-  const commodityFundMarketCapWall = await fetchJson("/api/chart-wall?range=6m&timeframe=1d&universe=global&level=all&market=%E5%95%86%E5%93%81&assetType=fund&sort=market_cap&order=desc");
+  const marketCapSmokeData = await fetchMarketCapSmokeData(fetchJson);
   const fundWall = await fetchJson("/api/chart-wall?range=6m&timeframe=1d&universe=global&level=all&market=all&assetType=fund&sort=return_1m");
   const commodityWall = await fetchJson("/api/chart-wall?range=6m&timeframe=1d&universe=global&level=all&market=%E5%95%86%E5%93%81&assetType=all&sort=volume_ratio");
   const preciousMetalsWall = await fetchJson("/api/chart-wall?range=6m&timeframe=1d&universe=global&level=all&market=%E5%95%86%E5%93%81&assetType=all&tag=%E8%B4%B5%E9%87%91%E5%B1%9E&sort=return_1m");
@@ -122,9 +119,6 @@ try {
   const fundCatalogSummary = await fetchJson("/api/funds/eastmoney/catalog/summary");
   const fundCatalogPage = await fetchJson("/api/funds/eastmoney/catalog?keyword=%E5%8D%8E%E5%A4%8F&fundType=all&status=all&limit=20&offset=0");
   const sortedFundCatalogPage = await fetchJson("/api/funds/eastmoney/catalog?keyword=%E5%8D%8E%E5%A4%8F&fundType=all&status=not_imported&sort=return_1m&order=desc&limit=20&offset=0");
-  const usEquityDirectoryMarketCapPage = await fetchJson("/api/directories/us-equity/items?status=all&sort=market_cap&order=desc&limit=20&offset=0");
-  const commodityDirectoryMarketCapPage = await fetchJson("/api/directories/commodities/items?status=all&sort=market_cap&order=desc&limit=20&offset=0");
-  const macroDirectoryMarketCapPage = await fetchJson("/api/directories/macro/items?status=all&sort=market_cap&order=desc&limit=20&offset=0");
   const fundSearch = await fetchJson("/api/funds/eastmoney/search?keyword=000001&limit=5");
   const importedFund = await fetchJson("/api/funds/eastmoney/import", {
     method: "POST",
@@ -181,7 +175,7 @@ try {
   assert(assetTypes.has("equity") && assetTypes.has("index") && assetTypes.has("fund") && assetTypes.has("commodity") && assetTypes.has("macro") && assetTypes.has("crypto"), "expected multiple asset types");
   assert(levels.has("broad-index") && levels.has("sector-index") && levels.has("company") && levels.has("instrument"), "expected multiple asset levels");
   assert(aShareWall.items.length >= 8 && aShareWall.items.every((item) => item.market === "A 股"), "expected A-share filtered chart wall");
-  assertMarketCapSmoke({ assert, isSortedDesc, globalMarketCapWall, usMarketCapWall, usFundMarketCapWall, commodityFundMarketCapWall, commodityDirectoryMarketCapPage, macroDirectoryMarketCapPage });
+  assertMarketCapSmoke({ assert, isSortedDesc, ...marketCapSmokeData });
   assert(usTrendValuationWall.sort === "trend_score", "expected valuation enrichment to preserve requested trend sort");
   assert(usTrendValuationWall.items.length >= 6 && usTrendValuationWall.items.every((item) => item.valuation.source === "nasdaq" && item.valuation.marketCap > 0), "expected explicit valuation enrichment without market-cap sorting");
   assert(fundWall.items.length >= 60 && fundWall.items.every((item) => item.assetType === "fund"), "expected expanded real fund/ETF chart wall");
@@ -241,9 +235,6 @@ try {
     sortedFundCatalogPage.items.some((item) => !item.isImported && item.metricSource === "catalog_snapshot" && item.return1m !== null),
     "expected sorted fund catalog to include not-imported snapshot metrics"
   );
-  assert(usEquityDirectoryMarketCapPage.items.length >= 20, "expected US equity directory market-cap page");
-  assert(usEquityDirectoryMarketCapPage.items.every((item) => item.valuation.source === "nasdaq" && item.valuation.marketCap > 0), "expected US equity directory Nasdaq market-cap valuations");
-  assert(isSortedDesc(usEquityDirectoryMarketCapPage.items, (item) => item.valuation.marketCap), "expected US equity directory market-cap sorting");
   assert(fundSearch.catalog.totalCount >= 20000 && fundSearch.source === "local-catalog", "expected local Eastmoney fund catalog search");
   assert(fundSearch.results.some((item) => item.code === "000001" && item.name.includes("华夏成长")), "expected Eastmoney fund catalog search result");
   assert(importedFund.asset?.id === "fund-cn-000001" && importedFund.barsImported >= 180, "expected dynamic Eastmoney fund import");
@@ -311,19 +302,8 @@ try {
           barsImported: importedFund.barsImported,
           chartWallVisible: importedFundWall.items.some((item) => item.id === "fund-cn-000001")
         },
-        markets: [...markets],
-        assetTypes: [...assetTypes],
-        levels: [...levels],
-        rawFileCount: finalHealth.rawFileCount,
-        databaseSizeBytes: finalHealth.databaseSizeBytes,
-        barsByTimeframe: finalHealth.barsByTimeframe,
-        barsBySource: finalHealth.barsBySource,
         aShareItems: aShareWall.items.length,
-        globalMarketCapLeader: globalMarketCapWall.items[0]?.symbol ?? null,
-        globalMarketCapFirstAshare: globalMarketCapWall.items.find((item) => item.market === "A 股")?.symbol ?? null,
-        usMarketCapLeader: usMarketCapWall.items[0]?.symbol ?? null,
         usTrendValuationItems: usTrendValuationWall.items.length,
-        usFundMarketCapLeader: usFundMarketCapWall.items[0]?.symbol ?? null,
         weeklyItems: weeklyWall.items.length,
         monthlyItems: monthlyWall.items.length,
         fifteenMinuteItems: fifteenMinuteWall.items.length,
@@ -340,11 +320,7 @@ try {
           activeTasks: taskCenter.activeTasks.length,
           recentFailures: taskCenter.recentFailures.length,
           pipelineSummaries: taskCenter.pipelineSummaries.length,
-          actions: taskCenter.actions.map((action) => ({
-            key: action.key,
-            status: action.latestStatus,
-            isRunning: action.isRunning
-          }))
+          actions: taskCenter.actions.length
         },
         latestBarAt: finalHealth.latestBarAt,
         lastIngestionAt: finalHealth.lastIngestionAt

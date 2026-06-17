@@ -31,14 +31,16 @@ export class NasdaqUsEquityDirectoryProvider implements AssetDirectoryProvider {
   }
 
   public getCategory = async (): Promise<AssetDirectoryCategory> => {
-    const loadResult = await this.loadCatalog();
-    const items = this.listDirectoryItems(loadResult);
+    const localAssets = this.listLocalUsAssets();
+    const loadResult = await this.loadCatalog(localAssets);
+    const items = this.listDirectoryItems(loadResult, localAssets);
     return this.buildCategory(loadResult, items);
   };
 
   public listItems = async (query: AssetDirectoryQuery): Promise<AssetDirectoryPageResponse> => {
-    const loadResult = await this.loadCatalog();
-    const items = this.listDirectoryItems(loadResult);
+    const localAssets = this.listLocalUsAssets();
+    const loadResult = await this.loadCatalog(localAssets);
+    const items = this.listDirectoryItems(loadResult, localAssets);
 
     return this.pageBuilderService.buildPage({
       category: this.buildCategory(loadResult, items),
@@ -51,7 +53,7 @@ export class NasdaqUsEquityDirectoryProvider implements AssetDirectoryProvider {
   public importItem = async (itemId: string) =>
     this.importService.importItem(itemId);
 
-  private loadCatalog = async (): Promise<NasdaqCatalogLoadResult> => {
+  private loadCatalog = async (localAssets: AssetSummary[]): Promise<NasdaqCatalogLoadResult> => {
     const [catalogResult, valuationResult] = await Promise.allSettled([
       this.catalogProvider.listCatalog(),
       this.valuationProvider.listStockValuationsBySymbol()
@@ -65,9 +67,11 @@ export class NasdaqUsEquityDirectoryProvider implements AssetDirectoryProvider {
       console.warn(valuationResult.reason);
     }
 
+    const valuationsBySymbol = valuationResult.status === "fulfilled" ? await this.withLocalAssetValuations(valuationResult.value, localAssets) : new Map<string, NasdaqUsEquityValuationItem>();
+
     return {
       catalogItems: catalogResult.status === "fulfilled" ? catalogResult.value : [],
-      valuationsBySymbol: valuationResult.status === "fulfilled" ? valuationResult.value : new Map(),
+      valuationsBySymbol,
       isCatalogAvailable: catalogResult.status === "fulfilled",
       isValuationAvailable: valuationResult.status === "fulfilled"
     };
@@ -88,13 +92,12 @@ export class NasdaqUsEquityDirectoryProvider implements AssetDirectoryProvider {
     lastSyncedAt: this.getLatestSyncedAt(items)
   });
 
-  private listDirectoryItems = (loadResult: NasdaqCatalogLoadResult): AssetDirectoryItem[] => {
-    const localAssets = this.listLocalUsAssets();
+  private listDirectoryItems = (loadResult: NasdaqCatalogLoadResult, localAssets: AssetSummary[]): AssetDirectoryItem[] => {
     const localAssetsBySymbol = new Map(localAssets.flatMap((asset) => this.getAssetSymbolKeys(asset).map((key) => [key, asset])));
     const usedLocalAssetIds = new Set<string>();
     const catalogItems = loadResult.catalogItems.map((catalogItem) => {
       const localAsset = localAssetsBySymbol.get(this.normalizeSymbol(catalogItem.yahooSymbol));
-      const valuationItem = loadResult.valuationsBySymbol.get(this.normalizeSymbol(catalogItem.yahooSymbol)) ?? null;
+      const valuationItem = this.getValuationItem(loadResult.valuationsBySymbol, catalogItem.yahooSymbol);
       const valuation = this.toValuation(valuationItem);
 
       if (localAsset) {
@@ -106,7 +109,7 @@ export class NasdaqUsEquityDirectoryProvider implements AssetDirectoryProvider {
     });
     const localOnlyItems = localAssets
       .filter((asset) => !usedLocalAssetIds.has(asset.id))
-      .map((asset) => this.itemMetricsService.toInPoolItem(this.categoryId, asset));
+      .map((asset) => this.withValuation(this.itemMetricsService.toInPoolItem(this.categoryId, asset), this.toValuation(this.getAssetValuationItem(loadResult.valuationsBySymbol, asset))));
 
     return [...catalogItems, ...localOnlyItems];
   };
@@ -150,7 +153,50 @@ export class NasdaqUsEquityDirectoryProvider implements AssetDirectoryProvider {
       .map(this.normalizeSymbol)
       .filter((value) => value.length > 0);
 
-  private normalizeSymbol = (value: string): string => value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  private withLocalAssetValuations = async (stockValuationsBySymbol: Map<string, NasdaqUsEquityValuationItem>, localAssets: AssetSummary[]): Promise<Map<string, NasdaqUsEquityValuationItem>> => {
+    const mergedValuations = new Map(stockValuationsBySymbol);
+    const missingSymbols = this.getLocalValuationSymbols(localAssets).filter((symbol) => !this.getValuationItem(mergedValuations, symbol)?.marketCap);
+
+    if (missingSymbols.length === 0) {
+      return mergedValuations;
+    }
+
+    try {
+      const localValuationsBySymbol = await this.valuationProvider.listValuationsForSymbols(missingSymbols);
+
+      for (const [symbol, item] of localValuationsBySymbol) {
+        mergedValuations.set(this.normalizeSymbol(symbol), item);
+      }
+    } catch (error) {
+      console.warn(error);
+    }
+
+    return mergedValuations;
+  };
+
+  private getLocalValuationSymbols = (assets: AssetSummary[]): string[] =>
+    [...new Set(assets.filter(this.isValuationCandidate).flatMap(this.getAssetSymbolKeys))];
+
+  private isValuationCandidate = (asset: AssetSummary): boolean =>
+    asset.assetType === "equity" || asset.assetType === "fund";
+
+  private getAssetValuationItem = (valuationsBySymbol: Map<string, NasdaqUsEquityValuationItem>, asset: AssetSummary): NasdaqUsEquityValuationItem | null => {
+    for (const symbol of this.getAssetSymbolKeys(asset)) {
+      const valuationItem = this.getValuationItem(valuationsBySymbol, symbol);
+
+      if (valuationItem) {
+        return valuationItem;
+      }
+    }
+
+    return null;
+  };
+
+  private getValuationItem = (valuationsBySymbol: Map<string, NasdaqUsEquityValuationItem>, symbol: string): NasdaqUsEquityValuationItem | null =>
+    valuationsBySymbol.get(this.normalizeSymbol(symbol)) ?? null;
+
+  private normalizeSymbol = (value: string): string =>
+    value.toUpperCase().replace(/[./]/g, "-").replace(/[^A-Z0-9-]/g, "");
 
   private toValuation = (item: NasdaqUsEquityValuationItem | null): AssetDirectoryValuation => ({
     ...this.valuationFactory.empty(),
