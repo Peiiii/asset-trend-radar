@@ -165,7 +165,7 @@ export function ChartWallPage(): JSX.Element {
       sort: effectiveSort,
       order: effectiveOrder,
       signal,
-      includeValuations: activeView === "data-health"
+      includeValuations: shouldIncludeValuations(activeView, effectiveMarket, effectiveAssetType, effectiveSort)
     }),
     [activeView, effectiveAssetType, effectiveMarket, effectiveOrder, effectiveSort, level, range, signal, tag, timeframe]
   );
@@ -975,6 +975,26 @@ function toggleSortOrder(value: ChartWallSortOrder): ChartWallSortOrder {
 
 function defaultOrderForSort(sort: string): ChartWallSortOrder {
   return sort === "symbol" || sort === "market" || sort === "asset_type" ? "asc" : "desc";
+}
+
+function shouldIncludeValuations(activeView: ActiveView, market: string, assetType: string, sort: string): boolean {
+  if (activeView === "data-health" || sort === "market_cap") {
+    return true;
+  }
+
+  if (!["overview", "chart-wall", "watchlist"].includes(activeView)) {
+    return false;
+  }
+
+  return isValuationCandidateMarket(market) || isValuationCandidateAssetType(assetType);
+}
+
+function isValuationCandidateMarket(market: string): boolean {
+  return ["all", "美股", "A 股", "加密", "商品", "基金"].includes(market);
+}
+
+function isValuationCandidateAssetType(assetType: string): boolean {
+  return ["all", "equity", "fund", "crypto"].includes(assetType);
 }
 
 function getAssetDirectorySort(sort: string): AssetDirectorySortKey {
