@@ -21,6 +21,9 @@ type OverviewSectionProps = {
 };
 
 export function OverviewSection({ data, items, visibleSearchCount, market, sort, order, onMarketSelect, onSelectAsset, onCompare }: OverviewSectionProps): JSX.Element {
+  const visibleAssetIds = new Set(items.map((item) => item.id));
+  const visibleEvents = data.scannerEvents.events.filter((event) => visibleAssetIds.has(event.assetId)).slice(0, 12);
+
   return (
     <section className="overview-section" aria-label="市场概览">
       <OverviewHeading generatedAt={data.chartWall.generatedAt} />
@@ -29,7 +32,7 @@ export function OverviewSection({ data, items, visibleSearchCount, market, sort,
       <MarketPulseBoard items={items} activeMarket={market} onMarketSelect={onMarketSelect} />
       <SortAwareMoversStrip items={items} sort={sort} order={order} onSelect={onSelectAsset} onCompare={onCompare} />
       <OpportunityLeaderboard items={items} onSelect={onSelectAsset} onCompare={onCompare} />
-      <EventListSection events={data.scannerEvents.events.slice(0, 12)} />
+      <EventListSection events={visibleEvents} />
     </section>
   );
 }

@@ -363,6 +363,7 @@ export function ChartWallPage(): JSX.Element {
             options={{ markets: marketFallbackOptions, assetTypes: assetTypeFallbackOptions, levels: levelFallbackOptions, tags: tagFallbackOptions, signals: signalFallbackOptions, sorts: sortOptions, orders: sortOrderOptions }}
             summary={{ visibleCount: filteredItems.length, apiCount: chartItems.length, sortLabel: sortDisplayLabel(sort), orderLabel: sortOrderLabel(order) }}
             isRefreshing={isGlobalSyncing}
+            showViewMode={activeView === "chart-wall"}
             onQueryChange={setQueryValue}
             onSortChange={setSortQueryValue}
             onDefaultOrder={defaultOrderForSort}

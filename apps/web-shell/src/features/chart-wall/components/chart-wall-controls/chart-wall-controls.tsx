@@ -53,6 +53,7 @@ type ChartWallControlsProps = {
     orderLabel: string;
   };
   isRefreshing: boolean;
+  showViewMode?: boolean;
   onQueryChange(name: string, value: string, fallback?: string): void;
   onSortChange(sort: string, order?: ChartWallSortOrder): void;
   onDefaultOrder(sort: string): ChartWallSortOrder;
@@ -61,7 +62,7 @@ type ChartWallControlsProps = {
   onRefresh(): void;
 };
 
-export function ChartWallControls({ values, defaults, facets, options, summary, isRefreshing, onQueryChange, onSortChange, onDefaultOrder, onParseOrder, onReset, onRefresh }: ChartWallControlsProps): JSX.Element {
+export function ChartWallControls({ values, defaults, facets, options, summary, isRefreshing, showViewMode = true, onQueryChange, onSortChange, onDefaultOrder, onParseOrder, onReset, onRefresh }: ChartWallControlsProps): JSX.Element {
   return (
     <section className="chart-wall-controls" aria-label="图表控制">
       <div className="chart-wall-controls__filters">
@@ -92,14 +93,16 @@ export function ChartWallControls({ values, defaults, facets, options, summary, 
       </div>
 
       <div className="chart-wall-controls__actions">
-        <div className="chart-wall-controls__view-mode" aria-label="图表墙视图">
-          <IconButton label="卡片视图" className={values.viewMode === "grid" ? "gi-icon-button--active" : ""} onClick={() => onQueryChange("view", "grid", "grid")}>
-            <Grid3X3 size={17} aria-hidden="true" />
-          </IconButton>
-          <IconButton label="表格视图" className={values.viewMode === "table" ? "gi-icon-button--active" : ""} onClick={() => onQueryChange("view", "table", "grid")}>
-            <Table2 size={17} aria-hidden="true" />
-          </IconButton>
-        </div>
+        {showViewMode && (
+          <div className="chart-wall-controls__view-mode" aria-label="图表墙视图">
+            <IconButton label="卡片视图" className={values.viewMode === "grid" ? "gi-icon-button--active" : ""} onClick={() => onQueryChange("view", "grid", "grid")}>
+              <Grid3X3 size={17} aria-hidden="true" />
+            </IconButton>
+            <IconButton label="表格视图" className={values.viewMode === "table" ? "gi-icon-button--active" : ""} onClick={() => onQueryChange("view", "table", "grid")}>
+              <Table2 size={17} aria-hidden="true" />
+            </IconButton>
+          </div>
+        )}
         <Button variant="ghost" onClick={onReset}>重置</Button>
         <Button variant="ghost" onClick={onRefresh} disabled={isRefreshing}>{isRefreshing ? "刷新中" : "重新采集"}</Button>
       </div>
