@@ -103,10 +103,11 @@ packages/market-domain
 - `资产目录` 是导航父级，默认展开；子目录按资产类别扩展，例如基金、加密、商品。
 - 已有基金目录继续由 `local-runtime` 的基金 catalog API 提供权威目录与导入动作。
 - 加密目录由 `data-adapters` 的交易所轻量 catalog 提供候选池，并由加密市场数据源补充市值/成交额快照；`local-runtime` 合并本地走势池状态；候选池完整性不等于默认全量导入走势池。
-- 美股目录由 `data-adapters` 的 NASDAQ Trader 官方符号目录提供股票/ETF 候选池，`local-runtime` 合并本地走势池状态；未入池条目可以按需拉取 Yahoo 历史走势后进入走势池。
+- 美股目录由 `data-adapters` 的 NASDAQ Trader 官方符号目录提供股票/ETF 候选池，由 Nasdaq screener/quote summary
+  补充股票和重点 ETF 的真实市值快照，`local-runtime` 合并本地走势池状态；未入池条目可以按需拉取 Yahoo 历史走势后进入走势池。
 - A 股目录由 `data-adapters` 的东方财富 A 股行情列表提供股票候选池、1D 快照和市值快照，`local-runtime` 合并本地指数/ETF/重点公司走势池状态；未入池股票可以按需拉取 Yahoo 历史走势后进入走势池。
-- NASDAQ Trader 符号目录不提供市值，Yahoo chart 端点也不提供 market cap。因此美股目录/图表墙在接入新的真实
-  quote/fundamentals 数据源前，应明确展示“未接入/源未提供”，不要用成交额、价格或本地 K 线估算市值。
+- NASDAQ Trader 符号目录和 Yahoo chart 端点不提供 market cap；美股估值必须来自 Nasdaq screener/quote summary 或后续
+  新增的真实 fundamentals 源。不得用成交额、价格或本地 K 线估算市值。
 - 其它资产类别在没有全量 catalog API 前，只能展示真实已入库资产，不做假全量；如果需要全量目录，先扩展 `market-domain` contract 和 `local-runtime` catalog service。
 - 通用目录表格、状态 badge、详情/对比入口可以在 app 层复用；外部目录同步、导入、去重和走势池写入必须在 runtime 层实现。
 - 目录表格采用统一基础列契约：名称、类别/市场、走势池状态、最新价/净值、规模/市值、1D、1M、3M、6M、1Y、数据状态、操作。各资产类别可以通过 adapter 提供不同字段取值和类别特有动作，但不要为同义字段另起一套布局、颜色或交互。

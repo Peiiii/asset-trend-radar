@@ -1,6 +1,6 @@
-import type { NasdaqUsEquityCatalogItem, NasdaqUsEquityCatalogProvider } from "@gold-insights/data-adapters";
+import type { NasdaqUsEquityCatalogItem, NasdaqUsEquityCatalogProvider, NasdaqUsEquityValuationItem, NasdaqUsEquityValuationProvider } from "@gold-insights/data-adapters";
 import type { SqliteAssetRepository, SqliteMarketDataRepository } from "@gold-insights/data-storage";
-import type { AssetDirectoryCategory, AssetDirectoryItem, AssetDirectoryPageResponse, AssetSummary } from "@gold-insights/market-domain";
+import type { AssetDirectoryCategory, AssetDirectoryItem, AssetDirectoryPageResponse, AssetDirectoryValuation, AssetSummary } from "@gold-insights/market-domain";
 import type { NasdaqUsEquityImportService } from "./nasdaq-us-equity-import.service";
 import { AssetDirectoryItemMetricsService } from "./asset-directory-item-metrics.service";
 import { AssetDirectoryPageBuilderService } from "./asset-directory-page-builder.service";
@@ -9,7 +9,9 @@ import { AssetDirectoryValuationFactory } from "./shared/asset-directory-valuati
 
 type NasdaqCatalogLoadResult = {
   catalogItems: NasdaqUsEquityCatalogItem[];
+  valuationsBySymbol: Map<string, NasdaqUsEquityValuationItem>;
   isCatalogAvailable: boolean;
+  isValuationAvailable: boolean;
 };
 
 export class NasdaqUsEquityDirectoryProvider implements AssetDirectoryProvider {
@@ -20,6 +22,7 @@ export class NasdaqUsEquityDirectoryProvider implements AssetDirectoryProvider {
 
   public constructor(
     private readonly catalogProvider: NasdaqUsEquityCatalogProvider,
+    private readonly valuationProvider: NasdaqUsEquityValuationProvider,
     private readonly assetRepository: SqliteAssetRepository,
     marketDataRepository: SqliteMarketDataRepository,
     private readonly importService: NasdaqUsEquityImportService
@@ -49,30 +52,37 @@ export class NasdaqUsEquityDirectoryProvider implements AssetDirectoryProvider {
     this.importService.importItem(itemId);
 
   private loadCatalog = async (): Promise<NasdaqCatalogLoadResult> => {
-    try {
-      return {
-        catalogItems: await this.catalogProvider.listCatalog(),
-        isCatalogAvailable: true
-      };
-    } catch (error) {
-      console.warn(error);
-      return {
-        catalogItems: [],
-        isCatalogAvailable: false
-      };
+    const [catalogResult, valuationResult] = await Promise.allSettled([
+      this.catalogProvider.listCatalog(),
+      this.valuationProvider.listStockValuationsBySymbol()
+    ]);
+
+    if (catalogResult.status === "rejected") {
+      console.warn(catalogResult.reason);
     }
+
+    if (valuationResult.status === "rejected") {
+      console.warn(valuationResult.reason);
+    }
+
+    return {
+      catalogItems: catalogResult.status === "fulfilled" ? catalogResult.value : [],
+      valuationsBySymbol: valuationResult.status === "fulfilled" ? valuationResult.value : new Map(),
+      isCatalogAvailable: catalogResult.status === "fulfilled",
+      isValuationAvailable: valuationResult.status === "fulfilled"
+    };
   };
 
   private buildCategory = (loadResult: NasdaqCatalogLoadResult, items: AssetDirectoryItem[]): AssetDirectoryCategory => ({
     id: this.categoryId,
     label: "美股目录",
     description: loadResult.isCatalogAvailable
-      ? "NASDAQ Trader 官方美股/ETF 符号目录；未入池资产先展示目录身份，加入后拉取完整 Yahoo 走势。"
+      ? `NASDAQ Trader 官方美股/ETF 符号目录；${loadResult.isValuationAvailable ? "NASDAQ 股票市值快照" : "市值源暂不可用"}，加入后拉取完整 Yahoo 走势。`
       : "NASDAQ Trader 候选目录暂不可用，当前回退展示本地走势池里的美股资产。",
     assetTypes: ["index", "fund", "equity"],
     markets: ["美股"],
     coverage: loadResult.isCatalogAvailable ? "full" : "trend_pool_only",
-    capabilities: ["search", "facets", "import_to_pool", "compare", "open_detail"],
+    capabilities: ["search", "facets", "snapshot_metrics", "import_to_pool", "compare", "open_detail"],
     itemCount: items.length,
     inPoolCount: items.filter((item) => item.poolState === "in_pool").length,
     lastSyncedAt: this.getLatestSyncedAt(items)
@@ -84,13 +94,15 @@ export class NasdaqUsEquityDirectoryProvider implements AssetDirectoryProvider {
     const usedLocalAssetIds = new Set<string>();
     const catalogItems = loadResult.catalogItems.map((catalogItem) => {
       const localAsset = localAssetsBySymbol.get(this.normalizeSymbol(catalogItem.yahooSymbol));
+      const valuationItem = loadResult.valuationsBySymbol.get(this.normalizeSymbol(catalogItem.yahooSymbol)) ?? null;
+      const valuation = this.toValuation(valuationItem);
 
       if (localAsset) {
         usedLocalAssetIds.add(localAsset.id);
-        return this.itemMetricsService.toInPoolItem(this.categoryId, localAsset);
+        return this.withValuation(this.itemMetricsService.toInPoolItem(this.categoryId, localAsset), valuation);
       }
 
-      return this.toCatalogItem(catalogItem);
+      return this.toCatalogItem(catalogItem, valuationItem, valuation);
     });
     const localOnlyItems = localAssets
       .filter((asset) => !usedLocalAssetIds.has(asset.id))
@@ -105,32 +117,32 @@ export class NasdaqUsEquityDirectoryProvider implements AssetDirectoryProvider {
       .filter((asset) => asset.market === "美股")
       .filter((asset) => asset.level !== "asset-class" && asset.level !== "market");
 
-  private toCatalogItem = (item: NasdaqUsEquityCatalogItem): AssetDirectoryItem => ({
+  private toCatalogItem = (item: NasdaqUsEquityCatalogItem, valuationItem: NasdaqUsEquityValuationItem | null, valuation: AssetDirectoryValuation): AssetDirectoryItem => ({
     id: item.id,
     categoryId: this.categoryId,
     label: item.label,
     symbol: item.yahooSymbol,
     market: "美股",
     assetType: item.assetType,
-    provider: item.source,
+    provider: valuationItem?.source ?? item.source,
     exchange: item.exchange,
     currency: item.currency,
-    latestValue: null,
+    latestValue: valuationItem?.latestPrice ?? null,
     latestValueLabel: "最新价",
-    latestValueAt: null,
+    latestValueAt: valuationItem?.latestAt ?? null,
     returns: {
-      return1d: null,
+      return1d: valuationItem?.return1d ?? null,
       return1m: null,
       return3m: null,
       return6m: null,
       return1y: null
     },
-    valuation: this.valuationFactory.empty(),
+    valuation,
     poolState: "not_in_pool",
-    dataState: "missing",
+    dataState: valuationItem ? "snapshot" : "missing",
     dataPointCount: 0,
     assetId: null,
-    tags: item.tags
+    tags: [...item.tags, ...[valuationItem?.sector, valuationItem?.industry].filter((tag): tag is string => Boolean(tag))]
   });
 
   private getAssetSymbolKeys = (asset: AssetSummary): string[] =>
@@ -139,6 +151,19 @@ export class NasdaqUsEquityDirectoryProvider implements AssetDirectoryProvider {
       .filter((value) => value.length > 0);
 
   private normalizeSymbol = (value: string): string => value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+
+  private toValuation = (item: NasdaqUsEquityValuationItem | null): AssetDirectoryValuation => ({
+    ...this.valuationFactory.empty(),
+    marketCap: item?.marketCap ?? null,
+    currency: item?.currency ?? null,
+    source: item?.source ?? null,
+    updatedAt: item?.latestAt ?? null
+  });
+
+  private withValuation = (item: AssetDirectoryItem, valuation: AssetDirectoryValuation): AssetDirectoryItem => ({
+    ...item,
+    valuation
+  });
 
   private getSearchText = (item: AssetDirectoryItem): string =>
     `${item.label} ${item.symbol} ${item.market} ${item.exchange} ${item.provider} ${item.tags.join(" ")}`;

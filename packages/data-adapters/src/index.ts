@@ -14,6 +14,8 @@ export { FredMacroDataProvider } from "./providers/fred-macro-data.provider";
 export { MassiveMarketDataProvider } from "./providers/massive-market-data.provider";
 export { NasdaqUsEquityCatalogProvider } from "./providers/nasdaq-us-equity-catalog.provider";
 export type { NasdaqUsEquityCatalogItem } from "./providers/nasdaq-us-equity-catalog.provider";
+export { NasdaqUsEquityValuationProvider } from "./providers/nasdaq/us-equity-valuation.provider";
+export type { NasdaqUsEquityValuationItem } from "./providers/nasdaq/us-equity-valuation.provider";
 export { TushareMarketDataProvider } from "./providers/tushare-market-data.provider";
 export { YahooMarketDataProvider } from "./providers/yahoo-market-data.provider";
 export type { MarketDataProvider, MarketDataRequest, MarketDataResponse } from "./types/market-data-adapter.types";

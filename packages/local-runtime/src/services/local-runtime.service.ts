@@ -1,4 +1,4 @@
-import { BinanceCryptoCatalogProvider, CoinGeckoCryptoMarketsProvider, EastmoneyAshareCatalogProvider, NasdaqUsEquityCatalogProvider } from "@gold-insights/data-adapters";
+import { BinanceCryptoCatalogProvider, CoinGeckoCryptoMarketsProvider, EastmoneyAshareCatalogProvider, NasdaqUsEquityCatalogProvider, NasdaqUsEquityValuationProvider } from "@gold-insights/data-adapters";
 import { LocalRawFileRepository, SqliteAssetRepository, SqliteDatabaseService, SqliteFundCatalogRepository, SqliteIngestionJobRepository, SqliteMarketDataRepository, SqliteScannerEventRepository, SqliteWatchlistRepository } from "@gold-insights/data-storage";
 import { AssetDirectoryController } from "../controllers/asset-directory.controller";
 import { AssetsController } from "../controllers/assets.controller";
@@ -64,8 +64,9 @@ export class LocalRuntimeService {
     const cryptoCatalogProvider = new BinanceCryptoCatalogProvider();
     const cryptoMarketsProvider = new CoinGeckoCryptoMarketsProvider();
     const nasdaqUsEquityCatalogProvider = new NasdaqUsEquityCatalogProvider();
+    const nasdaqUsEquityValuationProvider = new NasdaqUsEquityValuationProvider();
     const eastmoneyAshareCatalogProvider = new EastmoneyAshareCatalogProvider();
-    const chartWallValuationService = new ChartWallValuationService(cryptoMarketsProvider, eastmoneyAshareCatalogProvider);
+    const chartWallValuationService = new ChartWallValuationService(cryptoMarketsProvider, eastmoneyAshareCatalogProvider, nasdaqUsEquityValuationProvider);
     const queryService = new ChartWallQueryService(
       this.options,
       assetRepository,
@@ -119,7 +120,7 @@ export class LocalRuntimeService {
         markets: ["商品"],
         marketFilters: ["商品"]
       }, assetRepository, marketDataRepository),
-      new NasdaqUsEquityDirectoryProvider(nasdaqUsEquityCatalogProvider, assetRepository, marketDataRepository, nasdaqUsEquityImportService),
+      new NasdaqUsEquityDirectoryProvider(nasdaqUsEquityCatalogProvider, nasdaqUsEquityValuationProvider, assetRepository, marketDataRepository, nasdaqUsEquityImportService),
       new EastmoneyAshareDirectoryProvider(eastmoneyAshareCatalogProvider, assetRepository, marketDataRepository, eastmoneyAshareImportService),
       new TrendPoolAssetDirectoryProvider({
         categoryId: "hk-equity",
