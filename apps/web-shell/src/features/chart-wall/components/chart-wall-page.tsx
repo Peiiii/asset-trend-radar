@@ -18,7 +18,7 @@ import { NavLink, useLocation, useNavigate, useParams, useSearchParams } from "r
 import { AppShell, Button, EmptyState, ErrorState, IconButton, LoadingState, RangePicker, TimeframePicker } from "@gold-insights/ui";
 import type { ControlOption } from "@gold-insights/ui";
 import type { ChartWallSortOrder, ScannerEventsResponse } from "@gold-insights/market-domain";
-import type { AssetDetailData, ChartWallFilters, ChartWallPageData } from "@/shared/types/api.types";
+import type { ChartWallFilters, ChartWallPageData } from "@/shared/types/api.types";
 import { formatDateTime } from "@/shared/utils/format-number.utils";
 import { assetTypeFallbackOptions, defaultFilters, levelFallbackOptions, marketFallbackOptions, signalFallbackOptions, sortOptions, sortOrderOptions, tagFallbackOptions } from "../configs/chart-wall-page.config";
 import { ActiveFilterChips } from "./active-filter-chips/active-filter-chips";
@@ -43,6 +43,7 @@ import { UniverseSection } from "./universe-section/universe-section";
 import { WatchlistSection } from "./watchlist-section/watchlist-section";
 import { chartWallApiService } from "../services/chart-wall-api.service";
 import { useFundDirectoryQuery } from "../hooks/use-fund-directory-query";
+import { useAssetDetailQuery } from "../hooks/use-asset-detail-query";
 import { useChartWallQuery } from "../hooks/use-chart-wall-query";
 import { useCompareSelection } from "../hooks/use-compare-selection";
 import { useFundDirectoryUrlState } from "../hooks/use-fund-directory-url-state";
@@ -87,9 +88,6 @@ export function ChartWallPage(): JSX.Element {
   const compareSelection = useCompareSelection(range, timeframe);
   const [importingFundCode, setImportingFundCode] = useState<string | null>(null);
   const [fundImportMessage, setFundImportMessage] = useState<string | null>(null);
-  const [assetDetailData, setAssetDetailData] = useState<AssetDetailData | null>(null);
-  const [assetDetailError, setAssetDetailError] = useState<string | null>(null);
-  const [isAssetDetailLoading, setIsAssetDetailLoading] = useState(false);
 
   const setQueryValue = useCallback((name: string, value: string, fallback = ""): void => {
     const next = new URLSearchParams(searchParams);
@@ -144,6 +142,7 @@ export function ChartWallPage(): JSX.Element {
   const { data, error, isLoading, reload } = useChartWallQuery(filters);
   const fundDirectoryQuery = useFundDirectoryQuery(fundDirectory.filters, activeView === "fund-directory");
   const taskCenterQuery = useTaskCenterQuery(true);
+  const assetDetailQuery = useAssetDetailQuery(routeAssetId, range, timeframe, activeView === "asset-detail");
   const taskActions = useTaskActions({
     reloadChartWall: reload,
     reloadFundDirectory: fundDirectoryQuery.reload,
@@ -170,53 +169,23 @@ export function ChartWallPage(): JSX.Element {
   const selectedListItem = useMemo(() => chartItems.find((item) => item.id === routeAssetId) ?? filteredItems[0] ?? chartItems[0] ?? null, [chartItems, filteredItems, routeAssetId]);
   const selectedItem = useMemo(() => {
     if (activeView === "asset-detail") {
-      return assetDetailData?.item ? { ...assetDetailData.item, isCompared: compareSelection.comparedSet.has(assetDetailData.item.id) } : null;
+      return assetDetailQuery.data?.item ? { ...assetDetailQuery.data.item, isCompared: compareSelection.comparedSet.has(assetDetailQuery.data.item.id) } : null;
     }
 
     return selectedListItem;
-  }, [activeView, assetDetailData, compareSelection.comparedSet, selectedListItem]);
-
-  useEffect(() => {
-    if (activeView !== "asset-detail" || !routeAssetId) {
-      setAssetDetailData(null);
-      setAssetDetailError(null);
-      setIsAssetDetailLoading(false);
-      return undefined;
-    }
-
-    const controller = new AbortController();
-    setIsAssetDetailLoading(true);
-    setAssetDetailError(null);
-
-    void chartWallApiService
-      .fetchAssetDetail(routeAssetId, range, timeframe, controller.signal)
-      .then(setAssetDetailData)
-      .catch((nextError: unknown) => {
-        if (!controller.signal.aborted) {
-          setAssetDetailError(nextError instanceof Error ? nextError.message : "资产详情加载失败");
-          setAssetDetailData(null);
-        }
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) {
-          setIsAssetDetailLoading(false);
-        }
-      });
-
-    return () => {
-      controller.abort();
-    };
-  }, [activeView, range, routeAssetId, timeframe]);
+  }, [activeView, assetDetailQuery.data, compareSelection.comparedSet, selectedListItem]);
 
   const handleRefresh = async (): Promise<void> => {
     await taskActions.startGlobalRefresh();
   };
 
   const handlePin = (assetId: string): void => {
-    const item = chartItems.find((candidate) => candidate.id === assetId) ?? (assetDetailData?.item.id === assetId ? assetDetailData.item : null);
+    const item = chartItems.find((candidate) => candidate.id === assetId) ?? (assetDetailQuery.data?.item.id === assetId ? assetDetailQuery.data.item : null);
     const request = item?.isPinned ? chartWallApiService.removeWatchlistAsset(assetId) : chartWallApiService.addWatchlistAsset(assetId);
     void request.then(() => {
-      setAssetDetailData((current) => (current?.item.id === assetId ? { ...current, item: { ...current.item, isPinned: !current.item.isPinned } } : current));
+      if (item) {
+        assetDetailQuery.setPinned(assetId, !item.isPinned);
+      }
       return reload();
     });
   };
@@ -511,10 +480,10 @@ export function ChartWallPage(): JSX.Element {
           )}
 
           {activeView === "asset-detail" && (
-            isAssetDetailLoading ? (
+            assetDetailQuery.isLoading ? (
               <LoadingState />
-            ) : assetDetailError ? (
-              <ErrorState title="资产详情加载失败" message={assetDetailError} />
+            ) : assetDetailQuery.error ? (
+              <ErrorState title="资产详情加载失败" message={assetDetailQuery.error} />
             ) : (
               <AssetDetailSection
                 item={selectedItem}
