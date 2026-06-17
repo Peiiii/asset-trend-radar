@@ -68,6 +68,15 @@
   color: #1f6f5f;
 }
 
+.asset-directory-identity:disabled {
+  cursor: not-allowed;
+  opacity: 0.68;
+}
+
+.asset-directory-identity:disabled:hover strong {
+  color: inherit;
+}
+
 .asset-directory-identity:focus-visible {
   outline: 2px solid #8fc9bd;
   outline-offset: 2px;

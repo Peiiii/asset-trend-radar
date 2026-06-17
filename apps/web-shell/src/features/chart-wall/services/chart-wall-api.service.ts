@@ -1,5 +1,5 @@
-import type { AssetDetailResponse, ChartWallResponse, CompareResponse, DataHealthResponse, FundCatalogPageResponse, FundCatalogSummaryResponse, FundCatalogSyncResponse, FundImportResponse, FundSearchResponse, RuntimeTaskStartResponse, ScannerEventsResponse, TaskCenterResponse, UniverseTreeResponse, WatchlistsResponse } from "@gold-insights/market-domain";
-import type { ChartWallFilters, ChartWallPageData, FundCatalogPageFilters } from "@/shared/types/api.types";
+import type { AssetDetailResponse, AssetDirectoryPageResponse, ChartWallResponse, CompareResponse, DataHealthResponse, FundCatalogPageResponse, FundCatalogSummaryResponse, FundCatalogSyncResponse, FundImportResponse, FundSearchResponse, RuntimeTaskStartResponse, ScannerEventsResponse, TaskCenterResponse, UniverseTreeResponse, WatchlistsResponse } from "@gold-insights/market-domain";
+import type { AssetDirectoryPageFilters, ChartWallFilters, ChartWallPageData, FundCatalogPageFilters } from "@/shared/types/api.types";
 
 export class ChartWallApiService {
   public fetchPageData = async (filters: ChartWallFilters, signal?: AbortSignal): Promise<ChartWallPageData> => {
@@ -44,6 +44,19 @@ export class ChartWallApiService {
     }).toString();
 
     return this.fetchJson<FundCatalogPageResponse>(`/api/funds/eastmoney/catalog?${query}`, signal);
+  };
+
+  public fetchAssetDirectoryPage = async (filters: AssetDirectoryPageFilters, signal?: AbortSignal): Promise<AssetDirectoryPageResponse> => {
+    const query = new URLSearchParams({
+      keyword: filters.keyword,
+      status: filters.status,
+      sort: filters.sort,
+      order: filters.order,
+      limit: String(filters.limit),
+      offset: String(filters.offset)
+    }).toString();
+
+    return this.fetchJson<AssetDirectoryPageResponse>(`/api/directories/${encodeURIComponent(filters.categoryId)}/items?${query}`, signal);
   };
 
   public searchEastmoneyFunds = async (keyword: string): Promise<FundSearchResponse> =>

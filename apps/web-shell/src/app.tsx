@@ -10,6 +10,7 @@ export default function App(): JSX.Element {
         <Route path="/chart-wall" element={<ChartWallPage />} />
         <Route path="/directories/funds" element={<ChartWallPage />} />
         <Route path="/directories/crypto" element={<ChartWallPage />} />
+        <Route path="/directories/:directoryId" element={<ChartWallPage />} />
         <Route path="/funds" element={<ChartWallPage />} />
         <Route path="/universe" element={<ChartWallPage />} />
         <Route path="/scanner" element={<ChartWallPage />} />

@@ -1,6 +1,6 @@
 import { GitCompare, Search } from "lucide-react";
 import { Button, DataTableFrame, EmptyState, SignalBadge } from "@gold-insights/ui";
-import type { ChartWallItem } from "@gold-insights/market-domain";
+import type { AssetDirectoryItem } from "@gold-insights/market-domain";
 import { formatPrice } from "@/shared/utils/format-number.utils";
 import { DirectoryReturnPill } from "../directory-table/directory-return-pill";
 import "./asset-directory-section.css";
@@ -8,17 +8,20 @@ import "./asset-directory-section.css";
 type AssetDirectorySectionProps = {
   title: string;
   description: string;
-  items: ChartWallItem[];
+  items: AssetDirectoryItem[];
+  totalCount: number;
+  categoryItemCount: number;
+  categoryInPoolCount: number;
   search: string;
   statusLabel: string;
   onSelect(assetId: string): void;
   onCompare(assetId: string): void;
 };
 
-export function AssetDirectorySection({ title, description, items, search, statusLabel, onSelect, onCompare }: AssetDirectorySectionProps): JSX.Element {
-  const eventfulCount = items.filter((item) => item.events.length > 0).length;
-  const positiveCount = items.filter((item) => (item.return1m ?? item.returnPct ?? 0) > 0).length;
-  const sourceCount = new Set(items.map((item) => item.source)).size;
+export function AssetDirectorySection({ title, description, items, totalCount, categoryItemCount, categoryInPoolCount, search, statusLabel, onSelect, onCompare }: AssetDirectorySectionProps): JSX.Element {
+  const positiveCount = items.filter((item) => (item.returns.return1m ?? item.returns.return1d ?? 0) > 0).length;
+  const sourceCount = new Set(items.map((item) => item.provider)).size;
+  const hasHiddenItems = totalCount > items.length;
 
   return (
     <section className="single-view-section asset-directory-section">
@@ -28,15 +31,16 @@ export function AssetDirectorySection({ title, description, items, search, statu
           <p>{description}</p>
         </div>
         <div className="asset-directory-hero__metrics">
-          <span>目录 {items.length.toLocaleString("en-US")}</span>
-          <span>上涨 {positiveCount.toLocaleString("en-US")}</span>
-          <span>有事件 {eventfulCount.toLocaleString("en-US")}</span>
-          <span>来源 {sourceCount.toLocaleString("en-US")}</span>
+          <span>目录 {categoryItemCount.toLocaleString("en-US")}</span>
+          <span>本页上涨 {positiveCount.toLocaleString("en-US")}</span>
+          <span>走势池 {categoryInPoolCount.toLocaleString("en-US")}</span>
+          <span>本页来源 {sourceCount.toLocaleString("en-US")}</span>
         </div>
       </div>
 
       <div className="asset-directory-result-bar">
-        <span>当前筛选 {items.length.toLocaleString("en-US")} 个</span>
+        <span>当前筛选 {totalCount.toLocaleString("en-US")} 个</span>
+        {hasHiddenItems && <span>已显示前 {items.length.toLocaleString("en-US")} 个</span>}
         {search.trim().length > 0 && (
           <span>
             <Search size={13} aria-hidden="true" />
@@ -69,8 +73,8 @@ export function AssetDirectorySection({ title, description, items, search, statu
             {items.map((item) => (
               <tr key={item.id}>
                 <td>
-                  <button type="button" className="asset-directory-identity" onClick={() => onSelect(item.id)}>
-                    <strong>{item.name}</strong>
+                  <button type="button" className="asset-directory-identity" disabled={!item.assetId} onClick={() => item.assetId && onSelect(item.assetId)}>
+                    <strong>{item.label}</strong>
                     <small>{item.symbol} / {item.exchange}</small>
                   </button>
                 </td>
@@ -80,23 +84,23 @@ export function AssetDirectorySection({ title, description, items, search, statu
                     <small>{item.assetType}</small>
                   </div>
                 </td>
-                <td><SignalBadge label="已加入走势池" tone="positive" /></td>
-                <td>{formatPrice(item.lastPrice, item.currency)}</td>
-                <td><DirectoryReturnPill value={item.return1d} /></td>
-                <td><DirectoryReturnPill value={item.return1m} /></td>
-                <td><DirectoryReturnPill value={item.return3m} /></td>
-                <td><DirectoryReturnPill value={item.return6m} /></td>
-                <td><DirectoryReturnPill value={item.return1y} /></td>
+                <td><SignalBadge label={poolStateLabel(item.poolState)} tone={item.poolState === "in_pool" ? "positive" : "amber"} /></td>
+                <td>{formatPrice(item.latestValue, item.currency)}</td>
+                <td><DirectoryReturnPill value={item.returns.return1d} /></td>
+                <td><DirectoryReturnPill value={item.returns.return1m} /></td>
+                <td><DirectoryReturnPill value={item.returns.return3m} /></td>
+                <td><DirectoryReturnPill value={item.returns.return6m} /></td>
+                <td><DirectoryReturnPill value={item.returns.return1y} /></td>
                 <td>
                   <div className="asset-directory-data-stack">
                     <SignalBadge label={`${item.dataPointCount.toLocaleString("en-US")} 点`} tone="neutral" />
-                    <small>{item.trendScore} / {item.trendLabel} / {item.events.length} 事件</small>
+                    <small>{dataStateLabel(item.dataState)} / {item.provider}</small>
                   </div>
                 </td>
                 <td>
                   <div className="asset-directory-actions">
-                    <Button type="button" variant="ghost" onClick={() => onSelect(item.id)}>详情</Button>
-                    <Button type="button" variant="ghost" onClick={() => onCompare(item.id)}>
+                    <Button type="button" variant="ghost" disabled={!item.assetId} onClick={() => item.assetId && onSelect(item.assetId)}>详情</Button>
+                    <Button type="button" variant="ghost" disabled={!item.assetId} onClick={() => item.assetId && onCompare(item.assetId)}>
                       <GitCompare size={14} aria-hidden="true" />
                       对比
                     </Button>
@@ -109,4 +113,24 @@ export function AssetDirectorySection({ title, description, items, search, statu
       )}
     </section>
   );
+}
+
+function poolStateLabel(value: AssetDirectoryItem["poolState"]): string {
+  const labels: Record<AssetDirectoryItem["poolState"], string> = {
+    in_pool: "已加入走势池",
+    not_in_pool: "待加入走势池",
+    syncing: "同步中",
+    failed: "同步失败"
+  };
+  return labels[value];
+}
+
+function dataStateLabel(value: AssetDirectoryItem["dataState"]): string {
+  const labels: Record<AssetDirectoryItem["dataState"], string> = {
+    full_history: "完整走势",
+    snapshot: "目录快照",
+    missing: "待拉取",
+    stale: "待更新"
+  };
+  return labels[value];
 }

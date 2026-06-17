@@ -11,22 +11,32 @@ type ChartWallQueryState = {
   reload(): Promise<void>;
 };
 
-export function useChartWallQuery(filters: ChartWallFilters): ChartWallQueryState {
+export function useChartWallQuery(filters: ChartWallFilters, enabled = true): ChartWallQueryState {
   const [data, setData] = useState<ChartWallPageData | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(enabled);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const load = useCallback(
     async (signal?: AbortSignal): Promise<void> => {
+      if (!enabled) {
+        return;
+      }
+
       setError(null);
       const nextData = await chartWallApiService.fetchPageData(filters, signal);
       setData(nextData);
     },
-    [filters]
+    [enabled, filters]
   );
 
   useEffect(() => {
+    if (!enabled) {
+      setIsLoading(false);
+      setError(null);
+      return undefined;
+    }
+
     const controller = new AbortController();
     setIsLoading(true);
 
@@ -47,9 +57,13 @@ export function useChartWallQuery(filters: ChartWallFilters): ChartWallQueryStat
     return () => {
       controller.abort();
     };
-  }, [load]);
+  }, [enabled, load]);
 
   const refresh = useCallback(async (): Promise<void> => {
+    if (!enabled) {
+      return;
+    }
+
     setIsRefreshing(true);
     setError(null);
 
@@ -61,7 +75,7 @@ export function useChartWallQuery(filters: ChartWallFilters): ChartWallQueryStat
     } finally {
       setIsRefreshing(false);
     }
-  }, [load]);
+  }, [enabled, load]);
 
   return {
     data,

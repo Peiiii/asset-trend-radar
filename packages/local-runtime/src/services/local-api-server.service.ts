@@ -1,4 +1,5 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
+import type { AssetDirectoryController } from "../controllers/asset-directory.controller";
 import type { AssetsController } from "../controllers/assets.controller";
 import type { ChartWallController } from "../controllers/chart-wall.controller";
 import type { CompareController } from "../controllers/compare.controller";
@@ -27,6 +28,7 @@ export class LocalApiServerService {
     private readonly tasksController: TasksController,
     private readonly compareController: CompareController,
     private readonly watchlistsController: WatchlistsController,
+    private readonly assetDirectoryController: AssetDirectoryController,
     private readonly fundDiscoveryController: FundDiscoveryController,
     private readonly refreshController: RefreshController,
     private readonly requestContextProvider = new RequestContextProvider(),
@@ -105,6 +107,17 @@ export class LocalApiServerService {
 
       if (request.method === "GET" && url.pathname === "/api/watchlists") {
         this.watchlistsController.handleList(response);
+        return;
+      }
+
+      if (request.method === "GET" && url.pathname === "/api/directories") {
+        await this.assetDirectoryController.handleCategories(response);
+        return;
+      }
+
+      const assetDirectoryItemsMatch = /^\/api\/directories\/([^/]+)\/items$/.exec(url.pathname);
+      if (request.method === "GET" && assetDirectoryItemsMatch) {
+        await this.assetDirectoryController.handleCategoryItems(assetDirectoryItemsMatch[1], url, response);
         return;
       }
 

@@ -20,7 +20,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { NavLink, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { AppShell, Button, ErrorState, IconButton, LoadingState, RangePicker, TimeframePicker } from "@gold-insights/ui";
 import type { ControlOption } from "@gold-insights/ui";
-import type { ChartWallSortOrder } from "@gold-insights/market-domain";
+import type { AssetDirectoryCategoryId, AssetDirectoryCoverage, AssetDirectorySortKey, ChartWallSortOrder } from "@gold-insights/market-domain";
 import type { ChartWallFilters, ChartWallPageData } from "@/shared/types/api.types";
 import { formatDateTime } from "@/shared/utils/format-number.utils";
 import { assetTypeFallbackOptions, defaultFilters, levelFallbackOptions, marketFallbackOptions, signalFallbackOptions, sortOptions, sortOrderOptions, tagFallbackOptions } from "../configs/chart-wall-page.config";
@@ -43,6 +43,7 @@ import { TaskStatusButton } from "./task-center/task-status-button";
 import { UniverseSection } from "./universe-section/universe-section";
 import { WatchlistSection } from "./watchlist-section/watchlist-section";
 import { chartWallApiService } from "../services/chart-wall-api.service";
+import { useAssetDirectoryQuery } from "../hooks/use-asset-directory-query";
 import { useFundDirectoryQuery } from "../hooks/use-fund-directory-query";
 import { useAssetDetailQuery } from "../hooks/use-asset-detail-query";
 import { useChartWallQuery } from "../hooks/use-chart-wall-query";
@@ -51,13 +52,13 @@ import { useFundDirectoryUrlState } from "../hooks/use-fund-directory-url-state"
 import { useTaskActions } from "../hooks/use-task-actions";
 import { useTaskCenterQuery } from "../hooks/use-task-center-query";
 
-type ActiveView = "overview" | "chart-wall" | "fund-directory" | "crypto-directory" | "universe" | "scanner" | "asset-detail" | "watchlist" | "tasks" | "data-health";
+type ActiveView = "overview" | "chart-wall" | "fund-directory" | "asset-directory" | "universe" | "scanner" | "asset-detail" | "watchlist" | "tasks" | "data-health";
 
 const viewTitles: Record<ActiveView, string> = {
   overview: "全市场概览",
   "chart-wall": "全市场图表墙",
   "fund-directory": "基金目录",
-  "crypto-directory": "加密货币目录",
+  "asset-directory": "资产目录",
   universe: "资产宇宙",
   scanner: "机会扫描",
   "asset-detail": "资产详情",
@@ -72,6 +73,7 @@ export function ChartWallPage(): JSX.Element {
   const { assetId: routeAssetId } = useParams<{ assetId?: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeView = getActiveView(location.pathname);
+  const directoryCategoryId = getAssetDirectoryCategoryId(location.pathname);
   const range = getSearchValue(searchParams, "range", defaultFilters.range);
   const timeframe = getSearchValue(searchParams, "timeframe", defaultFilters.timeframe);
   const market = getSearchValue(searchParams, "market", defaultFilters.market);
@@ -91,11 +93,13 @@ export function ChartWallPage(): JSX.Element {
   const compareSelection = useCompareSelection(range, timeframe);
   const [importingFundCode, setImportingFundCode] = useState<string | null>(null);
   const [fundImportMessage, setFundImportMessage] = useState<string | null>(null);
-  const isAssetDirectoryView = activeView === "fund-directory" || activeView === "crypto-directory";
-  const effectiveMarket = activeView === "crypto-directory" ? "加密" : market;
-  const effectiveAssetType = activeView === "crypto-directory" ? "crypto" : assetType;
-  const effectiveSort = activeView === "crypto-directory" && !searchParams.has("sort") ? "return_1m" : sort;
-  const effectiveOrder = activeView === "crypto-directory" && !searchParams.has("order") ? "desc" : order;
+  const isAssetDirectoryView = activeView === "fund-directory" || activeView === "asset-directory";
+  const directoryChartFilters = getDirectoryChartFilters(directoryCategoryId);
+  const effectiveMarket = activeView === "asset-directory" ? directoryChartFilters.market : market;
+  const effectiveAssetType = activeView === "asset-directory" ? directoryChartFilters.assetType : assetType;
+  const effectiveSort = activeView === "asset-directory" && !searchParams.has("sort") ? "return_1m" : sort;
+  const effectiveOrder = activeView === "asset-directory" && !searchParams.has("order") ? "desc" : order;
+  const needsChartWallData = !isAssetDirectoryView && activeView !== "tasks";
 
   const setQueryValue = useCallback((name: string, value: string, fallback = ""): void => {
     const next = new URLSearchParams(searchParams);
@@ -147,8 +151,21 @@ export function ChartWallPage(): JSX.Element {
     }),
     [effectiveAssetType, effectiveMarket, effectiveOrder, effectiveSort, level, range, signal, tag, timeframe]
   );
-  const { data, error, isLoading, reload } = useChartWallQuery(filters);
+  const { data, error, isLoading, reload } = useChartWallQuery(filters, needsChartWallData);
   const fundDirectoryQuery = useFundDirectoryQuery(fundDirectory.filters, activeView === "fund-directory");
+  const assetDirectoryFilters = useMemo(
+    () => ({
+      categoryId: directoryCategoryId ?? "crypto",
+      keyword: search,
+      status: "all",
+      sort: getAssetDirectorySort(effectiveSort),
+      order: effectiveOrder,
+      limit: 1000,
+      offset: 0
+    }) as const,
+    [directoryCategoryId, effectiveOrder, effectiveSort, search]
+  );
+  const assetDirectoryQuery = useAssetDirectoryQuery(assetDirectoryFilters, activeView === "asset-directory");
   const taskCenterQuery = useTaskCenterQuery(true);
   const assetDetailQuery = useAssetDetailQuery(routeAssetId, range, timeframe, activeView === "asset-detail");
   const taskActions = useTaskActions({
@@ -253,9 +270,10 @@ export function ChartWallPage(): JSX.Element {
 
   const currentSearch = getSearchWithout(searchParams, ["from"]);
   const fundDirectorySearch = getFundDirectorySearch(searchParams);
-  const cryptoDirectorySearch = getCryptoDirectorySearch(searchParams);
+  const assetDirectorySearch = getAssetDirectorySearch(searchParams);
   const assetDetailReturnPath = getAssetDetailReturnPath(searchParams);
   const assetDetailReturnLabel = getAssetDetailReturnLabel(assetDetailReturnPath);
+  const headerDataSourceLabel = getHeaderDataSourceLabel(activeView, data, assetDirectoryQuery.data?.category.coverage);
   const handleAssetDetailBack = (): void => {
     navigate(assetDetailReturnPath);
   };
@@ -289,8 +307,23 @@ export function ChartWallPage(): JSX.Element {
               <SidebarButton active={activeView === "fund-directory"} label="基金目录" title="基金目录" to={`/directories/funds${fundDirectorySearch}`} level="child">
                 <BookOpen size={16} aria-hidden="true" />
               </SidebarButton>
-              <SidebarButton active={activeView === "crypto-directory"} label="加密目录" title="加密货币目录" to={`/directories/crypto${cryptoDirectorySearch}`} level="child">
+              <SidebarButton active={activeView === "asset-directory" && directoryCategoryId === "crypto"} label="加密目录" title="加密目录" to={`/directories/crypto${assetDirectorySearch}`} level="child">
                 <Bitcoin size={16} aria-hidden="true" />
+              </SidebarButton>
+              <SidebarButton active={activeView === "asset-directory" && directoryCategoryId === "commodities"} label="商品目录" title="商品目录" to={`/directories/commodities${assetDirectorySearch}`} level="child">
+                <BarChart3 size={16} aria-hidden="true" />
+              </SidebarButton>
+              <SidebarButton active={activeView === "asset-directory" && directoryCategoryId === "us-equity"} label="美股目录" title="美股目录" to={`/directories/us-equity${assetDirectorySearch}`} level="child">
+                <BarChart3 size={16} aria-hidden="true" />
+              </SidebarButton>
+              <SidebarButton active={activeView === "asset-directory" && directoryCategoryId === "a-share"} label="A 股目录" title="A 股目录" to={`/directories/a-share${assetDirectorySearch}`} level="child">
+                <BarChart3 size={16} aria-hidden="true" />
+              </SidebarButton>
+              <SidebarButton active={activeView === "asset-directory" && directoryCategoryId === "hk-equity"} label="港股目录" title="港股目录" to={`/directories/hk-equity${assetDirectorySearch}`} level="child">
+                <BarChart3 size={16} aria-hidden="true" />
+              </SidebarButton>
+              <SidebarButton active={activeView === "asset-directory" && directoryCategoryId === "macro"} label="宏观目录" title="宏观目录" to={`/directories/macro${assetDirectorySearch}`} level="child">
+                <Gauge size={16} aria-hidden="true" />
               </SidebarButton>
             </SidebarGroup>
             <SidebarButton active={activeView === "universe"} label="资产宇宙" title="资产宇宙" to={`/universe${currentSearch}`}>
@@ -320,8 +353,8 @@ export function ChartWallPage(): JSX.Element {
             </button>
           )}
           <div>
-            <p className="workspace-header__eyebrow">真实数据源: {data?.chartWall.sources.join(" / ") || "加载中"}</p>
-            <h1>{activeView === "asset-detail" && selectedItem ? selectedItem.name : viewTitles[activeView]}</h1>
+            <p className="workspace-header__eyebrow">真实数据源: {headerDataSourceLabel}</p>
+            <h1>{activeView === "asset-detail" && selectedItem ? selectedItem.name : activeView === "asset-directory" ? assetDirectoryQuery.data?.category.label ?? getAssetDirectoryLabel(directoryCategoryId) : viewTitles[activeView]}</h1>
           </div>
         </div>
         <div className="workspace-header__actions">
@@ -405,12 +438,12 @@ export function ChartWallPage(): JSX.Element {
       )}
       {data && activeView === "chart-wall" && assetType === "fund" && <FundScopeStrip data={data} market={market} />}
 
-      {isLoading && <LoadingState />}
-      {!isLoading && error && <ErrorState title="行情加载失败" message={error} />}
+      {needsChartWallData && isLoading && <LoadingState />}
+      {needsChartWallData && !isLoading && error && <ErrorState title="行情加载失败" message={error} />}
 
-      {!isLoading && !error && data && (
+      {(!needsChartWallData || (!isLoading && !error && data)) && (
         <>
-          {activeView === "overview" && (
+          {activeView === "overview" && data && (
             <OverviewSection
               data={data}
               items={filteredItems}
@@ -423,7 +456,7 @@ export function ChartWallPage(): JSX.Element {
             />
           )}
 
-          {activeView === "chart-wall" && (
+          {activeView === "chart-wall" && data && (
             <section className="chart-wall-section">
               <SectionHeader
                 title="走势列表"
@@ -469,19 +502,28 @@ export function ChartWallPage(): JSX.Element {
             />
           )}
 
-          {activeView === "crypto-directory" && (
-            <AssetDirectorySection
-              title="加密货币目录"
-              description="当前展示真实已入库、可打开完整走势和指标的加密资产。后续接入交易所全量目录后，这里会扩展为轻量候选池，再按需加入走势池。"
-              items={filteredItems}
-              search={search}
-              statusLabel="真实已入库 / 走势池"
-              onSelect={selectAsset}
-              onCompare={compareSelection.toggleCompare}
-            />
+          {activeView === "asset-directory" && (
+            assetDirectoryQuery.isLoading ? (
+              <LoadingState />
+            ) : assetDirectoryQuery.error ? (
+              <ErrorState title="资产目录加载失败" message={assetDirectoryQuery.error} />
+            ) : (
+              <AssetDirectorySection
+                title={assetDirectoryQuery.data?.category.label ?? getAssetDirectoryLabel(directoryCategoryId)}
+                description={assetDirectoryQuery.data?.category.description ?? "当前展示真实已入库、可打开完整走势和指标的资产。"}
+                items={assetDirectoryQuery.data?.items ?? []}
+                totalCount={assetDirectoryQuery.data?.totalCount ?? 0}
+                categoryItemCount={assetDirectoryQuery.data?.category.itemCount ?? assetDirectoryQuery.data?.totalCount ?? 0}
+                categoryInPoolCount={assetDirectoryQuery.data?.category.inPoolCount ?? 0}
+                search={search}
+                statusLabel={assetDirectoryQuery.data ? coverageLabel(assetDirectoryQuery.data.category.coverage) : "真实已入库 / 走势池"}
+                onSelect={selectAsset}
+                onCompare={compareSelection.toggleCompare}
+              />
+            )
           )}
 
-          {activeView === "universe" && (
+          {activeView === "universe" && data && (
             <UniverseSection
               nodes={data.universeTree.nodes}
               filters={{ search, market, assetType, level }}
@@ -489,7 +531,7 @@ export function ChartWallPage(): JSX.Element {
             />
           )}
 
-          {activeView === "scanner" && (
+          {activeView === "scanner" && data && (
             <ScannerSection
               scannerEvents={data.scannerEvents}
               eventType={scannerEventType}
@@ -520,7 +562,7 @@ export function ChartWallPage(): JSX.Element {
             )
           )}
 
-          {activeView === "watchlist" && (
+          {activeView === "watchlist" && data && (
             <WatchlistSection
               watchlists={data.watchlists.watchlists}
               chartItems={chartItems}
@@ -553,7 +595,7 @@ export function ChartWallPage(): JSX.Element {
             />
           )}
 
-          {activeView === "data-health" && (
+          {activeView === "data-health" && data && (
             <DataHealthSection
               data={data}
               assetTable={
@@ -639,6 +681,22 @@ function FundScopeStrip({ data, market }: { data: ChartWallPageData; market: str
   );
 }
 
+function getHeaderDataSourceLabel(activeView: ActiveView, data: ChartWallPageData | null, assetDirectoryCoverage?: AssetDirectoryCoverage): string {
+  if (activeView === "fund-directory") {
+    return "Eastmoney 基金目录 / 本地走势池";
+  }
+
+  if (activeView === "asset-directory") {
+    return assetDirectoryCoverage === "full" ? "资产目录 API / 本地走势池" : "本地走势池";
+  }
+
+  if (activeView === "tasks") {
+    return "本地任务中心";
+  }
+
+  return data?.chartWall.sources.join(" / ") || "加载中";
+}
+
 function SectionHeader({ title, description, generatedAt }: { title: string; description: string; generatedAt?: string }): JSX.Element {
   return (
     <div className="section-title-row">
@@ -663,8 +721,8 @@ function getActiveView(pathname: string): ActiveView {
   if (pathname.startsWith("/directories/funds") || pathname.startsWith("/funds")) {
     return "fund-directory";
   }
-  if (pathname.startsWith("/directories/crypto")) {
-    return "crypto-directory";
+  if (pathname.startsWith("/directories/")) {
+    return "asset-directory";
   }
   if (pathname.startsWith("/universe")) {
     return "universe";
@@ -714,6 +772,10 @@ function getAssetDetailReturnLabel(path: string): string {
     return "加密目录";
   }
 
+  if (path.startsWith("/directories/")) {
+    return getAssetDirectoryLabel(getAssetDirectoryCategoryId(path));
+  }
+
   if (path.startsWith("/universe")) {
     return "资产宇宙";
   }
@@ -758,7 +820,7 @@ function isSafeWorkspacePath(path: string): boolean {
     return false;
   }
 
-  return ["/overview", "/chart-wall", "/directories/funds", "/directories/crypto", "/funds", "/universe", "/scanner", "/watchlist", "/tasks", "/data-health"].some((prefix) => path === prefix || path.startsWith(`${prefix}?`));
+  return ["/overview", "/chart-wall", "/directories", "/funds", "/universe", "/scanner", "/watchlist", "/tasks", "/data-health"].some((prefix) => path === prefix || path.startsWith(`${prefix}/`) || path.startsWith(`${prefix}?`));
 }
 
 function getFundDirectorySearch(searchParams: URLSearchParams): string {
@@ -774,22 +836,57 @@ function getFundDirectorySearch(searchParams: URLSearchParams): string {
   return toSearchString(next);
 }
 
-function getCryptoDirectorySearch(searchParams: URLSearchParams): string {
+function getAssetDirectorySearch(searchParams: URLSearchParams): string {
   const next = new URLSearchParams();
 
-  for (const name of ["range", "timeframe", "q"]) {
+  for (const name of ["range", "timeframe", "q", "sort", "order"]) {
     const value = searchParams.get(name);
     if (value) {
       next.set(name, value);
     }
   }
 
-  next.set("market", "加密");
-  next.set("assetType", "crypto");
-  next.set("sort", "return_1m");
-  next.set("order", "desc");
+  if (!next.has("sort")) {
+    next.set("sort", "return_1m");
+  }
+
+  if (!next.has("order")) {
+    next.set("order", "desc");
+  }
 
   return toSearchString(next);
+}
+
+function getAssetDirectoryCategoryId(pathname: string): AssetDirectoryCategoryId | null {
+  const match = /^\/directories\/([^/?]+)/.exec(pathname);
+  const value = match?.[1];
+  const supported: AssetDirectoryCategoryId[] = ["funds", "crypto", "commodities", "us-equity", "a-share", "hk-equity", "macro"];
+  return value && supported.includes(value as AssetDirectoryCategoryId) ? (value as AssetDirectoryCategoryId) : null;
+}
+
+function getAssetDirectoryLabel(categoryId: AssetDirectoryCategoryId | null): string {
+  const labels: Record<AssetDirectoryCategoryId, string> = {
+    funds: "基金目录",
+    crypto: "加密目录",
+    commodities: "商品目录",
+    "us-equity": "美股目录",
+    "a-share": "A 股目录",
+    "hk-equity": "港股目录",
+    macro: "宏观目录"
+  };
+  return categoryId ? labels[categoryId] : "资产目录";
+}
+
+function getDirectoryChartFilters(categoryId: AssetDirectoryCategoryId | null): { market: string; assetType: string } {
+  const filters: Partial<Record<AssetDirectoryCategoryId, { market: string; assetType: string }>> = {
+    crypto: { market: "加密", assetType: "crypto" },
+    commodities: { market: "商品", assetType: "all" },
+    "us-equity": { market: "美股", assetType: "all" },
+    "a-share": { market: "A 股", assetType: "all" },
+    "hk-equity": { market: "港股", assetType: "all" },
+    macro: { market: "all", assetType: "macro" }
+  };
+  return filters[categoryId ?? "crypto"] ?? { market: "all", assetType: "all" };
 }
 
 function toSearchString(searchParams: URLSearchParams): string {
@@ -815,6 +912,20 @@ function toggleSortOrder(value: ChartWallSortOrder): ChartWallSortOrder {
 
 function defaultOrderForSort(sort: string): ChartWallSortOrder {
   return sort === "symbol" || sort === "market" || sort === "asset_type" ? "asc" : "desc";
+}
+
+function getAssetDirectorySort(sort: string): AssetDirectorySortKey {
+  const supported: AssetDirectorySortKey[] = ["relevance", "label", "latest_value", "return_1d", "return_1m", "return_3m", "return_6m", "return_1y", "data_point_count"];
+  return supported.includes(sort as AssetDirectorySortKey) ? (sort as AssetDirectorySortKey) : "relevance";
+}
+
+function coverageLabel(coverage: AssetDirectoryCoverage): string {
+  const labels: Record<AssetDirectoryCoverage, string> = {
+    full: "全量目录 / 可加入走势池",
+    partial: "部分目录 / 可扩展",
+    trend_pool_only: "真实已入库 / 走势池"
+  };
+  return labels[coverage];
 }
 
 function sortDisplayLabel(sort: string): string {

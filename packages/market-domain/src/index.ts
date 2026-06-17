@@ -1,4 +1,20 @@
 export type { AssetLevel, AssetSummary, AssetType, MarketDataSource } from "./types/asset.types";
+export type {
+  AssetDirectoryCategoriesResponse,
+  AssetDirectoryCapability,
+  AssetDirectoryCategory,
+  AssetDirectoryCategoryId,
+  AssetDirectoryCoverage,
+  AssetDirectoryDataState,
+  AssetDirectoryFacet,
+  AssetDirectoryItem,
+  AssetDirectoryPageResponse,
+  AssetDirectoryPoolState,
+  AssetDirectoryReturns,
+  AssetDirectorySortKey,
+  AssetDirectorySortOrder,
+  AssetDirectoryStatusFilter
+} from "./types/asset-directory.types";
 export type { OhlcvBar, SparklinePoint, Timeframe } from "./types/bar.types";
 export type {
   AssetBarsResponse,
