@@ -64,19 +64,28 @@ export class DirectoryRankingSummaryBuilder {
     const leader = values.at(-1) ?? null;
     const laggard = values[0] ?? null;
     const spread = leader !== null && laggard !== null ? Math.abs(leader - laggard) : null;
+    const hasValidSamples = validCount > 0;
 
     return {
       label: "排序质量",
-      description: missingCount > 0 ? `本页 ${missingCount.toLocaleString("en-US")} 个资产缺少${metric.label}，缺值已排在有值资产之后。` : `本页资产都有${metric.label}，当前排序可直接横向比较。`,
-      badgeLabel: `${metric.label} ${order === "desc" ? "降序" : "升序"}`,
-      badgeTone: missingCount > 0 ? "amber" : "blue",
+      description: this.buildNumericSortDescription(validCount, missingCount, metric.label),
+      badgeLabel: hasValidSamples ? `${metric.label} ${order === "desc" ? "降序" : "升序"}` : `${metric.label} 无样本`,
+      badgeTone: !hasValidSamples || missingCount > 0 ? "amber" : "blue",
       metrics: [
         { label: "有效样本", value: `${validCount.toLocaleString("en-US")} / ${items.length.toLocaleString("en-US")}`, tone: this.coverageTone(coverage) },
         { label: "缺值", value: missingCount.toLocaleString("en-US"), tone: missingCount > 0 ? "amber" : "positive" },
-        { label: "中位数", value: this.formatMetricValue(median, metric.unit), tone: "neutral" },
-        { label: "页内极差", value: this.formatMetricValue(spread, metric.unit), tone: spread !== null && spread > 0 ? "blue" : "neutral" }
+        { label: "中位数", value: this.formatMetricValue(median, metric.unit, hasValidSamples ? "暂无" : "无样本"), tone: "neutral" },
+        { label: "页内极差", value: this.formatMetricValue(spread, metric.unit, hasValidSamples ? "暂无" : "无样本"), tone: spread !== null && spread > 0 ? "blue" : "neutral" }
       ]
     };
+  };
+
+  private buildNumericSortDescription = (validCount: number, missingCount: number, metricLabel: string): string => {
+    if (validCount === 0) {
+      return `本页没有可用于${metricLabel}排序的数值；这些资产会保留在列表中，但当前名次只代表缺值后的稳定顺序。`;
+    }
+
+    return missingCount > 0 ? `本页 ${missingCount.toLocaleString("en-US")} 个资产缺少${metricLabel}，缺值已排在有值资产之后。` : `本页资产都有${metricLabel}，当前排序可直接横向比较。`;
   };
 
   private coverageTone = (coverage: number): DirectoryRankingSummaryTone => {
@@ -91,9 +100,9 @@ export class DirectoryRankingSummaryBuilder {
     return "amber";
   };
 
-  private formatMetricValue = (value: number | null, unit: DirectorySortMetricDefinition["unit"]): string => {
+  private formatMetricValue = (value: number | null, unit: DirectorySortMetricDefinition["unit"], emptyLabel = "暂无"): string => {
     if (value === null) {
-      return "暂无";
+      return emptyLabel;
     }
 
     if (unit === "percent") {

@@ -66,19 +66,23 @@ export function RankingQualitySummary({ items, sort = "trend_score", order = "de
   const spread = summary.leader !== null && summary.laggard !== null ? Math.abs(summary.leader - summary.laggard) : null;
   const coverageTone = summary.validCount === items.length ? "positive" : summary.validCount / Math.max(items.length, 1) >= 0.8 ? "blue" : "amber";
   const missingSummary = sort === "market_cap" ? buildValuationMissingSummary(items) : { value: summary.missingCount.toLocaleString("en-US"), title: "当前排序字段缺少可排名数值的资产数量" };
+  const hasValidSamples = summary.validCount > 0;
+  const badgeLabel = hasValidSamples ? `${summary.label} ${order === "desc" ? "降序" : "升序"}` : `${summary.label} 无样本`;
+  const badgeTone = hasValidSamples ? "blue" : "amber";
+  const emptyMetricLabel = hasValidSamples ? "暂无" : "无样本";
 
   return (
     <section className="ranking-quality-summary" aria-label="榜单质量">
       <div className="ranking-quality-summary__heading">
         <BarChart3 size={16} aria-hidden="true" />
         <strong>榜单质量</strong>
-        <SignalBadge label={`${summary.label} ${order === "desc" ? "降序" : "升序"}`} tone="blue" />
+        <SignalBadge label={badgeLabel} tone={badgeTone} />
       </div>
       <dl className="ranking-quality-summary__metrics">
         <RankSummaryMetric label="有效样本" value={`${summary.validCount.toLocaleString("en-US")} / ${items.length.toLocaleString("en-US")}`} tone={coverageTone} />
         <RankSummaryMetric label={sort === "market_cap" ? "市值空态" : "缺值"} value={missingSummary.value} title={missingSummary.title} tone={summary.missingCount > 0 ? "amber" : "positive"} />
-        <RankSummaryMetric label="中位数" value={formatMetricValue(summary.median, summary.unit)} tone="neutral" />
-        <RankSummaryMetric label="首尾差" value={formatMetricValue(spread, summary.unit)} tone={spread !== null && spread > 0 ? "blue" : "neutral"} />
+        <RankSummaryMetric label="中位数" value={formatMetricValue(summary.median, summary.unit, emptyMetricLabel)} tone="neutral" />
+        <RankSummaryMetric label="首尾差" value={formatMetricValue(spread, summary.unit, emptyMetricLabel)} tone={spread !== null && spread > 0 ? "blue" : "neutral"} />
       </dl>
     </section>
   );
@@ -148,9 +152,9 @@ function buildValuationMissingSummary(items: ChartWallItem[]): MissingSummary {
   };
 }
 
-function formatMetricValue(value: number | null, unit: SortMetricDefinition["unit"]): string {
+function formatMetricValue(value: number | null, unit: SortMetricDefinition["unit"], emptyLabel = "暂无"): string {
   if (value === null) {
-    return "暂无";
+    return emptyLabel;
   }
 
   if (unit === "percent") {
