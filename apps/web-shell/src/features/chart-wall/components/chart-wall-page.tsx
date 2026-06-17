@@ -164,9 +164,10 @@ export function ChartWallPage(): JSX.Element {
       tag,
       sort: effectiveSort,
       order: effectiveOrder,
-      signal
+      signal,
+      includeValuations: activeView === "data-health"
     }),
-    [effectiveAssetType, effectiveMarket, effectiveOrder, effectiveSort, level, range, signal, tag, timeframe]
+    [activeView, effectiveAssetType, effectiveMarket, effectiveOrder, effectiveSort, level, range, signal, tag, timeframe]
   );
   const { data, error, isLoading, reload } = useChartWallQuery(filters, needsChartWallData);
   const fundDirectoryQuery = useFundDirectoryQuery(fundDirectory.filters, activeView === "fund-directory");

@@ -3,7 +3,7 @@ import type { AssetDirectoryPageFilters, ChartWallFilters, ChartWallPageData, Fu
 
 export class ChartWallApiService {
   public fetchPageData = async (filters: ChartWallFilters, signal?: AbortSignal): Promise<ChartWallPageData> => {
-    const query = new URLSearchParams(filters).toString();
+    const query = this.toChartWallQuery(filters);
     const [chartWall, dataHealth, universeTree, scannerEvents, watchlists, fundCatalog] = await Promise.all([
       this.fetchJson<ChartWallResponse>(`/api/chart-wall?${query}`, signal),
       this.fetchJson<DataHealthResponse>("/api/data-health", signal),
@@ -107,6 +107,27 @@ export class ChartWallApiService {
     this.fetchJson<WatchlistsResponse>(`/api/watchlists/default/assets/${encodeURIComponent(assetId)}`, {
       method: "DELETE"
     });
+
+  private toChartWallQuery = (filters: ChartWallFilters): string => {
+    const query = new URLSearchParams({
+      range: filters.range,
+      timeframe: filters.timeframe,
+      universe: filters.universe,
+      level: filters.level,
+      market: filters.market,
+      assetType: filters.assetType,
+      sort: filters.sort,
+      order: filters.order,
+      signal: filters.signal,
+      tag: filters.tag
+    });
+
+    if (filters.includeValuations) {
+      query.set("includeValuations", "true");
+    }
+
+    return query.toString();
+  };
 
   private fetchJson = async <TData,>(url: string, initOrSignal?: RequestInit | AbortSignal): Promise<TData> => {
     const init = initOrSignal instanceof AbortSignal ? { signal: initOrSignal } : initOrSignal;

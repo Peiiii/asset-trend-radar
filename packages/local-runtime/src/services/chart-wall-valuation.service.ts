@@ -17,8 +17,8 @@ export class ChartWallValuationService {
     private readonly normalizationService: AssetValuationNormalizationService
   ) {}
 
-  public enrichForSort = async (items: ChartWallItem[], sort: string): Promise<ChartWallItem[]> => {
-    if (sort !== "market_cap" || !this.hasSupportedAssets(items)) {
+  public enrichForSort = async (items: ChartWallItem[], sort: string, includeValuations = false): Promise<ChartWallItem[]> => {
+    if ((!includeValuations && sort !== "market_cap") || !this.hasSupportedAssets(items)) {
       return items;
     }
 

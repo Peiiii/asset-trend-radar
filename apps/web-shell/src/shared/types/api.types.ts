@@ -21,6 +21,7 @@ export type ChartWallFilters = {
   order: ChartWallSortOrder;
   signal: string;
   tag: string;
+  includeValuations?: boolean;
 };
 
 export type CompareData = CompareResponse;

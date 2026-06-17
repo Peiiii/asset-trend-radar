@@ -13,6 +13,16 @@ export const getTimeframeQueryParam = (url: URL): Timeframe => {
 
 export const getStringQueryParam = (url: URL, name: string, fallback: string): string => url.searchParams.get(name) ?? fallback;
 
+export const getBooleanQueryParam = (url: URL, name: string, fallback = false): boolean => {
+  const value = url.searchParams.get(name);
+
+  if (value === null) {
+    return fallback;
+  }
+
+  return value === "1" || value === "true";
+};
+
 export const getIntegerQueryParam = (url: URL, name: string, fallback: number, min: number, max: number): number => {
   const value = Number(url.searchParams.get(name));
   return Number.isInteger(value) ? Math.min(Math.max(value, min), max) : fallback;

@@ -96,6 +96,7 @@ try {
   const chartWall = await fetchJson("/api/chart-wall?range=6m&timeframe=1d&universe=global&level=all&market=all&assetType=all&sort=trend_score");
   const aShareWall = await fetchJson("/api/chart-wall?range=6m&timeframe=1d&universe=global&level=all&market=A%20%E8%82%A1&assetType=all&sort=trend_score");
   const usMarketCapWall = await fetchJson("/api/chart-wall?range=6m&timeframe=1d&universe=global&level=all&market=%E7%BE%8E%E8%82%A1&assetType=equity&sort=market_cap&order=desc");
+  const usTrendValuationWall = await fetchJson("/api/chart-wall?range=6m&timeframe=1d&universe=global&level=all&market=%E7%BE%8E%E8%82%A1&assetType=equity&sort=trend_score&order=desc&includeValuations=true");
   const usFundMarketCapWall = await fetchJson("/api/chart-wall?range=6m&timeframe=1d&universe=global&level=all&market=%E7%BE%8E%E8%82%A1&assetType=fund&sort=market_cap&order=desc");
   const globalMarketCapWall = await fetchJson("/api/chart-wall?range=6m&timeframe=1d&universe=global&level=all&market=all&assetType=all&sort=market_cap&order=desc");
   const commodityFundMarketCapWall = await fetchJson("/api/chart-wall?range=6m&timeframe=1d&universe=global&level=all&market=%E5%95%86%E5%93%81&assetType=fund&sort=market_cap&order=desc");
@@ -181,6 +182,8 @@ try {
   assert(levels.has("broad-index") && levels.has("sector-index") && levels.has("company") && levels.has("instrument"), "expected multiple asset levels");
   assert(aShareWall.items.length >= 8 && aShareWall.items.every((item) => item.market === "A 股"), "expected A-share filtered chart wall");
   assertMarketCapSmoke({ assert, isSortedDesc, globalMarketCapWall, usMarketCapWall, usFundMarketCapWall, commodityFundMarketCapWall, commodityDirectoryMarketCapPage, macroDirectoryMarketCapPage });
+  assert(usTrendValuationWall.sort === "trend_score", "expected valuation enrichment to preserve requested trend sort");
+  assert(usTrendValuationWall.items.length >= 6 && usTrendValuationWall.items.every((item) => item.valuation.source === "nasdaq" && item.valuation.marketCap > 0), "expected explicit valuation enrichment without market-cap sorting");
   assert(fundWall.items.length >= 60 && fundWall.items.every((item) => item.assetType === "fund"), "expected expanded real fund/ETF chart wall");
   assert(fundWall.items.some((item) => item.market === "基金" && item.source === "eastmoney"), "expected China mutual funds from Eastmoney");
   assert(commodityWall.items.length >= 36 && commodityWall.items.every((item) => item.market === "商品"), "expected expanded commodity chart wall");
@@ -319,6 +322,7 @@ try {
         globalMarketCapLeader: globalMarketCapWall.items[0]?.symbol ?? null,
         globalMarketCapFirstAshare: globalMarketCapWall.items.find((item) => item.market === "A 股")?.symbol ?? null,
         usMarketCapLeader: usMarketCapWall.items[0]?.symbol ?? null,
+        usTrendValuationItems: usTrendValuationWall.items.length,
         usFundMarketCapLeader: usFundMarketCapWall.items[0]?.symbol ?? null,
         weeklyItems: weeklyWall.items.length,
         monthlyItems: monthlyWall.items.length,

@@ -11,6 +11,7 @@ export type ChartWallQuery = {
   order: ChartWallSortOrder;
   signal: string;
   tag: string;
+  includeValuations: boolean;
 };
 
 export type AssetBarsQuery = {

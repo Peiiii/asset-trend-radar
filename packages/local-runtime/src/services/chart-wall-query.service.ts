@@ -70,7 +70,7 @@ export class ChartWallQueryService {
     const matchedAssets = marketDataAssets.filter((asset) => this.matchesChartWallQuery(asset, query));
     const matchedItems = toPricedItems(matchedAssets);
     const signalFilteredItems = this.facetBuilder.applySignalFilter(matchedItems, query.signal);
-    const valuationEnrichedItems = await this.valuationService.enrichForSort(signalFilteredItems, query.sort);
+    const valuationEnrichedItems = await this.valuationService.enrichForSort(signalFilteredItems, query.sort, query.includeValuations);
     const items = this.itemSorter.sort(valuationEnrichedItems, query.sort, query.order);
 
     return {
@@ -125,7 +125,7 @@ export class ChartWallQueryService {
       generatedAt: new Date().toISOString(),
       timeframe: query.timeframe,
       range: query.range,
-      item: this.getChartWallItem(asset, { range: query.range, timeframe: query.timeframe, universe: "global", level: "all", market: "all", assetType: "all", sort: "trend_score", order: "desc", signal: "all", tag: "all" }, pinnedIds, new Set())
+      item: this.getChartWallItem(asset, { range: query.range, timeframe: query.timeframe, universe: "global", level: "all", market: "all", assetType: "all", sort: "trend_score", order: "desc", signal: "all", tag: "all", includeValuations: false }, pinnedIds, new Set())
     };
   };
 
