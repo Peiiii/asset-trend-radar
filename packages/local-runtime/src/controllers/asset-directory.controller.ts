@@ -1,5 +1,5 @@
 import type { ServerResponse } from "node:http";
-import type { AssetDirectoryAssetTypeFilter, AssetDirectoryCategoryId, AssetDirectorySortKey, AssetDirectorySortOrder, AssetDirectoryStatusFilter } from "@gold-insights/market-domain";
+import type { AssetDirectoryAssetTypeFilter, AssetDirectoryCategoryId, AssetDirectoryDataStateFilter, AssetDirectorySortKey, AssetDirectorySortOrder, AssetDirectoryStatusFilter } from "@gold-insights/market-domain";
 import { ErrorResponseProvider } from "../providers/error-response.provider";
 import { JsonResponseProvider } from "../providers/json-response.provider";
 import type { AssetDirectoryService } from "../services/asset-directory.service";
@@ -30,6 +30,7 @@ export class AssetDirectoryController {
         keyword: getStringQueryParam(url, "keyword", "").trim(),
         market: getStringQueryParam(url, "market", "all").trim() || "all",
         assetType: this.getAssetType(getStringQueryParam(url, "assetType", "all")),
+        dataState: this.getDataState(getStringQueryParam(url, "dataState", "all")),
         status: this.getStatus(getStringQueryParam(url, "status", "all")),
         sort: this.getSort(getStringQueryParam(url, "sort", "relevance")),
         order: this.getOrder(getStringQueryParam(url, "order", "desc")),
@@ -73,6 +74,11 @@ export class AssetDirectoryController {
   private getAssetType = (value: string): AssetDirectoryAssetTypeFilter => {
     const supported: AssetDirectoryAssetTypeFilter[] = ["all", "crypto", "equity", "index", "fund", "commodity", "macro"];
     return supported.includes(value as AssetDirectoryAssetTypeFilter) ? (value as AssetDirectoryAssetTypeFilter) : "all";
+  };
+
+  private getDataState = (value: string): AssetDirectoryDataStateFilter => {
+    const supported: AssetDirectoryDataStateFilter[] = ["all", "full_history", "snapshot", "missing", "stale"];
+    return supported.includes(value as AssetDirectoryDataStateFilter) ? (value as AssetDirectoryDataStateFilter) : "all";
   };
 
   private getSort = (value: string): AssetDirectorySortKey => {

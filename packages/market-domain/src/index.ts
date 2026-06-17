@@ -7,6 +7,7 @@ export type {
   AssetDirectoryCategoryId,
   AssetDirectoryCoverage,
   AssetDirectoryDataState,
+  AssetDirectoryDataStateFilter,
   AssetDirectoryFacet,
   AssetDirectoryImportResponse,
   AssetDirectoryItem,
@@ -40,6 +41,7 @@ export type {
 export type { IndicatorPoint, MacdState, TrendSnapshot } from "./types/indicator.types";
 export type {
   FundCatalogEntry,
+  FundCatalogDataStateFilter,
   FundCatalogImportStatus,
   FundCatalogMetricSnapshot,
   FundCatalogPageItem,

@@ -20,7 +20,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { NavLink, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { AppShell, Button, ErrorState, IconButton, LoadingState, RangePicker, TimeframePicker } from "@gold-insights/ui";
 import type { ControlOption } from "@gold-insights/ui";
-import type { AssetDirectoryAssetTypeFilter, AssetDirectoryCategoryId, AssetDirectoryCoverage, AssetDirectoryItem, AssetDirectorySortKey, AssetDirectoryStatusFilter, ChartWallSortOrder } from "@gold-insights/market-domain";
+import type { AssetDirectoryAssetTypeFilter, AssetDirectoryCategoryId, AssetDirectoryCoverage, AssetDirectoryDataStateFilter, AssetDirectoryItem, AssetDirectorySortKey, AssetDirectoryStatusFilter, ChartWallSortOrder } from "@gold-insights/market-domain";
 import type { ChartWallFilters, ChartWallPageData } from "@/shared/types/api.types";
 import { formatDateTime } from "@/shared/utils/format-number.utils";
 import { assetTypeFallbackOptions, defaultFilters, levelFallbackOptions, marketFallbackOptions, signalFallbackOptions, sortOptions, sortOrderOptions, tagFallbackOptions } from "../configs/chart-wall-page.config";
@@ -106,6 +106,7 @@ export function ChartWallPage(): JSX.Element {
   const effectiveOrder = activeView === "asset-directory" && !searchParams.has("order") ? "desc" : order;
   const assetDirectoryMarket = getSearchValue(searchParams, "directoryMarket", "all");
   const assetDirectoryAssetType = getAssetDirectoryAssetType(getSearchValue(searchParams, "directoryAssetType", "all"));
+  const assetDirectoryDataState = getAssetDirectoryDataState(getSearchValue(searchParams, "dataState", "all"));
   const assetDirectoryStatus = getAssetDirectoryStatus(getSearchValue(searchParams, "status", "all"));
   const assetDirectoryPage = getPositiveIntegerSearchValue(searchParams, "directoryPage", 1);
   const assetDirectoryTableSizing = getAssetDirectoryTableSizing(directoryCategoryId);
@@ -179,13 +180,14 @@ export function ChartWallPage(): JSX.Element {
       keyword: search,
       market: assetDirectoryMarket,
       assetType: assetDirectoryAssetType,
+      dataState: assetDirectoryDataState,
       status: assetDirectoryStatus,
       sort: getAssetDirectorySort(effectiveSort),
       order: effectiveOrder,
       limit: assetDirectoryLimit,
       offset: (assetDirectoryPage - 1) * assetDirectoryLimit
     }) as const,
-    [assetDirectoryAssetType, assetDirectoryMarket, assetDirectoryPage, assetDirectoryStatus, directoryCategoryId, effectiveOrder, effectiveSort, search]
+    [assetDirectoryAssetType, assetDirectoryDataState, assetDirectoryMarket, assetDirectoryPage, assetDirectoryStatus, directoryCategoryId, effectiveOrder, effectiveSort, search]
   );
   const assetDirectoryQuery = useAssetDirectoryQuery(assetDirectoryFilters, activeView === "asset-directory");
   const taskCenterQuery = useTaskCenterQuery(true);
@@ -522,6 +524,7 @@ export function ChartWallPage(): JSX.Element {
               keyword={fundDirectory.keyword}
               fundType={fundDirectory.fundType}
               status={fundDirectory.status}
+              dataState={fundDirectory.dataState}
               sort={fundDirectory.sort}
               order={fundDirectory.order}
               page={fundDirectory.page}
@@ -531,6 +534,7 @@ export function ChartWallPage(): JSX.Element {
               isCatalogSyncing={isFundCatalogSyncing}
               onKeywordChange={(value) => fundDirectory.setQueryValue("fundKeyword", value, "")}
               onFundTypeChange={(value) => fundDirectory.setQueryValue("fundType", value, "all")}
+              onDataStateChange={(value) => fundDirectory.setQueryValue("fundDataState", value, "all")}
               onStatusChange={(value) => fundDirectory.setQueryValue("fundStatus", value, "all")}
               onSortChange={fundDirectory.setSortValue}
               onPageChange={(value) => fundDirectory.setQueryValue("fundPage", String(value), "1")}
@@ -559,6 +563,7 @@ export function ChartWallPage(): JSX.Element {
                 categoryInPoolCount={assetDirectoryQuery.data?.category.inPoolCount ?? 0}
                 market={assetDirectoryMarket}
                 assetType={assetDirectoryAssetType}
+                dataState={assetDirectoryDataState}
                 status={assetDirectoryStatus}
                 sort={getAssetDirectorySort(effectiveSort)}
                 order={effectiveOrder}
@@ -566,6 +571,7 @@ export function ChartWallPage(): JSX.Element {
                 statusLabel={assetDirectoryQuery.data ? coverageLabel(assetDirectoryQuery.data.category.coverage) : "真实已入库 / 走势池"}
                 marketFacets={assetDirectoryQuery.data?.facets.markets ?? []}
                 assetTypeFacets={assetDirectoryQuery.data?.facets.assetTypes ?? []}
+                dataStateFacets={assetDirectoryQuery.data?.facets.dataStates ?? []}
                 statusFacets={assetDirectoryQuery.data?.facets.statuses ?? []}
                 page={assetDirectoryPage}
                 limit={assetDirectoryLimit}
@@ -577,6 +583,7 @@ export function ChartWallPage(): JSX.Element {
                 message={assetDirectoryMessage}
                 onMarketChange={(value) => setQueryValue("directoryMarket", value, "all")}
                 onAssetTypeChange={(value) => setQueryValue("directoryAssetType", value, "all")}
+                onDataStateChange={(value) => setQueryValue("dataState", value, "all")}
                 onStatusChange={(value) => setQueryValue("status", value, "all")}
                 onSortChange={setSortQueryValue}
                 onReset={resetFilters}
@@ -894,7 +901,7 @@ function isSafeWorkspacePath(path: string): boolean {
 function getFundDirectorySearch(searchParams: URLSearchParams): string {
   const next = new URLSearchParams();
 
-  for (const name of ["fundKeyword", "fundType", "fundStatus", "fundSort", "fundOrder", "fundPage"]) {
+  for (const name of ["fundKeyword", "fundType", "fundDataState", "fundStatus", "fundSort", "fundOrder", "fundPage"]) {
     const value = searchParams.get(name);
     if (value) {
       next.set(name, value);
@@ -907,7 +914,7 @@ function getFundDirectorySearch(searchParams: URLSearchParams): string {
 function getAssetDirectorySearch(searchParams: URLSearchParams): string {
   const next = new URLSearchParams();
 
-  for (const name of ["range", "timeframe", "q", "directoryMarket", "directoryAssetType", "status", "sort", "order", "directoryPage"]) {
+  for (const name of ["range", "timeframe", "q", "directoryMarket", "directoryAssetType", "dataState", "status", "sort", "order", "directoryPage"]) {
     const value = searchParams.get(name);
     if (value) {
       next.set(name, value);
@@ -1019,6 +1026,11 @@ function getAssetDirectoryStatus(status: string): AssetDirectoryStatusFilter {
 function getAssetDirectoryAssetType(assetType: string): AssetDirectoryAssetTypeFilter {
   const supported: AssetDirectoryAssetTypeFilter[] = ["all", "crypto", "equity", "index", "fund", "commodity", "macro"];
   return supported.includes(assetType as AssetDirectoryAssetTypeFilter) ? (assetType as AssetDirectoryAssetTypeFilter) : "all";
+}
+
+function getAssetDirectoryDataState(dataState: string): AssetDirectoryDataStateFilter {
+  const supported: AssetDirectoryDataStateFilter[] = ["all", "full_history", "snapshot", "missing", "stale"];
+  return supported.includes(dataState as AssetDirectoryDataStateFilter) ? (dataState as AssetDirectoryDataStateFilter) : "all";
 }
 
 function coverageLabel(coverage: AssetDirectoryCoverage): string {

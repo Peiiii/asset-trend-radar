@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, RefreshCcw, Search } from "lucide-react";
 import { Button, DataTableFrame, EmptyState, ErrorState, LoadingState, Select } from "@gold-insights/ui";
 import type { ControlOption } from "@gold-insights/ui";
-import type { FundCatalogImportStatus, FundCatalogPageResponse, FundCatalogSortKey, SortOrder } from "@gold-insights/market-domain";
+import type { FundCatalogDataStateFilter, FundCatalogImportStatus, FundCatalogPageResponse, FundCatalogSortKey, SortOrder } from "@gold-insights/market-domain";
 import { formatDateTime } from "@/shared/utils/format-number.utils";
 import { DirectoryTableColumns } from "./directory-table/directory-table-columns";
 import { fundDirectoryTableSizing } from "./directory-table/directory-table-sizing.config";
@@ -17,6 +17,7 @@ type FundDirectorySectionProps = {
   keyword: string;
   fundType: string;
   status: FundCatalogImportStatus;
+  dataState: FundCatalogDataStateFilter;
   sort: FundCatalogSortKey;
   order: SortOrder;
   page: number;
@@ -26,6 +27,7 @@ type FundDirectorySectionProps = {
   isCatalogSyncing: boolean;
   onKeywordChange(value: string): void;
   onFundTypeChange(value: string): void;
+  onDataStateChange(value: FundCatalogDataStateFilter): void;
   onStatusChange(value: FundCatalogImportStatus): void;
   onSortChange(value: FundCatalogSortKey): void;
   onPageChange(value: number): void;
@@ -41,6 +43,7 @@ export function FundDirectorySection({
   keyword,
   fundType,
   status,
+  dataState,
   sort,
   order,
   page,
@@ -50,6 +53,7 @@ export function FundDirectorySection({
   isCatalogSyncing,
   onKeywordChange,
   onFundTypeChange,
+  onDataStateChange,
   onStatusChange,
   onSortChange,
   onPageChange,
@@ -63,6 +67,7 @@ export function FundDirectorySection({
   const fromIndex = totalCount === 0 ? 0 : (page - 1) * limit + 1;
   const toIndex = Math.min(page * limit, totalCount);
   const fundTypeOptions = useMemo<ControlOption[]>(() => createFundTypeOptions(data, fundType), [data, fundType]);
+  const dataStateOptions = useMemo<ControlOption[]>(() => createDataStateOptions(data), [data]);
   const statusOptions = useMemo<ControlOption[]>(() => createStatusOptions(data), [data]);
 
   useEffect(() => {
@@ -105,6 +110,7 @@ export function FundDirectorySection({
           </Button>
         )}
         <Select id="fund-directory-type" label="类型" value={fundType} options={fundTypeOptions} onChange={onFundTypeChange} />
+        <Select id="fund-directory-data-state" label="数据" value={dataState} options={dataStateOptions} onChange={(value) => onDataStateChange(getFundCatalogDataState(value))} />
         <Select id="fund-directory-status" label="状态" value={status} options={statusOptions} onChange={(value) => onStatusChange(getImportStatus(value))} />
         <Button type="button" variant="ghost" disabled={isCatalogSyncing} onClick={onSyncCatalog}>
           <RefreshCcw size={15} aria-hidden="true" />
@@ -211,8 +217,31 @@ function createStatusOptions(data: FundCatalogPageResponse | null): ControlOptio
     : fallback;
 }
 
+function createDataStateOptions(data: FundCatalogPageResponse | null): ControlOption[] {
+  const fallback: ControlOption[] = [
+    { value: "all", label: "全部数据" },
+    { value: "full_history", label: "完整走势" },
+    { value: "snapshot", label: "目录快照" },
+    { value: "missing", label: "待拉取" },
+    { value: "stale", label: "待更新" }
+  ];
+
+  return data
+    ? data.dataStateFacets.map((facet) => ({
+        value: facet.value,
+        label: facet.label,
+        count: facet.count
+      }))
+    : fallback;
+}
+
 function getImportStatus(value: string): FundCatalogImportStatus {
   return value === "imported" || value === "not_imported" ? value : "all";
+}
+
+function getFundCatalogDataState(value: string): FundCatalogDataStateFilter {
+  const supported: FundCatalogDataStateFilter[] = ["all", "full_history", "snapshot", "missing", "stale"];
+  return supported.includes(value as FundCatalogDataStateFilter) ? (value as FundCatalogDataStateFilter) : "all";
 }
 
 function fundCatalogSortLabel(sort: FundCatalogSortKey): string {

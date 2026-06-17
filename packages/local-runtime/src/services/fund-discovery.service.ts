@@ -1,14 +1,14 @@
 import { EastmoneyFundCatalogProvider, EastmoneyFundDataProvider, EastmoneyFundRankProvider, EastmoneyFundSearchProvider } from "@gold-insights/data-adapters";
-import type { FundCatalogPageRecord, LocalRawFileRepository, SqliteAssetRepository, SqliteFundCatalogRepository, SqliteIngestionJobRepository, SqliteMarketDataRepository, SqliteScannerEventRepository } from "@gold-insights/data-storage";
+import type { LocalRawFileRepository, SqliteAssetRepository, SqliteFundCatalogRepository, SqliteIngestionJobRepository, SqliteMarketDataRepository, SqliteScannerEventRepository } from "@gold-insights/data-storage";
 import { calculateIndicators } from "@gold-insights/indicator-engine";
-import type { AssetSummary, FundCatalogEntry, FundCatalogImportStatus, FundCatalogPageItem, FundCatalogPageResponse, FundCatalogSortKey, FundCatalogSummaryResponse, FundCatalogSyncResponse, FundImportResponse, FundSearchResponse, FundSearchResult, OhlcvBar, SortOrder } from "@gold-insights/market-domain";
-import { dayMs, toIsoDateTime } from "@gold-insights/market-domain";
+import type { AssetSummary, FundCatalogDataStateFilter, FundCatalogEntry, FundCatalogImportStatus, FundCatalogPageResponse, FundCatalogSortKey, FundCatalogSummaryResponse, FundCatalogSyncResponse, FundImportResponse, FundSearchResponse, FundSearchResult, SortOrder } from "@gold-insights/market-domain";
+import { toIsoDateTime } from "@gold-insights/market-domain";
 import { ScannerEngineManager } from "@gold-insights/scanner-engine";
-
-type ImportedFundCatalogMetrics = Omit<FundCatalogPageItem, keyof FundCatalogEntry | "assetId" | "isImported" | "metricSource">;
+import { FundCatalogPageItemFactory } from "./fund-discovery/fund-catalog-page-item.factory";
 
 export class FundDiscoveryService {
   private metricSyncPromise: Promise<number> | null = null;
+  private readonly catalogPageItemFactory: FundCatalogPageItemFactory;
 
   public constructor(
     private readonly historyLimit: number,
@@ -23,7 +23,9 @@ export class FundDiscoveryService {
     private readonly searchProvider = new EastmoneyFundSearchProvider(),
     private readonly dataProvider = new EastmoneyFundDataProvider(),
     private readonly scannerEngine = new ScannerEngineManager()
-  ) {}
+  ) {
+    this.catalogPageItemFactory = new FundCatalogPageItemFactory(historyLimit, marketDataRepository);
+  }
 
   public searchFunds = async (keyword: string, limit = 20): Promise<FundSearchResponse> => {
     const normalizedKeyword = keyword.trim();
@@ -78,6 +80,7 @@ export class FundDiscoveryService {
     keyword,
     fundType,
     status,
+    dataState = "all",
     sort,
     order,
     limit,
@@ -86,6 +89,7 @@ export class FundDiscoveryService {
     keyword: string;
     fundType: string;
     status: FundCatalogImportStatus;
+    dataState?: FundCatalogDataStateFilter;
     sort: FundCatalogSortKey;
     order: SortOrder;
     limit: number;
@@ -98,12 +102,12 @@ export class FundDiscoveryService {
       keyword,
       fundType,
       status,
+      dataState,
       sort,
       order,
       limit,
       offset
     });
-    const metricsByAssetId = this.getImportedMetrics(page.items.filter((item) => item.assetId).map((item) => String(item.assetId)));
 
     return {
       generatedAt: new Date().toISOString(),
@@ -111,15 +115,17 @@ export class FundDiscoveryService {
       keyword,
       fundType,
       status,
+      dataState,
       sort,
       order,
       limit,
       offset,
       totalCount: page.totalCount,
       importedTotalCount: page.importedTotalCount,
-      items: page.items.map((item) => this.toCatalogPageItem(item, metricsByAssetId.get(item.assetId ?? ""))),
+      items: this.catalogPageItemFactory.toPageItems(page.items),
       fundTypes: this.fundCatalogRepository.listFundTypeFacets(keyword, status),
-      statusFacets: this.fundCatalogRepository.listStatusFacets(keyword, fundType)
+      dataStateFacets: this.fundCatalogRepository.listDataStateFacets(keyword, fundType, status),
+      statusFacets: this.fundCatalogRepository.listStatusFacets(keyword, fundType, dataState)
     };
   };
 
@@ -290,70 +296,4 @@ export class FundDiscoveryService {
     themes: [],
     canBuy: false
   });
-
-  private getImportedMetrics = (assetIds: string[]): Map<string, ImportedFundCatalogMetrics> => {
-    const metricsByAssetId = new Map<string, ImportedFundCatalogMetrics>();
-
-    for (const assetId of assetIds) {
-      const bars = this.marketDataRepository.listBars(assetId, "1d", this.historyLimit);
-      const latestBar = bars.at(-1) ?? null;
-
-      metricsByAssetId.set(assetId, {
-        dataPointCount: bars.length,
-        latestNav: latestBar?.close ?? null,
-        latestNavDate: latestBar ? new Date(latestBar.ts).toISOString().slice(0, 10) : null,
-        latestBarAt: toIsoDateTime(latestBar?.ts ?? null),
-        return1d: this.getPreviousBarReturn(bars),
-        return1m: this.getCalendarReturn(bars, 30),
-        return3m: this.getCalendarReturn(bars, 90),
-        return6m: this.getCalendarReturn(bars, 180),
-        return1y: this.getCalendarReturn(bars, 365)
-      });
-    }
-
-    return metricsByAssetId;
-  };
-
-  private toCatalogPageItem = (entry: FundCatalogPageRecord, metrics?: ImportedFundCatalogMetrics): FundCatalogPageItem => ({
-    ...entry,
-    isImported: Boolean(entry.assetId),
-    metricSource: metrics ? "local_bars" : entry.metricUpdatedAt ? "catalog_snapshot" : null,
-    dataPointCount: metrics?.dataPointCount ?? 0,
-    latestNav: metrics?.latestNav ?? entry.latestNav ?? null,
-    latestNavDate: metrics?.latestNavDate ?? entry.latestNavDate ?? null,
-    latestBarAt: metrics?.latestBarAt ?? null,
-    return1d: metrics?.return1d ?? entry.return1d ?? null,
-    return1m: metrics?.return1m ?? entry.return1m ?? null,
-    return3m: metrics?.return3m ?? entry.return3m ?? null,
-    return6m: metrics?.return6m ?? entry.return6m ?? null,
-    return1y: metrics?.return1y ?? entry.return1y ?? null
-  });
-
-  private getPreviousBarReturn = (bars: OhlcvBar[]): number | null => {
-    const latestBar = bars.at(-1);
-    const previousBar = bars.at(-2);
-
-    if (!latestBar || !previousBar || previousBar.close === 0) {
-      return null;
-    }
-
-    return ((latestBar.close - previousBar.close) / previousBar.close) * 100;
-  };
-
-  private getCalendarReturn = (bars: OhlcvBar[], days: number): number | null => {
-    const latestBar = bars.at(-1);
-
-    if (!latestBar) {
-      return null;
-    }
-
-    const targetTs = latestBar.ts - days * dayMs;
-    const baseBar = bars.find((bar) => bar.ts >= targetTs) ?? null;
-
-    if (!baseBar || baseBar.ts === latestBar.ts || baseBar.close === 0) {
-      return null;
-    }
-
-    return ((latestBar.close - baseBar.close) / baseBar.close) * 100;
-  };
 }

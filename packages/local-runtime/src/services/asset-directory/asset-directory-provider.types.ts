@@ -1,9 +1,10 @@
-import type { AssetDirectoryAssetTypeFilter, AssetDirectoryCategory, AssetDirectoryCategoryId, AssetDirectoryImportResponse, AssetDirectoryPageResponse, AssetDirectorySortKey, AssetDirectorySortOrder, AssetDirectoryStatusFilter } from "@gold-insights/market-domain";
+import type { AssetDirectoryAssetTypeFilter, AssetDirectoryCategory, AssetDirectoryCategoryId, AssetDirectoryDataStateFilter, AssetDirectoryImportResponse, AssetDirectoryPageResponse, AssetDirectorySortKey, AssetDirectorySortOrder, AssetDirectoryStatusFilter } from "@gold-insights/market-domain";
 
 export type AssetDirectoryQuery = {
   keyword: string;
   market: string;
   assetType: AssetDirectoryAssetTypeFilter;
+  dataState: AssetDirectoryDataStateFilter;
   status: AssetDirectoryStatusFilter;
   sort: AssetDirectorySortKey;
   order: AssetDirectorySortOrder;

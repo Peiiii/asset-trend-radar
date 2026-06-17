@@ -55,6 +55,7 @@ export class FundAssetDirectoryProvider implements AssetDirectoryProvider {
       keyword: query.keyword,
       fundType: "all",
       status: this.toFundStatus(query.status),
+      dataState: query.dataState,
       sort: this.toFundSort(query.sort),
       order: query.order,
       limit: query.limit,
@@ -67,6 +68,7 @@ export class FundAssetDirectoryProvider implements AssetDirectoryProvider {
       keyword: query.keyword,
       market: query.market,
       assetType: query.assetType,
+      dataState: query.dataState,
       status: query.status,
       sort: query.sort,
       order: query.order,
@@ -77,6 +79,7 @@ export class FundAssetDirectoryProvider implements AssetDirectoryProvider {
       facets: {
         markets: [{ value: "基金", label: "基金", count: page.totalCount }],
         assetTypes: [{ value: "fund", label: "基金", count: page.totalCount }],
+        dataStates: page.dataStateFacets,
         statuses: page.statusFacets.map((facet) => ({
           value: this.fromFundStatus(facet.value),
           label: facet.label,
@@ -95,6 +98,7 @@ export class FundAssetDirectoryProvider implements AssetDirectoryProvider {
     keyword: query.keyword,
     market: query.market,
     assetType: query.assetType,
+    dataState: query.dataState,
     status: query.status,
     sort: query.sort,
     order: query.order,
@@ -105,6 +109,13 @@ export class FundAssetDirectoryProvider implements AssetDirectoryProvider {
     facets: {
       markets: [],
       assetTypes: [],
+      dataStates: [
+        { value: "all", label: "全部数据", count: 0 },
+        { value: "full_history", label: "完整走势", count: 0 },
+        { value: "snapshot", label: "目录快照", count: 0 },
+        { value: "missing", label: "待拉取", count: 0 },
+        { value: "stale", label: "待更新", count: 0 }
+      ],
       statuses: [
         { value: "all", label: "全部状态", count: 0 },
         { value: "in_pool", label: "已加入走势池", count: 0 },

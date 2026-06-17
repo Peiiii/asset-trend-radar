@@ -2,7 +2,7 @@ export { ChartWallSnapshotRepository } from "./repositories/chart-wall-snapshot.
 export { LocalRawFileRepository } from "./repositories/local-raw-file.repository";
 export { SqliteAssetRepository } from "./repositories/sqlite-asset.repository";
 export { SqliteFundCatalogRepository } from "./repositories/sqlite-fund-catalog.repository";
-export type { FundCatalogPageRecord } from "./repositories/sqlite-fund-catalog.repository";
+export type { FundCatalogPageRecord } from "./repositories/fund-catalog/fund-catalog-page.types";
 export { SqliteIngestionJobRepository } from "./repositories/sqlite-ingestion-job.repository";
 export { SqliteMarketDataRepository } from "./repositories/sqlite-market-data.repository";
 export { SqliteScannerEventRepository } from "./repositories/sqlite-scanner-event.repository";

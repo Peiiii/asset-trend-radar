@@ -1,42 +1,14 @@
 import type { DatabaseSync } from "node:sqlite";
-import type { FundCatalogEntry, FundCatalogImportStatus, FundCatalogMetricSnapshot, FundCatalogSortKey, FundCatalogSummary, SortOrder } from "@gold-insights/market-domain";
+import type { FundCatalogDataStateFilter, FundCatalogEntry, FundCatalogImportStatus, FundCatalogMetricSnapshot, FundCatalogSummary } from "@gold-insights/market-domain";
+import { SqliteFundCatalogFilterBuilder } from "./fund-catalog/sqlite-fund-catalog-filter.builder";
+import type { FundCatalogPageQuery, FundCatalogPageRecord, FundCatalogPageResult } from "./fund-catalog/fund-catalog-page.types";
 import { SqliteFundCatalogOrderBuilder } from "./sqlite-fund-catalog-order.builder";
-
-export type FundCatalogPageQuery = {
-  keyword: string;
-  fundType: string;
-  status: FundCatalogImportStatus;
-  sort: FundCatalogSortKey;
-  order: SortOrder;
-  limit: number;
-  offset: number;
-};
-
-export type FundCatalogPageRecord = FundCatalogEntry & {
-  assetId: string | null;
-  latestNav: number | null;
-  accumulatedNav: number | null;
-  latestNavDate: string | null;
-  return1d: number | null;
-  return1w: number | null;
-  return1m: number | null;
-  return3m: number | null;
-  return6m: number | null;
-  return1y: number | null;
-  returnYtd: number | null;
-  metricUpdatedAt: number | null;
-};
-
-export type FundCatalogPageResult = {
-  totalCount: number;
-  importedTotalCount: number;
-  items: FundCatalogPageRecord[];
-};
 
 export class SqliteFundCatalogRepository {
   public constructor(
     private readonly database: DatabaseSync,
-    private readonly orderBuilder = new SqliteFundCatalogOrderBuilder()
+    private readonly orderBuilder = new SqliteFundCatalogOrderBuilder(),
+    private readonly filterBuilder = new SqliteFundCatalogFilterBuilder()
   ) {}
 
   public upsertEntries = (entries: FundCatalogEntry[]): number => {
@@ -155,7 +127,7 @@ export class SqliteFundCatalogRepository {
   };
 
   public listPage = (query: FundCatalogPageQuery): FundCatalogPageResult => {
-    const filter = this.createPageFilter(query);
+    const filter = this.filterBuilder.createPageFilter(query);
     const order = this.orderBuilder.createOrder(query);
     const totalRow = this.database.prepare(`SELECT COUNT(*) AS count ${filter.fromSql} ${filter.whereSql}`).get(...filter.params) as { count: number };
     const importedRow = this.database
@@ -202,10 +174,11 @@ export class SqliteFundCatalogRepository {
   };
 
   public listFundTypeFacets = (keyword: string, status: FundCatalogImportStatus): Array<{ value: string; label: string; count: number }> => {
-    const filter = this.createPageFilter({
+    const filter = this.filterBuilder.createPageFilter({
       keyword,
       fundType: "all",
       status,
+      dataState: "all",
       sort: "relevance",
       order: "desc",
       limit: 1,
@@ -233,10 +206,18 @@ export class SqliteFundCatalogRepository {
     });
   };
 
-  public listStatusFacets = (keyword: string, fundType: string): Array<{ value: FundCatalogImportStatus; label: string; count: number }> => [
-    { value: "all", label: "全部", count: this.countByStatus(keyword, fundType, "all") },
-    { value: "imported", label: "已加入走势池", count: this.countByStatus(keyword, fundType, "imported") },
-    { value: "not_imported", label: "待加入走势池", count: this.countByStatus(keyword, fundType, "not_imported") }
+  public listStatusFacets = (keyword: string, fundType: string, dataState: FundCatalogDataStateFilter = "all"): Array<{ value: FundCatalogImportStatus; label: string; count: number }> => [
+    { value: "all", label: "全部", count: this.countByStatus(keyword, fundType, dataState, "all") },
+    { value: "imported", label: "已加入走势池", count: this.countByStatus(keyword, fundType, dataState, "imported") },
+    { value: "not_imported", label: "待加入走势池", count: this.countByStatus(keyword, fundType, dataState, "not_imported") }
+  ];
+
+  public listDataStateFacets = (keyword: string, fundType: string, status: FundCatalogImportStatus): Array<{ value: FundCatalogDataStateFilter; label: string; count: number }> => [
+    { value: "all", label: "全部数据", count: this.countByDataState(keyword, fundType, status, "all") },
+    { value: "full_history", label: "完整走势", count: this.countByDataState(keyword, fundType, status, "full_history") },
+    { value: "snapshot", label: "目录快照", count: this.countByDataState(keyword, fundType, status, "snapshot") },
+    { value: "missing", label: "待拉取", count: this.countByDataState(keyword, fundType, status, "missing") },
+    { value: "stale", label: "待更新", count: this.countByDataState(keyword, fundType, status, "stale") }
   ];
 
   public getSummary = (): FundCatalogSummary => {
@@ -254,46 +235,27 @@ export class SqliteFundCatalogRepository {
     };
   };
 
-  private createPageFilter = (query: FundCatalogPageQuery): { fromSql: string; whereSql: string; params: Array<number | string> } => {
-    const conditions = ["c.source = 'eastmoney'"];
-    const params: Array<number | string> = [];
-    const normalizedKeyword = query.keyword.trim();
-
-    if (normalizedKeyword.length > 0) {
-      const upperKeyword = `%${normalizedKeyword.toUpperCase()}%`;
-      conditions.push("(c.code LIKE ? OR c.name LIKE ? OR UPPER(COALESCE(c.pinyin, '')) LIKE ? OR UPPER(COALESCE(c.full_pinyin, '')) LIKE ? OR COALESCE(c.fund_type, '') LIKE ?)");
-      params.push(`${normalizedKeyword}%`, `%${normalizedKeyword}%`, upperKeyword, upperKeyword, `%${normalizedKeyword}%`);
-    }
-
-    if (query.fundType !== "all") {
-      if (query.fundType === "未分类") {
-        conditions.push("(c.fund_type IS NULL OR c.fund_type = '')");
-      } else {
-        conditions.push("c.fund_type = ?");
-        params.push(query.fundType);
-      }
-    }
-
-    if (query.status === "imported") {
-      conditions.push("a.id IS NOT NULL");
-    }
-
-    if (query.status === "not_imported") {
-      conditions.push("a.id IS NULL");
-    }
-
-    return {
-      fromSql: "FROM fund_catalog c LEFT JOIN assets a ON a.id = 'fund-cn-' || c.code LEFT JOIN (SELECT asset_id, COUNT(*) AS data_point_count FROM ohlcv_bars WHERE timeframe = '1d' GROUP BY asset_id) b ON b.asset_id = a.id",
-      whereSql: `WHERE ${conditions.join(" AND ")}`,
-      params
-    };
-  };
-
-  private countByStatus = (keyword: string, fundType: string, status: FundCatalogImportStatus): number => {
-    const filter = this.createPageFilter({
+  private countByStatus = (keyword: string, fundType: string, dataState: FundCatalogDataStateFilter, status: FundCatalogImportStatus): number => {
+    const filter = this.filterBuilder.createPageFilter({
       keyword,
       fundType,
       status,
+      dataState,
+      sort: "relevance",
+      order: "desc",
+      limit: 1,
+      offset: 0
+    });
+    const row = this.database.prepare(`SELECT COUNT(*) AS count ${filter.fromSql} ${filter.whereSql}`).get(...filter.params) as { count: number };
+    return row.count;
+  };
+
+  private countByDataState = (keyword: string, fundType: string, status: FundCatalogImportStatus, dataState: FundCatalogDataStateFilter): number => {
+    const filter = this.filterBuilder.createPageFilter({
+      keyword,
+      fundType,
+      status,
+      dataState,
       sort: "relevance",
       order: "desc",
       limit: 1,

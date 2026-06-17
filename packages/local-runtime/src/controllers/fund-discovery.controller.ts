@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import type { FundCatalogImportStatus, FundCatalogSortKey, SortOrder } from "@gold-insights/market-domain";
+import type { FundCatalogDataStateFilter, FundCatalogImportStatus, FundCatalogSortKey, SortOrder } from "@gold-insights/market-domain";
 import { ErrorResponseProvider } from "../providers/error-response.provider";
 import { JsonResponseProvider } from "../providers/json-response.provider";
 import type { FundDiscoveryService } from "../services/fund-discovery.service";
@@ -30,12 +30,13 @@ export class FundDiscoveryController {
     const keyword = getStringQueryParam(url, "keyword", "").trim();
     const fundType = getStringQueryParam(url, "fundType", "all").trim() || "all";
     const status = this.getImportStatus(getStringQueryParam(url, "status", "all"));
+    const dataState = this.getDataState(getStringQueryParam(url, "dataState", "all"));
     const sort = this.getCatalogSort(getStringQueryParam(url, "sort", "relevance"));
     const order = this.getSortOrder(getStringQueryParam(url, "order", "desc"));
     const limit = Math.min(Math.max(Number(getStringQueryParam(url, "limit", "50")) || 50, 1), 100);
     const offset = Math.max(Number(getStringQueryParam(url, "offset", "0")) || 0, 0);
 
-    this.jsonResponseProvider.writeJson(response, await this.fundDiscoveryService.listCatalogPage({ keyword, fundType, status, sort, order, limit, offset }));
+    this.jsonResponseProvider.writeJson(response, await this.fundDiscoveryService.listCatalogPage({ keyword, fundType, status, dataState, sort, order, limit, offset }));
   };
 
   public handleCatalogSync = async (response: ServerResponse): Promise<void> => {
@@ -74,6 +75,11 @@ export class FundDiscoveryController {
     });
 
   private getImportStatus = (value: string): FundCatalogImportStatus => (value === "imported" || value === "not_imported" ? value : "all");
+
+  private getDataState = (value: string): FundCatalogDataStateFilter => {
+    const supported: FundCatalogDataStateFilter[] = ["all", "full_history", "snapshot", "missing", "stale"];
+    return supported.includes(value as FundCatalogDataStateFilter) ? (value as FundCatalogDataStateFilter) : "all";
+  };
 
   private getCatalogSort = (value: string): FundCatalogSortKey => {
     const supported: FundCatalogSortKey[] = ["relevance", "code", "name", "latest_nav", "return_1d", "return_1w", "return_1m", "return_3m", "return_6m", "return_1y", "data_point_count"];

@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from "react";
-import type { FundCatalogImportStatus, FundCatalogSortKey, SortOrder } from "@gold-insights/market-domain";
+import type { FundCatalogDataStateFilter, FundCatalogImportStatus, FundCatalogSortKey, SortOrder } from "@gold-insights/market-domain";
 import type { FundCatalogPageFilters } from "@/shared/types/api.types";
 
 const fundDirectoryLimit = 50;
@@ -9,6 +9,7 @@ export type FundDirectoryUrlState = {
   keyword: string;
   fundType: string;
   status: FundCatalogImportStatus;
+  dataState: FundCatalogDataStateFilter;
   sort: FundCatalogSortKey;
   order: SortOrder;
   page: number;
@@ -22,6 +23,7 @@ export function useFundDirectoryUrlState(searchParams: URLSearchParams, setSearc
   const keyword = getSearchValue(searchParams, "fundKeyword", "");
   const fundType = getSearchValue(searchParams, "fundType", "all");
   const status = getFundCatalogImportStatus(getSearchValue(searchParams, "fundStatus", "all"));
+  const dataState = getFundCatalogDataState(getSearchValue(searchParams, "fundDataState", "all"));
   const sort = getFundCatalogSort(getSearchValue(searchParams, "fundSort", "relevance"));
   const order = getSortOrderValue(getSearchValue(searchParams, "fundOrder", "desc"));
   const page = getPositiveIntegerSearchValue(searchParams, "fundPage", 1);
@@ -31,12 +33,13 @@ export function useFundDirectoryUrlState(searchParams: URLSearchParams, setSearc
       keyword,
       fundType,
       status,
+      dataState,
       sort,
       order,
       limit: fundDirectoryLimit,
       offset: (page - 1) * fundDirectoryLimit
     }),
-    [fundType, keyword, order, page, sort, status]
+    [dataState, fundType, keyword, order, page, sort, status]
   );
 
   const setQueryValue = useCallback((name: string, value: string, fallback: string): void => {
@@ -79,6 +82,7 @@ export function useFundDirectoryUrlState(searchParams: URLSearchParams, setSearc
     keyword,
     fundType,
     status,
+    dataState,
     sort,
     order,
     page,
@@ -100,6 +104,11 @@ function getPositiveIntegerSearchValue(searchParams: URLSearchParams, name: stri
 
 function getFundCatalogImportStatus(value: string): FundCatalogImportStatus {
   return value === "imported" || value === "not_imported" ? value : "all";
+}
+
+function getFundCatalogDataState(value: string): FundCatalogDataStateFilter {
+  const supported: FundCatalogDataStateFilter[] = ["all", "full_history", "snapshot", "missing", "stale"];
+  return supported.includes(value as FundCatalogDataStateFilter) ? (value as FundCatalogDataStateFilter) : "all";
 }
 
 function getFundCatalogSort(value: string): FundCatalogSortKey {
