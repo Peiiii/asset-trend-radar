@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { Button, EmptyState, ErrorState, LoadingState, SegmentedControl, SignalBadge } from "@gold-insights/ui";
 import type { RuntimeTask, RuntimeTaskActionKey, RuntimeTaskPipelineSummary, TaskCenterResponse } from "@gold-insights/market-domain";
 import { formatDateTime } from "@/shared/utils/format-number.utils";
-import { buildTaskActivitySummary, filterTasks, formatDuration, formatMetadata, formatPollInterval, getTaskFilterOptions, pipelineStatusLabel, pipelineTone, taskStatusLabel, taskStatusTone } from "./task-center.utils";
+import { buildTaskActivitySummary, filterTasks, formatDuration, formatMetadata, formatPollInterval, getTaskFilterOptions, pipelineStatusLabel, pipelineTone, taskFailureTone, taskStatusLabel, taskStatusTone } from "./task-center.utils";
 import type { TaskFilter, TaskTone } from "./task-center.utils";
 import { TaskActionPanel } from "./task-action-panel";
 import "./task-activity-metrics.css";
@@ -59,7 +59,7 @@ export function TaskCenterSection({ data, error, isLoading, isPolling, lastLoade
             <TaskSummaryCard label="运行中" value={data.runningCount} tone={data.runningCount > 0 ? "blue" : "neutral"} />
             <TaskSummaryCard label="疑似卡住" value={data.staleRunningCount} tone={data.staleRunningCount > 0 ? "amber" : "neutral"} />
             <TaskSummaryCard label="成功" value={data.successCount} tone="positive" />
-            <TaskSummaryCard label="失败" value={data.failedCount} tone={data.failedCount > 0 ? "negative" : "neutral"} />
+            <TaskSummaryCard label="失败" value={data.failedCount} tone={taskFailureTone(data)} />
             <TaskSummaryCard label="记录数" value={data.totalCount} tone="neutral" />
             <TaskSummaryCard label="最近刷新" value={formatDateTime(data.generatedAt)} tone="neutral" />
           </div>
@@ -108,7 +108,7 @@ function TaskActivityPanel({ data, isPolling, lastLoadedAt, pollIntervalMs }: { 
         <div className="task-activity-panel__metrics" aria-label="后台任务关键指标">
           <TaskActivityMetric label="运行中" value={data.runningCount} tone={data.runningCount > 0 ? "blue" : "neutral"} />
           <TaskActivityMetric label="疑似卡住" value={data.staleRunningCount} tone={data.staleRunningCount > 0 ? "amber" : "neutral"} />
-          <TaskActivityMetric label="失败" value={data.failedCount} tone={data.failedCount > 0 ? "negative" : "neutral"} />
+          <TaskActivityMetric label="失败" value={data.failedCount} tone={taskFailureTone(data)} />
           <TaskActivityMetric label="总记录" value={data.totalCount} tone="neutral" />
         </div>
       </div>

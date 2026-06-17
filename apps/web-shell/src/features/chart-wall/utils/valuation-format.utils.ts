@@ -41,23 +41,38 @@ export function getValuationDisplay(valuation: AssetValuation, fallbackCurrency:
   }
 
   if (isNonValuationAssetType(context.assetType) && valuation.source === null) {
+    const detail = getNotApplicableDetail(context.assetType);
+
     return {
       label: "不适用",
-      detail: getNotApplicableDetail(context.assetType),
-      title: `${getNotApplicableDetail(context.assetType)}，不是后台加载中`,
+      detail,
+      title: `${detail}，不是后台加载中`,
       rankLabel: null,
       value,
       status: "not_applicable"
     };
   }
 
+  if (valuation.source === null) {
+    const detail = getSourceUnavailableDetail(context.assetType);
+
+    return {
+      label: "未覆盖",
+      detail,
+      title: `${detail}；当前目录已有资产符号，但没有接入可用的规模/市值快照，不是后台加载中`,
+      rankLabel: null,
+      value,
+      status: "source_unavailable"
+    };
+  }
+
   return {
-    label: valuation.source ? "无规模" : "未覆盖",
-    detail: valuation.source ? `${valuation.source} 未返回` : "无规模源",
-    title: valuation.source ? "当前来源已返回快照，但没有提供规模/市值字段，不是后台加载中" : "当前目录源未覆盖规模/市值快照，不是后台加载中",
+    label: "源缺值",
+    detail: `${valuation.source} 未给规模`,
+    title: "当前来源已返回快照，但没有提供规模/市值字段，不是后台加载中",
     rankLabel: null,
     value,
-    status: valuation.source ? "source_missing_value" : "source_unavailable"
+    status: "source_missing_value"
   };
 }
 
@@ -157,6 +172,18 @@ function getNotApplicableDetail(assetType: AssetType | undefined): string {
   }
 
   return "指数无市值";
+}
+
+function getSourceUnavailableDetail(assetType: AssetType | undefined): string {
+  if (assetType === "fund") {
+    return "未接入 AUM/规模源";
+  }
+
+  if (assetType === "equity" || assetType === "crypto") {
+    return "未接入市值源";
+  }
+
+  return "未接入规模源";
 }
 
 function formatCompactNumber(value: number): string {

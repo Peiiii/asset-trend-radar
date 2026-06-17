@@ -123,10 +123,6 @@ export class AssetChartCardMetricsBuilder {
       return "amber";
     }
 
-    if (status === "source_unavailable") {
-      return "negative";
-    }
-
     return "neutral";
   };
 

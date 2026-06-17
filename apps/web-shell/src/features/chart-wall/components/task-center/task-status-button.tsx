@@ -1,7 +1,7 @@
 import { AlertTriangle, CheckCircle2, Loader2, ListChecks, XCircle } from "lucide-react";
 import type { TaskCenterResponse } from "@gold-insights/market-domain";
 import { formatDateTime } from "@/shared/utils/format-number.utils";
-import { formatPollInterval, hasCurrentTaskFailure } from "./task-center.utils";
+import { formatPollInterval, hasCurrentTaskFailure, hasHistoricalTaskFailure, taskFailureTone } from "./task-center.utils";
 import "./task-status-button.css";
 
 type TaskStatusButtonProps = {
@@ -100,6 +100,19 @@ function getTaskStatusState(data: TaskCenterResponse | null, isLoading: boolean,
     };
   }
 
+  if (data && hasHistoricalTaskFailure(data)) {
+    const failureCount = data.failedCount.toLocaleString("en-US");
+
+    return {
+      tone: "amber",
+      label: `历史失败 ${failureCount}`,
+      secondary: data.latestTask ? `最近 ${data.latestTask.label}` : "可追溯",
+      title: `当前没有运行中、卡住或最新失败任务；${failureCount} 个历史失败可在任务中心查看，${pollingLabel}`,
+      icon: <AlertTriangle size={16} aria-hidden="true" />,
+      metrics
+    };
+  }
+
   if (data) {
     return {
       tone: "positive",
@@ -131,6 +144,6 @@ function buildTaskStatusMetrics(data: TaskCenterResponse | null, isLoading: bool
   return [
     { label: "运行", value: data.runningCount, tone: data.runningCount > 0 ? "blue" : "neutral" },
     { label: "卡住", value: data.staleRunningCount, tone: data.staleRunningCount > 0 ? "amber" : "neutral" },
-    { label: hasCurrentFailure ? "失败" : "历史失败", value: data.failedCount, tone: hasCurrentFailure ? "negative" : "neutral" }
+    { label: hasCurrentFailure ? "失败" : "历史失败", value: data.failedCount, tone: taskFailureTone(data) }
   ];
 }
