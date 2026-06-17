@@ -114,7 +114,7 @@
   background: #edf5ff;
 }
 
-.asset-detail-metric span {
+.asset-detail-metric > span {
   display: block;
   color: #687386;
   font-size: 12px;

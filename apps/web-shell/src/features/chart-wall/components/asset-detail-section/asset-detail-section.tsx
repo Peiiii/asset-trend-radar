@@ -1,5 +1,5 @@
 import { GitCompare, Pin } from "lucide-react";
-import { Button, EmptyState, PriceChange, SignalBadge, TechnicalChart } from "@gold-insights/ui";
+import { Button, EmptyState, SignalBadge, TechnicalChart } from "@gold-insights/ui";
 import type { ChartWallItem } from "@gold-insights/market-domain";
 import { formatDateTime, formatPrice } from "@/shared/utils/format-number.utils";
 import { AssetChartCard } from "../asset-chart-card";
@@ -36,7 +36,7 @@ export function AssetDetailSection({ item, relatedItems, onSelect, onPin, onComp
         </div>
         <div className="asset-detail-summary__metrics">
           <DetailMetric label="最新价" value={formatPrice(item.lastPrice, item.currency)} />
-          <DetailMetric label="区间涨幅" value={<PriceChange value={item.returnPct} />} />
+          <DetailMetric label="区间涨幅" value={formatPercent(item.returnPct)} tone={returnTone(item.returnPct)} />
           <DetailMetric label="趋势分" value={String(item.trendScore)} tone={item.trendScore >= 60 ? "positive" : item.trendScore <= 35 ? "negative" : "neutral"} />
           <DetailMetric label="当前回撤" value={formatPercent(item.drawdownPct)} tone={drawdownTone(item.drawdownPct)} />
         </div>
