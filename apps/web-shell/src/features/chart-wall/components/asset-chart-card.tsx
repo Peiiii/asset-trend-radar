@@ -2,7 +2,7 @@ import { GitCompare, Pin } from "lucide-react";
 import { ChartCardShell, IconButton, PriceChange, SignalBadge, TechnicalChart, TrendBadge } from "@gold-insights/ui";
 import type { ChartWallItem, MacdState } from "@gold-insights/market-domain";
 import { formatPrice } from "@/shared/utils/format-number.utils";
-import { getValuationDisplay } from "../utils/valuation-format.utils";
+import { getValuationDisplay, type ValuationDisplayStatus } from "../utils/valuation-format.utils";
 import { AssetChartCardMetricsBuilder } from "./asset-chart-card/asset-chart-card-metrics.builder";
 import { DataQualityIndicator } from "./data-quality/data-quality-indicator";
 import "./asset-chart-card.css";
@@ -61,7 +61,7 @@ export function AssetChartCard({ item, sort, rank, onSelect, onPin, onCompare }:
   const primaryMetric = metricsBuilder.buildPrimaryMetric(item, sort);
   const sortMetric = metricsBuilder.buildSortMetric(item, sort);
   const valuationDisplay = getValuationDisplay(item.valuation, item.currency, { assetType: item.assetType });
-  const shouldShowValuation = valuationDisplay.status === "available" || valuationDisplay.status === "turnover_only";
+  const shouldShowValuation = shouldShowValuationRow(valuationDisplay.status, sort);
   const shouldShowSortMetric = Boolean(sortMetric && !primaryMetric.isSortMetric);
   const rankClassName = rank ? `asset-chart-card__rank asset-chart-card__rank--${rank <= 3 ? "top" : "normal"}` : "";
 
@@ -106,7 +106,7 @@ export function AssetChartCard({ item, sort, rank, onSelect, onPin, onCompare }:
       </div>
       {shouldShowValuation && (
         <div className={`asset-chart-card__valuation-row asset-chart-card__valuation-row--${valuationDisplay.status}`} title={valuationDisplay.title}>
-          <span>{valuationDisplay.status === "turnover_only" ? "成交额" : "市值/规模"}</span>
+          <span>{valuationRowLabel(valuationDisplay.status)}</span>
           <strong>{valuationDisplay.label}</strong>
           <small>{[valuationDisplay.detail, valuationDisplay.rankLabel].filter(Boolean).join(" / ")}</small>
         </div>
@@ -163,6 +163,26 @@ function ReturnCell({ label, value, active = false }: { label: string; value: nu
 
 function formatPercent(value: number | null | undefined): string {
   return value === null || value === undefined ? "暂无" : `${value.toFixed(2)}%`;
+}
+
+function shouldShowValuationRow(status: ValuationDisplayStatus, sort: string | undefined): boolean {
+  if (status === "available" || status === "turnover_only") {
+    return true;
+  }
+
+  return sort === "market_cap";
+}
+
+function valuationRowLabel(status: ValuationDisplayStatus): string {
+  if (status === "turnover_only") {
+    return "成交额";
+  }
+
+  if (status === "not_applicable") {
+    return "市值语义";
+  }
+
+  return "市值/规模";
 }
 
 function assetTypeLabel(assetType: string): string {

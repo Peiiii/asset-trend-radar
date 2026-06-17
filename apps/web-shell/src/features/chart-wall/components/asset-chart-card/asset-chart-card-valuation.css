@@ -35,3 +35,28 @@
   border-color: #ead7ab;
   background: #fff8e8;
 }
+
+.asset-chart-card__valuation-row--source_missing_value {
+  border-color: #ead7ab;
+  background: #fff8e8;
+  color: #986211;
+}
+
+.asset-chart-card__valuation-row--source_missing_value strong,
+.asset-chart-card__valuation-row--source_missing_value small {
+  color: #986211;
+}
+
+.asset-chart-card__valuation-row--source_unavailable,
+.asset-chart-card__valuation-row--not_applicable {
+  border-color: #dde4ee;
+  background: #f7f9fc;
+  color: #667386;
+}
+
+.asset-chart-card__valuation-row--source_unavailable strong,
+.asset-chart-card__valuation-row--source_unavailable small,
+.asset-chart-card__valuation-row--not_applicable strong,
+.asset-chart-card__valuation-row--not_applicable small {
+  color: #667386;
+}
