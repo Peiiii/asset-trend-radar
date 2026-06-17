@@ -163,7 +163,14 @@ export function AssetDirectorySection({ title, description, items, totalCount, c
                 <td>
                   <div className="asset-directory-actions">
                     {canImport && item.poolState !== "in_pool" && (
-                      <Button type="button" variant="secondary" title="加入走势池" disabled={importingItemId !== null} onClick={() => onImport(item)}>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        title={importingItemId === item.id ? `正在导入：${item.label}` : `加入走势池：${item.label}`}
+                        aria-label={importingItemId === item.id ? `正在导入：${item.label}` : `加入走势池：${item.label}`}
+                        disabled={importingItemId !== null}
+                        onClick={() => onImport(item)}
+                      >
                         <Plus size={14} aria-hidden="true" />
                         {importingItemId === item.id ? "导入中" : "加入走势池"}
                       </Button>

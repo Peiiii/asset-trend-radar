@@ -12,6 +12,7 @@ type FundDirectoryRowProps = {
 
 export function FundDirectoryRow({ item, importingCode, sort, onImport, onSelectAsset }: FundDirectoryRowProps): JSX.Element {
   const isImporting = importingCode === item.code;
+  const importActionLabel = isImporting ? `正在处理：${item.name}` : item.isImported ? `更新净值：${item.name}` : `加入走势池：${item.name}`;
 
   return (
     <tr>
@@ -51,7 +52,7 @@ export function FundDirectoryRow({ item, importingCode, sort, onImport, onSelect
       </td>
       <td>
         <div className="row-actions">
-          <button type="button" disabled={isImporting} onClick={() => onImport(item.code)}>
+          <button type="button" title={importActionLabel} aria-label={importActionLabel} disabled={isImporting} onClick={() => onImport(item.code)}>
             {item.isImported ? <RefreshCcw size={13} aria-hidden="true" /> : <Plus size={13} aria-hidden="true" />}
             {isImporting ? "处理中" : item.isImported ? "更新净值" : "加入走势池"}
           </button>
