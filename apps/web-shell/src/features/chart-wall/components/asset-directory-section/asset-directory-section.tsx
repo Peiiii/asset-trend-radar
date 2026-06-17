@@ -1,6 +1,7 @@
 import { GitCompare, Search } from "lucide-react";
-import { Button, DataTableFrame, EmptyState, SignalBadge } from "@gold-insights/ui";
-import type { AssetDirectoryItem } from "@gold-insights/market-domain";
+import { Button, DataTableFrame, EmptyState, Select, SignalBadge } from "@gold-insights/ui";
+import type { ControlOption } from "@gold-insights/ui";
+import type { AssetDirectoryItem, AssetDirectorySortKey, AssetDirectorySortOrder, AssetDirectoryStatusFilter } from "@gold-insights/market-domain";
 import { formatPrice } from "@/shared/utils/format-number.utils";
 import { DirectoryReturnPill } from "../directory-table/directory-return-pill";
 import "./asset-directory-section.css";
@@ -12,13 +13,41 @@ type AssetDirectorySectionProps = {
   totalCount: number;
   categoryItemCount: number;
   categoryInPoolCount: number;
+  status: AssetDirectoryStatusFilter;
+  sort: AssetDirectorySortKey;
+  order: AssetDirectorySortOrder;
   search: string;
   statusLabel: string;
+  onStatusChange(status: AssetDirectoryStatusFilter): void;
+  onSortChange(sort: AssetDirectorySortKey, order?: AssetDirectorySortOrder): void;
+  onReset(): void;
   onSelect(assetId: string): void;
   onCompare(assetId: string): void;
 };
 
-export function AssetDirectorySection({ title, description, items, totalCount, categoryItemCount, categoryInPoolCount, search, statusLabel, onSelect, onCompare }: AssetDirectorySectionProps): JSX.Element {
+const directoryStatusOptions: ControlOption[] = [
+  { value: "all", label: "全部状态" },
+  { value: "in_pool", label: "已加入走势池" },
+  { value: "not_in_pool", label: "待加入走势池" }
+];
+
+const directorySortOptions: ControlOption[] = [
+  { value: "return_1d", label: "1D 涨幅" },
+  { value: "return_1m", label: "1M 涨幅" },
+  { value: "return_3m", label: "3M 涨幅" },
+  { value: "return_6m", label: "6M 涨幅" },
+  { value: "return_1y", label: "1Y 涨幅" },
+  { value: "latest_value", label: "最新价" },
+  { value: "data_point_count", label: "数据点" },
+  { value: "label", label: "名称" }
+];
+
+const directoryOrderOptions: ControlOption[] = [
+  { value: "desc", label: "降序" },
+  { value: "asc", label: "升序" }
+];
+
+export function AssetDirectorySection({ title, description, items, totalCount, categoryItemCount, categoryInPoolCount, status, sort, order, search, statusLabel, onStatusChange, onSortChange, onReset, onSelect, onCompare }: AssetDirectorySectionProps): JSX.Element {
   const positiveCount = items.filter((item) => (item.returns.return1m ?? item.returns.return1d ?? 0) > 0).length;
   const sourceCount = new Set(items.map((item) => item.provider)).size;
   const hasHiddenItems = totalCount > items.length;
@@ -36,6 +65,13 @@ export function AssetDirectorySection({ title, description, items, totalCount, c
           <span>走势池 {categoryInPoolCount.toLocaleString("en-US")}</span>
           <span>本页来源 {sourceCount.toLocaleString("en-US")}</span>
         </div>
+      </div>
+
+      <div className="asset-directory-toolbar">
+        <Select id="asset-directory-status" label="状态" value={status} options={directoryStatusOptions} onChange={(value) => onStatusChange(getDirectoryStatus(value))} />
+        <Select id="asset-directory-sort" label="排序" value={sort} options={directorySortOptions} onChange={(value) => onSortChange(getDirectorySort(value), getDefaultDirectoryOrder(value))} />
+        <Select id="asset-directory-order" label="方向" value={order} options={directoryOrderOptions} onChange={(value) => onSortChange(sort, getDirectoryOrder(value))} />
+        <Button type="button" variant="ghost" onClick={onReset}>重置</Button>
       </div>
 
       <div className="asset-directory-result-bar">
@@ -133,4 +169,21 @@ function dataStateLabel(value: AssetDirectoryItem["dataState"]): string {
     stale: "待更新"
   };
   return labels[value];
+}
+
+function getDirectoryStatus(value: string): AssetDirectoryStatusFilter {
+  return value === "in_pool" || value === "not_in_pool" ? value : "all";
+}
+
+function getDirectorySort(value: string): AssetDirectorySortKey {
+  const supported: AssetDirectorySortKey[] = ["label", "latest_value", "return_1d", "return_1m", "return_3m", "return_6m", "return_1y", "data_point_count"];
+  return supported.includes(value as AssetDirectorySortKey) ? (value as AssetDirectorySortKey) : "return_1m";
+}
+
+function getDirectoryOrder(value: string): AssetDirectorySortOrder {
+  return value === "asc" ? "asc" : "desc";
+}
+
+function getDefaultDirectoryOrder(sort: string): AssetDirectorySortOrder {
+  return sort === "label" ? "asc" : "desc";
 }

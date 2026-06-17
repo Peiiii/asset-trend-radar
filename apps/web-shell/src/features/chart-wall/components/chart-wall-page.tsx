@@ -20,7 +20,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { NavLink, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { AppShell, Button, ErrorState, IconButton, LoadingState, RangePicker, TimeframePicker } from "@gold-insights/ui";
 import type { ControlOption } from "@gold-insights/ui";
-import type { AssetDirectoryCategoryId, AssetDirectoryCoverage, AssetDirectorySortKey, ChartWallSortOrder } from "@gold-insights/market-domain";
+import type { AssetDirectoryCategoryId, AssetDirectoryCoverage, AssetDirectorySortKey, AssetDirectoryStatusFilter, ChartWallSortOrder } from "@gold-insights/market-domain";
 import type { ChartWallFilters, ChartWallPageData } from "@/shared/types/api.types";
 import { formatDateTime } from "@/shared/utils/format-number.utils";
 import { assetTypeFallbackOptions, defaultFilters, levelFallbackOptions, marketFallbackOptions, signalFallbackOptions, sortOptions, sortOrderOptions, tagFallbackOptions } from "../configs/chart-wall-page.config";
@@ -99,6 +99,7 @@ export function ChartWallPage(): JSX.Element {
   const effectiveAssetType = activeView === "asset-directory" ? directoryChartFilters.assetType : assetType;
   const effectiveSort = activeView === "asset-directory" && !searchParams.has("sort") ? "return_1m" : sort;
   const effectiveOrder = activeView === "asset-directory" && !searchParams.has("order") ? "desc" : order;
+  const assetDirectoryStatus = getAssetDirectoryStatus(getSearchValue(searchParams, "status", "all"));
   const needsChartWallData = !isAssetDirectoryView && activeView !== "tasks";
 
   const setQueryValue = useCallback((name: string, value: string, fallback = ""): void => {
@@ -157,13 +158,13 @@ export function ChartWallPage(): JSX.Element {
     () => ({
       categoryId: directoryCategoryId ?? "crypto",
       keyword: search,
-      status: "all",
+      status: assetDirectoryStatus,
       sort: getAssetDirectorySort(effectiveSort),
       order: effectiveOrder,
       limit: 1000,
       offset: 0
     }) as const,
-    [directoryCategoryId, effectiveOrder, effectiveSort, search]
+    [assetDirectoryStatus, directoryCategoryId, effectiveOrder, effectiveSort, search]
   );
   const assetDirectoryQuery = useAssetDirectoryQuery(assetDirectoryFilters, activeView === "asset-directory");
   const taskCenterQuery = useTaskCenterQuery(true);
@@ -515,8 +516,14 @@ export function ChartWallPage(): JSX.Element {
                 totalCount={assetDirectoryQuery.data?.totalCount ?? 0}
                 categoryItemCount={assetDirectoryQuery.data?.category.itemCount ?? assetDirectoryQuery.data?.totalCount ?? 0}
                 categoryInPoolCount={assetDirectoryQuery.data?.category.inPoolCount ?? 0}
+                status={assetDirectoryStatus}
+                sort={getAssetDirectorySort(effectiveSort)}
+                order={effectiveOrder}
                 search={search}
                 statusLabel={assetDirectoryQuery.data ? coverageLabel(assetDirectoryQuery.data.category.coverage) : "真实已入库 / 走势池"}
+                onStatusChange={(value) => setQueryValue("status", value, "all")}
+                onSortChange={setSortQueryValue}
+                onReset={resetFilters}
                 onSelect={selectAsset}
                 onCompare={compareSelection.toggleCompare}
               />
@@ -839,7 +846,7 @@ function getFundDirectorySearch(searchParams: URLSearchParams): string {
 function getAssetDirectorySearch(searchParams: URLSearchParams): string {
   const next = new URLSearchParams();
 
-  for (const name of ["range", "timeframe", "q", "sort", "order"]) {
+  for (const name of ["range", "timeframe", "q", "status", "sort", "order"]) {
     const value = searchParams.get(name);
     if (value) {
       next.set(name, value);
@@ -917,6 +924,10 @@ function defaultOrderForSort(sort: string): ChartWallSortOrder {
 function getAssetDirectorySort(sort: string): AssetDirectorySortKey {
   const supported: AssetDirectorySortKey[] = ["relevance", "label", "latest_value", "return_1d", "return_1m", "return_3m", "return_6m", "return_1y", "data_point_count"];
   return supported.includes(sort as AssetDirectorySortKey) ? (sort as AssetDirectorySortKey) : "relevance";
+}
+
+function getAssetDirectoryStatus(status: string): AssetDirectoryStatusFilter {
+  return status === "in_pool" || status === "not_in_pool" ? status : "all";
 }
 
 function coverageLabel(coverage: AssetDirectoryCoverage): string {

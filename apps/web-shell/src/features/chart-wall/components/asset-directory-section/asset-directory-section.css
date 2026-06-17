@@ -4,6 +4,7 @@
 }
 
 .asset-directory-hero,
+.asset-directory-toolbar,
 .asset-directory-result-bar {
   display: flex;
   align-items: center;
@@ -28,6 +29,7 @@
 }
 
 .asset-directory-hero__metrics,
+.asset-directory-toolbar,
 .asset-directory-result-bar {
   display: flex;
   flex-wrap: wrap;
@@ -50,6 +52,14 @@
 
 .asset-directory-result-bar {
   justify-content: space-between;
+}
+
+.asset-directory-toolbar {
+  justify-content: flex-start;
+  padding: 10px;
+  border: 1px solid #d7dde7;
+  border-radius: 8px;
+  background: #ffffff;
 }
 
 .asset-directory-identity {
@@ -121,6 +131,7 @@
 
 @media (max-width: 760px) {
   .asset-directory-hero,
+  .asset-directory-toolbar,
   .asset-directory-result-bar {
     align-items: stretch;
     flex-direction: column;
