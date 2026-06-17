@@ -24,6 +24,7 @@ import { NasdaqUsEquityDirectoryProvider } from "./asset-directory/nasdaq-us-equ
 import { NasdaqUsEquityImportService } from "./asset-directory/nasdaq-us-equity-import.service";
 import { TrendPoolAssetDirectoryProvider } from "./asset-directory/trend-pool-asset-directory.provider";
 import { ChartWallQueryService } from "./chart-wall-query.service";
+import { ChartWallValuationService } from "./chart-wall-valuation.service";
 import { FundDiscoveryService } from "./fund-discovery.service";
 import { IngestionWorkerService } from "./ingestion-worker.service";
 import { LocalApiServerService } from "./local-api-server.service";
@@ -60,13 +61,19 @@ export class LocalRuntimeService {
       rawFileRepository
     );
 
+    const cryptoCatalogProvider = new BinanceCryptoCatalogProvider();
+    const cryptoMarketsProvider = new CoinGeckoCryptoMarketsProvider();
+    const nasdaqUsEquityCatalogProvider = new NasdaqUsEquityCatalogProvider();
+    const eastmoneyAshareCatalogProvider = new EastmoneyAshareCatalogProvider();
+    const chartWallValuationService = new ChartWallValuationService(cryptoMarketsProvider, eastmoneyAshareCatalogProvider);
     const queryService = new ChartWallQueryService(
       this.options,
       assetRepository,
       marketDataRepository,
       scannerEventRepository,
       ingestionJobRepository,
-      watchlistRepository
+      watchlistRepository,
+      chartWallValuationService
     );
     this.fundDiscoveryService = new FundDiscoveryService(
       this.options.historyLimit,
@@ -77,10 +84,6 @@ export class LocalRuntimeService {
       ingestionJobRepository,
       rawFileRepository
     );
-    const cryptoCatalogProvider = new BinanceCryptoCatalogProvider();
-    const cryptoMarketsProvider = new CoinGeckoCryptoMarketsProvider();
-    const nasdaqUsEquityCatalogProvider = new NasdaqUsEquityCatalogProvider();
-    const eastmoneyAshareCatalogProvider = new EastmoneyAshareCatalogProvider();
     const assetDirectoryHistoryImportService = new AssetDirectoryHistoryImportService(
       assetRepository,
       marketDataRepository,

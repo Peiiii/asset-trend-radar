@@ -2,6 +2,7 @@ import { ArrowDown, ArrowUp, Eye, GitCompare, Star } from "lucide-react";
 import { EmptyState, PriceChange, SignalBadge, TrendBadge, useTableScrollShadows } from "@gold-insights/ui";
 import type { ChartWallItem, ChartWallSortOrder } from "@gold-insights/market-domain";
 import { formatPrice } from "@/shared/utils/format-number.utils";
+import { getValuationDisplay } from "../../utils/valuation-format.utils";
 import { DataQualityIndicator } from "../data-quality/data-quality-indicator";
 import { RankingQualitySummary } from "../ranking-quality-summary/ranking-quality-summary";
 import "./exchange-table-active-sort.css";
@@ -43,6 +44,7 @@ const sortLabels: Record<string, string> = {
   return_3m: "3M 涨幅",
   return_6m: "6M 涨幅",
   return_1y: "1Y 涨幅",
+  market_cap: "市值",
   volume_ratio: "量比",
   drawdown: "回撤",
   trend_score: "趋势",
@@ -52,6 +54,7 @@ const sortLabels: Record<string, string> = {
 
 export function ExchangeTable({ items, sort, order, onSort, onSelect, onPin, onCompare }: ExchangeTableProps): JSX.Element {
   const tableScroll = useTableScrollShadows(items.length);
+  const showValuationColumn = sort === "market_cap" || items.some((item) => item.valuation.source !== null);
 
   if (items.length === 0) {
     return <EmptyState title="没有匹配资产" description="换一个市场、品种、信号或搜索词试试。" />;
@@ -93,6 +96,7 @@ export function ExchangeTable({ items, sort, order, onSort, onSelect, onPin, onC
               <SortableHeader label="市场" sortValue="market" currentSort={sort} order={order} onSort={handleSort} />
               <SortableHeader label="品种" sortValue="asset_type" currentSort={sort} order={order} onSort={handleSort} />
               <th>最新价</th>
+              {showValuationColumn && <SortableHeader label="市值" sortValue="market_cap" currentSort={sort} order={order} onSort={handleSort} />}
               <SortableHeader label="1D" sortValue="return_1d" currentSort={sort} order={order} onSort={handleSort} />
               <SortableHeader label="1M" sortValue="return_1m" currentSort={sort} order={order} onSort={handleSort} />
               <SortableHeader label="3M" sortValue="return_3m" currentSort={sort} order={order} onSort={handleSort} />
@@ -109,7 +113,7 @@ export function ExchangeTable({ items, sort, order, onSort, onSelect, onPin, onC
           </thead>
           <tbody>
             {items.map((item, index) => (
-              <ExchangeTableRow key={item.id} rank={index + 1} item={item} sort={sort} onSelect={onSelect} onPin={onPin} onCompare={onCompare} />
+              <ExchangeTableRow key={item.id} rank={index + 1} item={item} sort={sort} showValuationColumn={showValuationColumn} onSelect={onSelect} onPin={onPin} onCompare={onCompare} />
             ))}
           </tbody>
         </table>
@@ -118,7 +122,7 @@ export function ExchangeTable({ items, sort, order, onSort, onSelect, onPin, onC
   );
 }
 
-function ExchangeTableRow({ rank, item, sort, onSelect, onPin, onCompare }: { rank: number; item: ChartWallItem; sort: string; onSelect(assetId: string): void; onPin(assetId: string): void; onCompare(assetId: string): void }): JSX.Element {
+function ExchangeTableRow({ rank, item, sort, showValuationColumn, onSelect, onPin, onCompare }: { rank: number; item: ChartWallItem; sort: string; showValuationColumn: boolean; onSelect(assetId: string): void; onPin(assetId: string): void; onCompare(assetId: string): void }): JSX.Element {
   return (
     <tr onDoubleClick={() => onSelect(item.id)}>
       <td className="exchange-table__rank">{rank}</td>
@@ -131,6 +135,7 @@ function ExchangeTableRow({ rank, item, sort, onSelect, onPin, onCompare }: { ra
       <td className={activeSortCellClassName(sort === "market")}><SignalBadge label={item.market} tone={marketTone(item.market)} /></td>
       <td className={activeSortCellClassName(sort === "asset_type")}><SignalBadge label={assetTypeLabel(item.assetType)} tone="blue" /></td>
       <td className="exchange-table__price">{formatPrice(item.lastPrice, item.currency)}</td>
+      {showValuationColumn && <ValuationCell item={item} active={sort === "market_cap"} />}
       <MetricCell active={sort === "return_1d"}><PriceChange value={item.return1d} /></MetricCell>
       <MetricCell active={sort === "return_1m"}><PriceChange value={item.return1m} /></MetricCell>
       <MetricCell active={sort === "return_3m"}><PriceChange value={item.return3m} /></MetricCell>
@@ -161,6 +166,17 @@ function ExchangeTableRow({ rank, item, sort, onSelect, onPin, onCompare }: { ra
         </div>
       </td>
     </tr>
+  );
+}
+
+function ValuationCell({ item, active }: { item: ChartWallItem; active: boolean }): JSX.Element {
+  const display = getValuationDisplay(item.valuation, item.currency);
+
+  return (
+    <td className={activeSortCellClassName(active, "exchange-table__valuation")} title={display.title}>
+      <strong>{display.label}</strong>
+      <small>{[display.detail, display.rankLabel].filter(Boolean).join(" / ")}</small>
+    </td>
   );
 }
 

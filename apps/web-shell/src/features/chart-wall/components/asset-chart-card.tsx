@@ -2,6 +2,7 @@ import { GitCompare, Pin } from "lucide-react";
 import { ChartCardShell, IconButton, PriceChange, SignalBadge, TechnicalChart, TrendBadge } from "@gold-insights/ui";
 import type { ChartWallItem, MacdState } from "@gold-insights/market-domain";
 import { formatPrice } from "@/shared/utils/format-number.utils";
+import { getValuationDisplay } from "../utils/valuation-format.utils";
 import { DataQualityIndicator } from "./data-quality/data-quality-indicator";
 import "./asset-chart-card.css";
 
@@ -207,6 +208,8 @@ function getSortMetric(item: ChartWallItem, sort: string | undefined): { label: 
       return percentSortMetric("6M 涨幅", item.return6m);
     case "return_1y":
       return percentSortMetric("1Y 涨幅", item.return1y);
+    case "market_cap":
+      return valuationSortMetric(item);
     case "volume_ratio":
       return { label: "量比", value: item.volumeRatio === null ? "暂无" : `${item.volumeRatio.toFixed(2)}x`, tone: "neutral" };
     case "drawdown":
@@ -221,6 +224,15 @@ function getSortMetric(item: ChartWallItem, sort: string | undefined): { label: 
     default:
       return null;
   }
+}
+
+function valuationSortMetric(item: ChartWallItem): { label: string; value: string; tone: "positive" | "negative" | "neutral" } {
+  const display = getValuationDisplay(item.valuation, item.currency);
+  return {
+    label: "市值",
+    value: display.label,
+    tone: display.value === null ? "negative" : "neutral"
+  };
 }
 
 function percentSortMetric(label: string, value: number | null | undefined): { label: string; value: string; tone: "positive" | "negative" | "neutral" } {

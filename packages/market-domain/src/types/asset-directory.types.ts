@@ -1,4 +1,4 @@
-import type { AssetSummary, AssetType } from "./asset.types";
+import type { AssetSummary, AssetType, AssetValuation } from "./asset.types";
 
 export type AssetDirectoryCategoryId = "funds" | "crypto" | "commodities" | "us-equity" | "a-share" | "hk-equity" | "macro";
 export type AssetDirectoryCoverage = "full" | "partial" | "trend_pool_only";
@@ -30,16 +30,7 @@ export type AssetDirectoryReturns = {
   return1y: number | null;
 };
 
-export type AssetDirectoryValuation = {
-  marketCap: number | null;
-  floatMarketCap: number | null;
-  fullyDilutedValuation: number | null;
-  turnover24h: number | null;
-  marketCapRank: number | null;
-  currency: string | null;
-  source: string | null;
-  updatedAt: string | null;
-};
+export type AssetDirectoryValuation = AssetValuation;
 
 export type AssetDirectoryItem = {
   id: string;

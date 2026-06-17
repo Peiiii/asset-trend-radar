@@ -9,10 +9,10 @@ export class ChartWallController {
     private readonly jsonResponseProvider = new JsonResponseProvider()
   ) {}
 
-  public handleChartWall = (url: URL, response: ServerResponse): void => {
+  public handleChartWall = async (url: URL, response: ServerResponse): Promise<void> => {
     this.jsonResponseProvider.writeJson(
       response,
-      this.queryService.getChartWall({
+      await this.queryService.getChartWall({
         range: getRangeQueryParam(url),
         timeframe: getTimeframeQueryParam(url),
         universe: getStringQueryParam(url, "universe", "global"),

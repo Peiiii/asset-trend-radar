@@ -1,4 +1,4 @@
-import type { AssetSummary } from "./asset.types";
+import type { AssetSummary, AssetValuation } from "./asset.types";
 import type { MacdState } from "./indicator.types";
 import type { ScannerEvent } from "./scanner-event.types";
 import type { OhlcvBar, SparklinePoint } from "./bar.types";
@@ -32,6 +32,7 @@ export type ChartWallItem = AssetSummary & {
   dataPointCount: number;
   firstBarAt: string | null;
   latestBarAt: string | null;
+  valuation: AssetValuation;
   sparkline: SparklinePoint[];
   indicators: IndicatorPoint[];
   events: ScannerEvent[];

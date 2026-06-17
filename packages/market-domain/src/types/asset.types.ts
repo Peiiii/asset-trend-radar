@@ -19,3 +19,14 @@ export type AssetSummary = {
   vendorSymbol?: string;
   tags?: string[];
 };
+
+export type AssetValuation = {
+  marketCap: number | null;
+  floatMarketCap: number | null;
+  fullyDilutedValuation: number | null;
+  turnover24h: number | null;
+  marketCapRank: number | null;
+  currency: string | null;
+  source: string | null;
+  updatedAt: string | null;
+};

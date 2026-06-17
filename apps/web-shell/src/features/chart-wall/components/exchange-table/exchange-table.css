@@ -96,7 +96,7 @@
 
 .exchange-table {
   width: 100%;
-  min-width: 1710px;
+  min-width: 1840px;
   border-collapse: separate;
   border-spacing: 0;
 }
@@ -257,6 +257,29 @@
   font-size: 14px;
   font-weight: 900;
   font-variant-numeric: tabular-nums;
+}
+
+.exchange-table__valuation strong,
+.exchange-table__valuation small {
+  display: block;
+  max-width: 132px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.exchange-table__valuation strong {
+  color: #243044;
+  font-size: 13px;
+  font-weight: 950;
+  font-variant-numeric: tabular-nums;
+}
+
+.exchange-table__valuation small {
+  margin-top: 3px;
+  color: #6b7687;
+  font-size: 11px;
+  font-weight: 850;
 }
 
 .exchange-table__metric .gi-price-change,

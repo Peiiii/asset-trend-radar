@@ -66,6 +66,7 @@ export const sortOptions: ControlOption[] = [
   { value: "return_3m", label: "3M 涨幅" },
   { value: "return_6m", label: "6M 涨幅" },
   { value: "return_1y", label: "1Y 涨幅" },
+  { value: "market_cap", label: "市值", description: "有真实规模快照的资产靠前" },
   { value: "volume_ratio", label: "量能放大", description: "最近成交相对 20 日均值" },
   { value: "drawdown", label: "回撤较小", description: "距离区间高点更近" },
   { value: "event_count", label: "事件数", description: "扫描事件多的靠前" },

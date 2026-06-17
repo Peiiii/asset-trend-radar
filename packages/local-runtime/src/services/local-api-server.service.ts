@@ -71,7 +71,7 @@ export class LocalApiServerService {
       }
 
       if (request.method === "GET" && url.pathname === "/api/chart-wall") {
-        this.chartWallController.handleChartWall(url, response);
+        await this.chartWallController.handleChartWall(url, response);
         return;
       }
 

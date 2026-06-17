@@ -25,6 +25,8 @@ export class ChartWallItemSorter {
         return this.sortByNullableNumber(items, (item) => item.events.length, order);
       case "data_point_count":
         return this.sortByNullableNumber(items, (item) => item.dataPointCount, order);
+      case "market_cap":
+        return this.sortByNullableNumber(items, (item) => item.valuation.marketCap ?? item.valuation.floatMarketCap ?? item.valuation.fullyDilutedValuation, order);
       case "market":
         return this.sortByText(items, (item) => item.market, order);
       case "asset_type":

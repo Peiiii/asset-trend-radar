@@ -1,6 +1,7 @@
 import { BarChart3 } from "lucide-react";
 import { SignalBadge } from "@gold-insights/ui";
 import type { ChartWallItem, ChartWallSortOrder } from "@gold-insights/market-domain";
+import { formatLargeMoney, getValuationSortableValue } from "../../utils/valuation-format.utils";
 import "./ranking-quality-summary.css";
 
 type RankingQualitySummaryProps = {
@@ -11,7 +12,7 @@ type RankingQualitySummaryProps = {
 
 type SortMetricDefinition = {
   label: string;
-  unit: "percent" | "number" | "ratio";
+  unit: "percent" | "number" | "ratio" | "money";
   getValue(item: ChartWallItem): number | null;
 };
 
@@ -33,6 +34,7 @@ const sortMetrics: Record<string, SortMetricDefinition> = {
   return_3m: { label: "3M 涨幅", unit: "percent", getValue: (item) => item.return3m },
   return_6m: { label: "6M 涨幅", unit: "percent", getValue: (item) => item.return6m },
   return_1y: { label: "1Y 涨幅", unit: "percent", getValue: (item) => item.return1y },
+  market_cap: { label: "市值", unit: "money", getValue: (item) => getValuationSortableValue(item.valuation) },
   volume_ratio: { label: "量比", unit: "ratio", getValue: (item) => item.volumeRatio },
   drawdown: { label: "回撤", unit: "percent", getValue: (item) => item.drawdownPct },
   trend_score: { label: "趋势分", unit: "number", getValue: (item) => item.trendScore },
@@ -114,6 +116,10 @@ function formatMetricValue(value: number | null, unit: SortMetricDefinition["uni
 
   if (unit === "ratio") {
     return `${value.toFixed(2)}x`;
+  }
+
+  if (unit === "money") {
+    return formatLargeMoney(value, "USD");
   }
 
   return value.toLocaleString("en-US", { maximumFractionDigits: 0 });

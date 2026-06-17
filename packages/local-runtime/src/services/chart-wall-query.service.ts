@@ -28,6 +28,7 @@ import type { AssetBarsQuery, ChartWallQuery, CompareQuery, ScannerEventsQuery }
 import type { LocalRuntimeOptions } from "../types/local-runtime-options.types";
 import { ChartWallFacetBuilderService } from "./chart-wall-facet-builder.service";
 import { ChartWallItemSorter } from "./chart-wall-item-sorter.service";
+import type { ChartWallValuationService } from "./chart-wall-valuation.service";
 
 type RangedSeries = {
   bars: OhlcvBar[];
@@ -45,10 +46,11 @@ export class ChartWallQueryService {
     private readonly marketDataRepository: SqliteMarketDataRepository,
     private readonly scannerEventRepository: SqliteScannerEventRepository,
     private readonly ingestionJobRepository: SqliteIngestionJobRepository,
-    private readonly watchlistRepository: SqliteWatchlistRepository
+    private readonly watchlistRepository: SqliteWatchlistRepository,
+    private readonly valuationService: ChartWallValuationService
   ) {}
 
-  public getChartWall = (query: ChartWallQuery): ChartWallResponse => {
+  public getChartWall = async (query: ChartWallQuery): Promise<ChartWallResponse> => {
     const marketDataAssets = this.assetRepository.listAssets().filter((asset) => this.isMarketDataAsset(asset));
     const watchlistAssetIds = new Set(this.watchlistRepository.listWatchlists().flatMap((watchlist) => watchlist.assets.map((asset) => asset.id)));
     const comparedAssetIds = new Set<string>();
@@ -68,7 +70,8 @@ export class ChartWallQueryService {
     const matchedAssets = marketDataAssets.filter((asset) => this.matchesChartWallQuery(asset, query));
     const matchedItems = toPricedItems(matchedAssets);
     const signalFilteredItems = this.facetBuilder.applySignalFilter(matchedItems, query.signal);
-    const items = this.itemSorter.sort(signalFilteredItems, query.sort, query.order);
+    const valuationEnrichedItems = await this.valuationService.enrichForSort(signalFilteredItems, query.sort);
+    const items = this.itemSorter.sort(valuationEnrichedItems, query.sort, query.order);
 
     return {
       universe: query.universe,
@@ -267,6 +270,7 @@ export class ChartWallQueryService {
       dataPointCount: bars.length,
       firstBarAt: toIsoDateTime(bars[0]?.ts ?? null),
       latestBarAt: toIsoDateTime(latest?.ts ?? null),
+      valuation: this.valuationService.empty(),
       sparkline: this.toSparkline(bars),
       indicators,
       events: this.scannerEventRepository.listEventsForAsset(asset.id),

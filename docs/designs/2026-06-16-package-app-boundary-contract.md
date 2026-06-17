@@ -72,6 +72,9 @@ packages/market-domain
 - 复杂页面状态应收敛到 hook/service/class，避免单个 React 文件无限增长。
 - URL 是页面状态的来源，但不是业务事实来源。
 - 如果需要新接口字段，先在 `market-domain` 定义 response contract，再在 app 使用。
+- 资产规模、市值、流通市值、完全稀释估值、成交额快照使用 `market-domain` 的 `AssetValuation`
+  contract。app 只负责格式化和“未接入/源未提供”展示；外部估值源的拉取、缓存、失败降级和排序补全属于
+  `data-adapters` + `local-runtime`。
 
 ### 概览页与图表墙
 
@@ -85,6 +88,8 @@ packages/market-domain
 - 不要把概览型模块继续塞进图表墙列表区；概览型组件优先进入 `overview-section`。
 - 不要为了概览页复制一套筛选状态；筛选控件应复用同一套 URL query 和 API 口径。
 - 只要概览指标来自已有 `ChartWallResponse`，就留在 app 展示层编排；如果需要新的权威聚合字段，先扩展 `market-domain` response contract，再由 `local-runtime` 计算。
+- 图表墙只在 runtime 中按需补全真实 `AssetValuation` 后再做 `market_cap` 排序。前端不得用成交量、价格或其它展示字段
+  伪造规模排序；没有估值来源的资产应作为缺值排到后面。
 
 ### 资产目录
 
@@ -100,6 +105,8 @@ packages/market-domain
 - 加密目录由 `data-adapters` 的交易所轻量 catalog 提供候选池，并由加密市场数据源补充市值/成交额快照；`local-runtime` 合并本地走势池状态；候选池完整性不等于默认全量导入走势池。
 - 美股目录由 `data-adapters` 的 NASDAQ Trader 官方符号目录提供股票/ETF 候选池，`local-runtime` 合并本地走势池状态；未入池条目可以按需拉取 Yahoo 历史走势后进入走势池。
 - A 股目录由 `data-adapters` 的东方财富 A 股行情列表提供股票候选池、1D 快照和市值快照，`local-runtime` 合并本地指数/ETF/重点公司走势池状态；未入池股票可以按需拉取 Yahoo 历史走势后进入走势池。
+- NASDAQ Trader 符号目录不提供市值，Yahoo chart 端点也不提供 market cap。因此美股目录/图表墙在接入新的真实
+  quote/fundamentals 数据源前，应明确展示“未接入/源未提供”，不要用成交额、价格或本地 K 线估算市值。
 - 其它资产类别在没有全量 catalog API 前，只能展示真实已入库资产，不做假全量；如果需要全量目录，先扩展 `market-domain` contract 和 `local-runtime` catalog service。
 - 通用目录表格、状态 badge、详情/对比入口可以在 app 层复用；外部目录同步、导入、去重和走势池写入必须在 runtime 层实现。
 - 目录表格采用统一基础列契约：名称、类别/市场、走势池状态、最新价/净值、规模/市值、1D、1M、3M、6M、1Y、数据状态、操作。各资产类别可以通过 adapter 提供不同字段取值和类别特有动作，但不要为同义字段另起一套布局、颜色或交互。
