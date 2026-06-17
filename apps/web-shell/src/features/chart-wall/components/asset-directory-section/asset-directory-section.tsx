@@ -102,30 +102,32 @@ export function AssetDirectorySection({ title, description, items, totalCount, c
         </div>
       </div>
 
-      <div className="asset-directory-toolbar">
-        <Select id="asset-directory-market" label="市场" value={market} options={marketOptions} onChange={onMarketChange} />
-        <Select id="asset-directory-asset-type" label="品种" value={assetType} options={assetTypeOptions} onChange={(value) => onAssetTypeChange(getDirectoryAssetType(value))} />
-        <Select id="asset-directory-data-state" label="数据" value={dataState} options={dataStateOptions} onChange={(value) => onDataStateChange(getDirectoryDataState(value))} />
-        <Select id="asset-directory-valuation-status" label="规模" value={valuationStatus} options={valuationStatusOptions} onChange={(value) => onValuationStatusChange(getDirectoryValuationStatus(value))} />
-        <Select id="asset-directory-status" label="状态" value={status} options={statusOptions} onChange={(value) => onStatusChange(getDirectoryStatus(value))} />
-        <Select id="asset-directory-sort" label="排序" value={sort} options={directorySortOptions} onChange={(value) => onSortChange(getDirectorySort(value), getDefaultDirectoryOrder(value))} />
-        <Select id="asset-directory-order" label="方向" value={order} options={directoryOrderOptions} onChange={(value) => onSortChange(sort, getDirectoryOrder(value))} />
-        <Button type="button" variant="ghost" onClick={onReset}>重置</Button>
-      </div>
+      <div className="asset-directory-workbench">
+        <div className="asset-directory-toolbar">
+          <Select id="asset-directory-market" label="市场" value={market} options={marketOptions} onChange={onMarketChange} />
+          <Select id="asset-directory-asset-type" label="品种" value={assetType} options={assetTypeOptions} onChange={(value) => onAssetTypeChange(getDirectoryAssetType(value))} />
+          <Select id="asset-directory-data-state" label="数据" value={dataState} options={dataStateOptions} onChange={(value) => onDataStateChange(getDirectoryDataState(value))} />
+          <Select id="asset-directory-valuation-status" label="规模" value={valuationStatus} options={valuationStatusOptions} onChange={(value) => onValuationStatusChange(getDirectoryValuationStatus(value))} />
+          <Select id="asset-directory-status" label="状态" value={status} options={statusOptions} onChange={(value) => onStatusChange(getDirectoryStatus(value))} />
+          <Select id="asset-directory-sort" label="排序" value={sort} options={directorySortOptions} onChange={(value) => onSortChange(getDirectorySort(value), getDefaultDirectoryOrder(value))} />
+          <Select id="asset-directory-order" label="方向" value={order} options={directoryOrderOptions} onChange={(value) => onSortChange(sort, getDirectoryOrder(value))} />
+          <Button type="button" variant="ghost" onClick={onReset}>重置</Button>
+        </div>
 
-      {message && <p className="asset-directory-message">{message}</p>}
+        {message && <p className="asset-directory-message">{message}</p>}
 
-      <div className="asset-directory-result-bar">
-        <span>当前筛选 {totalCount.toLocaleString("en-US")} 个</span>
-        <span>{fromIndex.toLocaleString("en-US")}-{toIndex.toLocaleString("en-US")}</span>
-        <span>第 {page.toLocaleString("en-US")} / {totalPages.toLocaleString("en-US")} 页</span>
-        {search.trim().length > 0 && (
-          <span>
-            <Search size={13} aria-hidden="true" />
-            {search.trim()}
-          </span>
-        )}
-        <span>{statusLabel}</span>
+        <div className="asset-directory-result-bar">
+          <span>当前筛选 {totalCount.toLocaleString("en-US")} 个</span>
+          <span>{fromIndex.toLocaleString("en-US")}-{toIndex.toLocaleString("en-US")}</span>
+          <span>第 {page.toLocaleString("en-US")} / {totalPages.toLocaleString("en-US")} 页</span>
+          {search.trim().length > 0 && (
+            <span>
+              <Search size={13} aria-hidden="true" />
+              {search.trim()}
+            </span>
+          )}
+          <span>{statusLabel}</span>
+        </div>
       </div>
 
       <DirectoryRankingSummary items={items} totalCount={totalCount} sort={sort} order={order} />

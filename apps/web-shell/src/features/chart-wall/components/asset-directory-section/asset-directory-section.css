@@ -61,6 +61,20 @@
   font-weight: 850;
 }
 
+.asset-directory-workbench {
+  position: sticky;
+  top: 0;
+  z-index: 32;
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid rgba(207, 215, 228, 0.88);
+  border-radius: 8px;
+  background: rgba(245, 247, 250, 0.94);
+  box-shadow: 0 10px 24px rgba(24, 32, 50, 0.08);
+  backdrop-filter: blur(12px);
+}
+
 .asset-directory-result-bar {
   justify-content: space-between;
 }
@@ -78,10 +92,6 @@
 
 .asset-directory-toolbar {
   justify-content: flex-start;
-  padding: 10px;
-  border: 1px solid #d7dde7;
-  border-radius: 8px;
-  background: #ffffff;
 }
 
 .asset-directory-identity {
@@ -172,10 +182,15 @@
 
 @media (max-width: 760px) {
   .asset-directory-hero,
+  .asset-directory-workbench,
   .asset-directory-toolbar,
   .asset-directory-result-bar,
   .asset-directory-pagination {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .asset-directory-workbench {
+    position: static;
   }
 }

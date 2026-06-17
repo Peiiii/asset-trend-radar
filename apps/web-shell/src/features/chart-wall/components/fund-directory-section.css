@@ -50,6 +50,20 @@
   font-weight: 850;
 }
 
+.fund-directory-workbench {
+  position: sticky;
+  top: 0;
+  z-index: 32;
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid rgba(207, 215, 228, 0.88);
+  border-radius: 8px;
+  background: rgba(245, 247, 250, 0.94);
+  box-shadow: 0 10px 24px rgba(24, 32, 50, 0.08);
+  backdrop-filter: blur(12px);
+}
+
 .fund-directory-toolbar {
   flex-wrap: wrap;
   gap: 10px;
@@ -171,9 +185,14 @@
 @media (max-width: 760px) {
   .fund-directory-toolbar,
   .fund-directory-hero,
+  .fund-directory-workbench,
   .fund-directory-result-bar {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .fund-directory-workbench {
+    position: static;
   }
 
   .fund-directory-toolbar .search-control {

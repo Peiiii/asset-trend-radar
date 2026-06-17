@@ -89,48 +89,52 @@ export function FundDirectorySection({
         </div>
       </div>
 
-      <form
-        className="fund-directory-toolbar"
-        onSubmit={(event) => {
-          event.preventDefault();
-          onKeywordChange(draftKeyword.trim());
-        }}
-      >
-        <label className="search-control" htmlFor="fund-directory-search">
-          <Search size={17} aria-hidden="true" />
-          <input id="fund-directory-search" value={draftKeyword} onChange={(event) => setDraftKeyword(event.target.value)} placeholder="搜索基金代码、名称、拼音、类型" />
-        </label>
-        <Button type="submit" variant="secondary">
-          <Search size={15} aria-hidden="true" />
-          搜索
-        </Button>
-        {keyword.length > 0 && (
-          <Button type="button" variant="ghost" onClick={() => onKeywordChange("")}>
-            清空
+      <div className="fund-directory-workbench">
+        <form
+          className="fund-directory-toolbar"
+          onSubmit={(event) => {
+            event.preventDefault();
+            onKeywordChange(draftKeyword.trim());
+          }}
+        >
+          <label className="search-control" htmlFor="fund-directory-search">
+            <Search size={17} aria-hidden="true" />
+            <input id="fund-directory-search" value={draftKeyword} onChange={(event) => setDraftKeyword(event.target.value)} placeholder="搜索基金代码、名称、拼音、类型" />
+          </label>
+          <Button type="submit" variant="secondary">
+            <Search size={15} aria-hidden="true" />
+            搜索
           </Button>
-        )}
-        <Select id="fund-directory-type" label="类型" value={fundType} options={fundTypeOptions} onChange={onFundTypeChange} />
-        <Select id="fund-directory-data-state" label="数据" value={dataState} options={dataStateOptions} onChange={(value) => onDataStateChange(getFundCatalogDataState(value))} />
-        <Select id="fund-directory-status" label="状态" value={status} options={statusOptions} onChange={(value) => onStatusChange(getImportStatus(value))} />
-        <Button type="button" variant="ghost" disabled={isCatalogSyncing} onClick={onSyncCatalog}>
-          <RefreshCcw size={15} aria-hidden="true" />
-          {isCatalogSyncing ? "同步中" : "同步目录"}
-        </Button>
-      </form>
+          {keyword.length > 0 && (
+            <Button type="button" variant="ghost" onClick={() => onKeywordChange("")}>
+              清空
+            </Button>
+          )}
+          <Select id="fund-directory-type" label="类型" value={fundType} options={fundTypeOptions} onChange={onFundTypeChange} />
+          <Select id="fund-directory-data-state" label="数据" value={dataState} options={dataStateOptions} onChange={(value) => onDataStateChange(getFundCatalogDataState(value))} />
+          <Select id="fund-directory-status" label="状态" value={status} options={statusOptions} onChange={(value) => onStatusChange(getImportStatus(value))} />
+          <Button type="button" variant="ghost" disabled={isCatalogSyncing} onClick={onSyncCatalog}>
+            <RefreshCcw size={15} aria-hidden="true" />
+            {isCatalogSyncing ? "同步中" : "同步目录"}
+          </Button>
+        </form>
 
-      {message && <p className="fund-directory-message">{message}</p>}
+        {message && <p className="fund-directory-message">{message}</p>}
 
-      {isLoading && <LoadingState />}
-      {!isLoading && error && <ErrorState title="基金目录加载失败" message={error} />}
-      {!isLoading && !error && data && (
-        <>
+        {!isLoading && !error && data && (
           <div className="fund-directory-result-bar">
             <span>当前筛选 {totalCount.toLocaleString("en-US")} 只</span>
             <span>{fromIndex.toLocaleString("en-US")}-{toIndex.toLocaleString("en-US")}</span>
             <span>第 {page.toLocaleString("en-US")} / {totalPages.toLocaleString("en-US")} 页</span>
             <span>排序 {fundCatalogSortLabel(sort)} {order === "desc" ? "降序" : "升序"}</span>
           </div>
+        )}
+      </div>
 
+      {isLoading && <LoadingState />}
+      {!isLoading && error && <ErrorState title="基金目录加载失败" message={error} />}
+      {!isLoading && !error && data && (
+        <>
           {data.items.length === 0 ? (
             <EmptyState title="没有匹配基金" description="换一个关键词、类型或入库状态试试。" />
           ) : (
