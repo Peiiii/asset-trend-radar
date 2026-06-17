@@ -1,18 +1,20 @@
 import { Button, EmptyState } from "@gold-insights/ui";
-import type { ChartWallItem } from "@gold-insights/market-domain";
+import type { ChartWallItem, ChartWallSortOrder } from "@gold-insights/market-domain";
 import { AssetChartCard } from "../asset-chart-card";
+import { ChartGridRankSummary } from "./chart-grid-rank-summary";
 import "./chart-grid.css";
 
 type ChartGridProps = {
   items: ChartWallItem[];
   sort?: string;
+  order?: ChartWallSortOrder;
   onSelect(assetId: string): void;
   onPin(assetId: string): void;
   onCompare(assetId: string): void;
   onResetFilters(): void;
 };
 
-export function ChartGrid({ items, sort, onSelect, onPin, onCompare, onResetFilters }: ChartGridProps): JSX.Element {
+export function ChartGrid({ items, sort, order, onSelect, onPin, onCompare, onResetFilters }: ChartGridProps): JSX.Element {
   if (items.length === 0) {
     return (
       <div className="chart-grid-empty">
@@ -25,10 +27,13 @@ export function ChartGrid({ items, sort, onSelect, onPin, onCompare, onResetFilt
   }
 
   return (
-    <div className="chart-wall-grid">
-      {items.map((item, index) => (
-        <AssetChartCard key={item.id} item={item} sort={sort} rank={index + 1} onSelect={onSelect} onPin={onPin} onCompare={onCompare} />
-      ))}
-    </div>
+    <>
+      <ChartGridRankSummary items={items} sort={sort} order={order} />
+      <div className="chart-wall-grid">
+        {items.map((item, index) => (
+          <AssetChartCard key={item.id} item={item} sort={sort} rank={index + 1} onSelect={onSelect} onPin={onPin} onCompare={onCompare} />
+        ))}
+      </div>
+    </>
   );
 }
