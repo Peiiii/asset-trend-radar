@@ -1,7 +1,8 @@
 import type { ChartWallItem } from "@gold-insights/market-domain";
-import { getValuationDisplay } from "../../utils/valuation-format.utils";
+import { getValuationDisplay, type ValuationDisplayStatus } from "../../utils/valuation-format.utils";
 
 type MetricTone = "positive" | "negative" | "neutral";
+type SortMetricTone = MetricTone | "amber" | "blue";
 type PerformanceMetricKey = "return" | "return_1d" | "return_1w" | "return_1m" | "return_3m" | "return_6m" | "return_1y";
 
 type ReturnMetric = {
@@ -21,7 +22,8 @@ export type AssetChartCardPrimaryMetric = {
 export type AssetChartCardSortMetric = {
   label: string;
   value: string;
-  tone: MetricTone;
+  tone: SortMetricTone;
+  title?: string;
 } | null;
 
 export class AssetChartCardMetricsBuilder {
@@ -98,7 +100,8 @@ export class AssetChartCardMetricsBuilder {
     return {
       label: "市值",
       value: display.label,
-      tone: "neutral"
+      tone: this.getValuationTone(display.status),
+      title: display.title
     };
   };
 
@@ -110,6 +113,22 @@ export class AssetChartCardMetricsBuilder {
 
   private getPercentTone = (value: number | null | undefined): MetricTone =>
     value === null || value === undefined ? "neutral" : value >= 0 ? "positive" : "negative";
+
+  private getValuationTone = (status: ValuationDisplayStatus): SortMetricTone => {
+    if (status === "available") {
+      return "blue";
+    }
+
+    if (status === "turnover_only" || status === "source_missing_value") {
+      return "amber";
+    }
+
+    if (status === "source_unavailable") {
+      return "negative";
+    }
+
+    return "neutral";
+  };
 
   private formatPercent = (value: number | null | undefined): string =>
     value === null || value === undefined ? "暂无" : `${value.toFixed(2)}%`;

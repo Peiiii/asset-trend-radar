@@ -113,6 +113,16 @@
   color: #a43131;
 }
 
+.asset-chart-card__sort-metric--amber {
+  background: #fff6df;
+  color: #986211;
+}
+
+.asset-chart-card__sort-metric--blue {
+  background: #edf5ff;
+  color: #245f9f;
+}
+
 .asset-chart-card__meta-row,
 .asset-chart-card__return-grid,
 .asset-chart-card__risk-row {

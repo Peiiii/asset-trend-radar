@@ -93,7 +93,7 @@ export function AssetChartCard({ item, sort, rank, onSelect, onPin, onCompare }:
       </div>
 
       {shouldShowSortMetric && sortMetric && (
-        <div className={`asset-chart-card__sort-metric asset-chart-card__sort-metric--${sortMetric.tone}`}>
+        <div className={`asset-chart-card__sort-metric asset-chart-card__sort-metric--${sortMetric.tone}`} title={sortMetric.title}>
           <span>排序</span>
           <strong>{sortMetric.label} {sortMetric.value}</strong>
         </div>
