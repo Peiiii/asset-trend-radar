@@ -1,14 +1,10 @@
-import { ChevronLeft, ChevronRight, GitCompare, Plus, Search } from "lucide-react";
-import { Button, DataTableFrame, EmptyState, Select, SignalBadge } from "@gold-insights/ui";
+import { ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { Button, EmptyState, Select } from "@gold-insights/ui";
 import type { ControlOption } from "@gold-insights/ui";
 import type { AssetDirectoryItem, AssetDirectoryPageResponse, AssetDirectorySortKey, AssetDirectorySortOrder, AssetDirectoryStatusFilter } from "@gold-insights/market-domain";
-import { formatPrice } from "@/shared/utils/format-number.utils";
-import { DirectoryReturnCell, getDirectoryActiveSortCellClassName } from "../directory-table/directory-return-pill";
 import { DirectoryRankingSummary } from "../directory-ranking-summary/directory-ranking-summary";
-import { DirectoryTableColumns } from "../directory-table/directory-table-columns";
-import { DirectorySortableHeader } from "../directory-table/directory-sortable-header";
-import { DirectoryValuationCell } from "../directory-table/directory-valuation-cell";
 import { ValuationCoverageSummary } from "../valuation-coverage-summary/valuation-coverage-summary";
+import { AssetDirectoryTable } from "./asset-directory-table";
 import "./asset-directory-section.css";
 
 type AssetDirectorySectionProps = {
@@ -125,83 +121,20 @@ export function AssetDirectorySection({ title, description, items, totalCount, c
       {items.length === 0 ? (
         <EmptyState title="没有匹配资产" description="换一个关键词或回到图表墙调整筛选条件。" />
       ) : (
-        <DataTableFrame rowCount={items.length} className="directory-table-wrapper asset-directory-table-wrapper" minWidth={tableMinWidth} firstColumnMinWidth={firstColumnMinWidth} lastColumnMinWidth={lastColumnMinWidth}>
-          <DirectoryTableColumns includeValuationColumn />
-          <thead>
-            <tr>
-              <DirectorySortableHeader label="资产" sortValue="label" currentSort={sort} order={order} onSort={handleHeaderSort} />
-              <th>类型</th>
-              <th>状态</th>
-              <DirectorySortableHeader label="最新价" sortValue="latest_value" currentSort={sort} order={order} onSort={handleHeaderSort} />
-              <DirectorySortableHeader label="市值" sortValue="market_cap" currentSort={sort} order={order} onSort={handleHeaderSort} />
-              <DirectorySortableHeader label="1D" sortValue="return_1d" currentSort={sort} order={order} onSort={handleHeaderSort} />
-              <DirectorySortableHeader label="1M" sortValue="return_1m" currentSort={sort} order={order} onSort={handleHeaderSort} />
-              <DirectorySortableHeader label="3M" sortValue="return_3m" currentSort={sort} order={order} onSort={handleHeaderSort} />
-              <DirectorySortableHeader label="6M" sortValue="return_6m" currentSort={sort} order={order} onSort={handleHeaderSort} />
-              <DirectorySortableHeader label="1Y" sortValue="return_1y" currentSort={sort} order={order} onSort={handleHeaderSort} />
-              <DirectorySortableHeader label="数据" sortValue="data_point_count" currentSort={sort} order={order} onSort={handleHeaderSort} />
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item) => (
-              <tr key={item.id}>
-                <td>
-                  <div className="asset-directory-identity" title={`${item.label} / ${item.symbol} / ${item.exchange}`}>
-                    <strong>{item.label}</strong>
-                    <small>{item.symbol}</small>
-                  </div>
-                </td>
-                <td>
-                  <div className="asset-directory-type-stack" title={`${assetTypeLabel(item.assetType)} / ${item.market} / ${item.exchange}`}>
-                    <SignalBadge label={assetTypeLabel(item.assetType)} tone="blue" />
-                    <small>{item.market}</small>
-                  </div>
-                </td>
-                <td><SignalBadge label={poolStateLabel(item.poolState)} tone={item.poolState === "in_pool" ? "positive" : "amber"} /></td>
-                <td className={getDirectoryActiveSortCellClassName(sort === "latest_value")}>{formatPrice(item.latestValue, item.currency)}</td>
-                <DirectoryValuationCell item={item} active={sort === "market_cap"} />
-                <DirectoryReturnCell value={item.returns.return1d} active={sort === "return_1d"} />
-                <DirectoryReturnCell value={item.returns.return1m} active={sort === "return_1m"} />
-                <DirectoryReturnCell value={item.returns.return3m} active={sort === "return_3m"} />
-                <DirectoryReturnCell value={item.returns.return6m} active={sort === "return_6m"} />
-                <DirectoryReturnCell value={item.returns.return1y} active={sort === "return_1y"} />
-                <td className={getDirectoryActiveSortCellClassName(sort === "data_point_count")}>
-                  <div className="asset-directory-data-stack" title={`${item.dataPointCount.toLocaleString("en-US")} 点 / ${dataStateLabel(item.dataState)} / ${item.provider}`}>
-                    <SignalBadge label={`${item.dataPointCount.toLocaleString("en-US")} 点`} tone="neutral" />
-                    <small>{dataStateLabel(item.dataState)} / {item.provider}</small>
-                  </div>
-                </td>
-                <td>
-                  <div className="asset-directory-actions">
-                    {canImport && item.poolState !== "in_pool" && (
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        title={importingItemId === item.id ? `正在导入：${item.label}` : `加入走势池：${item.label}`}
-                        aria-label={importingItemId === item.id ? `正在导入：${item.label}` : `加入走势池：${item.label}`}
-                        disabled={importingItemId !== null}
-                        onClick={() => onImport(item)}
-                      >
-                        <Plus size={14} aria-hidden="true" />
-                        {importingItemId === item.id ? "导入中" : "加入走势池"}
-                      </Button>
-                    )}
-                    {item.assetId && (
-                      <>
-                        <Button type="button" variant="ghost" onClick={() => onSelect(item.assetId ?? "")}>详情</Button>
-                        <Button type="button" variant="ghost" onClick={() => onCompare(item.assetId ?? "")}>
-                          <GitCompare size={14} aria-hidden="true" />
-                          对比
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </DataTableFrame>
+        <AssetDirectoryTable
+          items={items}
+          sort={sort}
+          order={order}
+          tableMinWidth={tableMinWidth}
+          firstColumnMinWidth={firstColumnMinWidth}
+          lastColumnMinWidth={lastColumnMinWidth}
+          canImport={canImport}
+          importingItemId={importingItemId}
+          onHeaderSort={handleHeaderSort}
+          onImport={onImport}
+          onSelect={onSelect}
+          onCompare={onCompare}
+        />
       )}
 
       <div className="asset-directory-pagination">
@@ -217,38 +150,6 @@ export function AssetDirectorySection({ title, description, items, totalCount, c
       </div>
     </section>
   );
-}
-
-function poolStateLabel(value: AssetDirectoryItem["poolState"]): string {
-  const labels: Record<AssetDirectoryItem["poolState"], string> = {
-    in_pool: "已加入走势池",
-    not_in_pool: "待加入走势池",
-    syncing: "同步中",
-    failed: "同步失败"
-  };
-  return labels[value];
-}
-
-function dataStateLabel(value: AssetDirectoryItem["dataState"]): string {
-  const labels: Record<AssetDirectoryItem["dataState"], string> = {
-    full_history: "完整走势",
-    snapshot: "目录快照",
-    missing: "待拉取",
-    stale: "待更新"
-  };
-  return labels[value];
-}
-
-function assetTypeLabel(value: AssetDirectoryItem["assetType"]): string {
-  const labels: Record<AssetDirectoryItem["assetType"], string> = {
-    crypto: "币种",
-    equity: "股票",
-    index: "指数",
-    fund: "基金",
-    commodity: "商品",
-    macro: "宏观"
-  };
-  return labels[value];
 }
 
 function getDirectoryStatus(value: string): AssetDirectoryStatusFilter {
