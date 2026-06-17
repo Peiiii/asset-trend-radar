@@ -1,7 +1,7 @@
 import { BarChart3 } from "lucide-react";
 import { SignalBadge } from "@gold-insights/ui";
 import type { ChartWallItem, ChartWallSortOrder } from "@gold-insights/market-domain";
-import { formatLargeMoney, getValuationSortableValue } from "../../utils/valuation-format.utils";
+import { formatLargeMoney, getValuationDisplay, getValuationSortableValue, type ValuationDisplayStatus } from "../../utils/valuation-format.utils";
 import "./ranking-quality-summary.css";
 
 type RankingQualitySummaryProps = {
@@ -24,6 +24,11 @@ type RankSummary = {
   median: number | null;
   leader: number | null;
   laggard: number | null;
+};
+
+type MissingSummary = {
+  value: string;
+  title: string;
 };
 
 const sortMetrics: Record<string, SortMetricDefinition> = {
@@ -60,6 +65,7 @@ export function RankingQualitySummary({ items, sort = "trend_score", order = "de
   const summary = buildRankSummary(items, metric);
   const spread = summary.leader !== null && summary.laggard !== null ? Math.abs(summary.leader - summary.laggard) : null;
   const coverageTone = summary.validCount === items.length ? "positive" : summary.validCount / Math.max(items.length, 1) >= 0.8 ? "blue" : "amber";
+  const missingSummary = sort === "market_cap" ? buildValuationMissingSummary(items) : { value: summary.missingCount.toLocaleString("en-US"), title: "当前排序字段缺少可排名数值的资产数量" };
 
   return (
     <section className="ranking-quality-summary" aria-label="榜单质量">
@@ -70,7 +76,7 @@ export function RankingQualitySummary({ items, sort = "trend_score", order = "de
       </div>
       <dl className="ranking-quality-summary__metrics">
         <RankSummaryMetric label="有效样本" value={`${summary.validCount.toLocaleString("en-US")} / ${items.length.toLocaleString("en-US")}`} tone={coverageTone} />
-        <RankSummaryMetric label="缺值" value={summary.missingCount.toLocaleString("en-US")} tone={summary.missingCount > 0 ? "amber" : "positive"} />
+        <RankSummaryMetric label={sort === "market_cap" ? "市值空态" : "缺值"} value={missingSummary.value} title={missingSummary.title} tone={summary.missingCount > 0 ? "amber" : "positive"} />
         <RankSummaryMetric label="中位数" value={formatMetricValue(summary.median, summary.unit)} tone="neutral" />
         <RankSummaryMetric label="首尾差" value={formatMetricValue(spread, summary.unit)} tone={spread !== null && spread > 0 ? "blue" : "neutral"} />
       </dl>
@@ -78,9 +84,9 @@ export function RankingQualitySummary({ items, sort = "trend_score", order = "de
   );
 }
 
-function RankSummaryMetric({ label, value, tone }: { label: string; value: string; tone: "positive" | "negative" | "neutral" | "amber" | "blue" }): JSX.Element {
+function RankSummaryMetric({ label, value, title, tone }: { label: string; value: string; title?: string; tone: "positive" | "negative" | "neutral" | "amber" | "blue" }): JSX.Element {
   return (
-    <div className={`ranking-quality-summary__metric ranking-quality-summary__metric--${tone}`}>
+    <div className={`ranking-quality-summary__metric ranking-quality-summary__metric--${tone}`} title={title}>
       <dt>{label}</dt>
       <dd>{value}</dd>
     </div>
@@ -102,6 +108,43 @@ function buildRankSummary(items: ChartWallItem[], metric: SortMetricDefinition):
     median,
     leader: values.at(-1) ?? null,
     laggard: values[0] ?? null
+  };
+}
+
+const valuationMissingLabels: Record<Exclude<ValuationDisplayStatus, "available">, string> = {
+  turnover_only: "仅成交额",
+  source_missing_value: "源无规模",
+  source_unavailable: "未覆盖",
+  not_applicable: "不适用"
+};
+
+const valuationMissingOrder: Exclude<ValuationDisplayStatus, "available">[] = ["not_applicable", "source_unavailable", "source_missing_value", "turnover_only"];
+
+function buildValuationMissingSummary(items: ChartWallItem[]): MissingSummary {
+  const counts = new Map<Exclude<ValuationDisplayStatus, "available">, number>(valuationMissingOrder.map((status) => [status, 0]));
+
+  for (const item of items) {
+    const status = getValuationDisplay(item.valuation, item.currency, { assetType: item.assetType }).status;
+
+    if (status !== "available") {
+      counts.set(status, (counts.get(status) ?? 0) + 1);
+    }
+  }
+
+  const parts = valuationMissingOrder
+    .map((status) => ({ status, count: counts.get(status) ?? 0 }))
+    .filter((part) => part.count > 0);
+
+  if (parts.length === 0) {
+    return {
+      value: "0",
+      title: "当前列表全部资产都有可用于市值排序的真实规模快照"
+    };
+  }
+
+  return {
+    value: parts.map((part) => `${valuationMissingLabels[part.status]} ${part.count.toLocaleString("en-US")}`).join(" / "),
+    title: `${parts.map((part) => `${valuationMissingLabels[part.status]} ${part.count.toLocaleString("en-US")}`).join("；")}。这些状态不是后台加载中。`
   };
 }
 
