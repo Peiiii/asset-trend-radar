@@ -3,7 +3,7 @@ import { ChartWallPage } from "@/features/chart-wall/components/chart-wall-page"
 
 export default function App(): JSX.Element {
   return (
-    <BrowserRouter>
+    <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
       <Routes>
         <Route path="/" element={<Navigate to="/chart-wall" replace />} />
         <Route path="/chart-wall" element={<ChartWallPage />} />
