@@ -15,6 +15,7 @@ import { ChartWallQueryService } from "./chart-wall-query.service";
 import { FundDiscoveryService } from "./fund-discovery.service";
 import { IngestionWorkerService } from "./ingestion-worker.service";
 import { LocalApiServerService } from "./local-api-server.service";
+import { RuntimeTaskRecoveryService } from "./runtime-task-recovery.service";
 import { TaskCenterService } from "./task-center.service";
 
 export class LocalRuntimeService {
@@ -22,6 +23,7 @@ export class LocalRuntimeService {
   private readonly ingestionWorkerService: IngestionWorkerService;
   private readonly fundDiscoveryService: FundDiscoveryService;
   private readonly apiServerService: LocalApiServerService;
+  private readonly taskRecoveryService: RuntimeTaskRecoveryService;
 
   public constructor(private readonly options: LocalRuntimeOptions) {
     this.databaseService = new SqliteDatabaseService(this.options.databasePath);
@@ -33,6 +35,7 @@ export class LocalRuntimeService {
     const watchlistRepository = new SqliteWatchlistRepository(connection);
     const fundCatalogRepository = new SqliteFundCatalogRepository(connection);
     const rawFileRepository = new LocalRawFileRepository(this.options.rawDataPath);
+    this.taskRecoveryService = new RuntimeTaskRecoveryService(ingestionJobRepository);
 
     this.ingestionWorkerService = new IngestionWorkerService(
       assetUniverse,
@@ -80,6 +83,11 @@ export class LocalRuntimeService {
   }
 
   public start = async (): Promise<LocalRuntimeStartResult> => {
+    const recoveredTaskCount = this.taskRecoveryService.recoverInterruptedTasks();
+    if (recoveredTaskCount > 0) {
+      console.warn(`Recovered ${recoveredTaskCount} interrupted runtime task(s).`);
+    }
+
     const url = await this.apiServerService.start();
 
     if (this.options.refreshOnStart) {

@@ -19,6 +19,14 @@ export class SqliteIngestionJobRepository {
       .run(status, Date.now(), errorMessage, id);
   };
 
+  public failRunningJobs = (errorMessage: string): number => {
+    const result = this.database
+      .prepare("UPDATE ingestion_jobs SET status = 'failed', finished_at = ?, error_message = ? WHERE status = 'running'")
+      .run(Date.now(), errorMessage) as { changes?: number };
+
+    return Number(result.changes ?? 0);
+  };
+
   public getLatestJob = (): IngestionJobSummary | null => {
     const row = this.database
       .prepare(

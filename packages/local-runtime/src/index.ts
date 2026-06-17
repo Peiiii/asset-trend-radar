@@ -14,5 +14,6 @@ export { ChartWallQueryService } from "./services/chart-wall-query.service";
 export { FundDiscoveryService } from "./services/fund-discovery.service";
 export { IngestionWorkerService } from "./services/ingestion-worker.service";
 export { LocalRuntimeService } from "./services/local-runtime.service";
+export { RuntimeTaskRecoveryService } from "./services/runtime-task-recovery.service";
 export type { AssetBarsQuery, ChartWallQuery } from "./types/chart-wall-query.types";
 export type { LocalRuntimeOptions, LocalRuntimeStartResult } from "./types/local-runtime-options.types";

@@ -241,6 +241,7 @@ try {
   assert(finalHealth.lastIngestionAt !== initialHealth.lastIngestionAt, "expected refresh endpoint to update ingestion time");
   assert(taskCenter.tasks.length >= 2 && typeof taskCenter.runningCount === "number", "expected task center endpoint with recent tasks");
   assert(taskCenter.totalCount >= taskCenter.tasks.length, "expected task center total count to cover returned recent tasks");
+  assert(taskCenter.staleRunningCount === 0, "expected no stale running task after clean smoke runtime");
   assert(tinyTaskCenter.tasks.length === 1, "expected task center limit to only constrain recent task list");
   assert(tinyTaskCenter.totalCount === taskCenter.totalCount, "expected task center total count to ignore task list limit");
   assert(tinyTaskCenter.runningCount === taskCenter.runningCount, "expected task center running count to ignore task list limit");
@@ -311,6 +312,7 @@ try {
           tasks: taskCenter.tasks.length,
           totalCount: taskCenter.totalCount,
           runningCount: taskCenter.runningCount,
+          staleRunningCount: taskCenter.staleRunningCount,
           failedCount: taskCenter.failedCount,
           activeTasks: taskCenter.activeTasks.length,
           recentFailures: taskCenter.recentFailures.length,
