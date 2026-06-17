@@ -146,7 +146,7 @@ try {
   const assetTypes = new Set(chartWall.items.map((item) => item.assetType));
   const levels = new Set(chartWall.items.map((item) => item.level));
 
-  assert(initialHealth.assetCount >= 150, "expected full asset universe with hierarchy nodes, expanded funds, and expanded commodities");
+  assert(initialHealth.assetCount >= 156, "expected full asset universe with hierarchy nodes, expanded funds, expanded commodities, and commodity-chain ETFs");
   assert(initialHealth.barCount >= 45 * 1000, "expected multi-asset startup ingestion to persist full daily history and intraday bars");
   assert(initialHealth.latestBarAt !== null, "expected latest bar timestamp");
   assert(initialHealth.lastIngestionAt !== null, "expected ingestion timestamp");
@@ -161,9 +161,9 @@ try {
   assert(initialHealth.latestJob?.status === "success", "expected latest ingestion job status");
   assert(chartWall.sources.includes("yahoo"), "expected Yahoo source");
   assert(chartWall.sources.includes("eastmoney"), "expected Eastmoney source");
-  assert(chartWall.items.length >= 125, "expected broad chart wall items with expanded commodities");
+  assert(chartWall.items.length >= 130, "expected broad chart wall items with expanded commodities");
   assert(chartWall.summary.visibleItems === chartWall.items.length, "expected chart wall summary visible count");
-  assert(chartWall.summary.totalUniverseAssets >= 85, "expected chart wall summary universe count with expanded commodities");
+  assert(chartWall.summary.totalUniverseAssets >= 90, "expected chart wall summary universe count with expanded commodities");
   assert(chartWall.facets.markets.some((facet) => facet.value === "美股"), "expected market facets");
   assert(chartWall.facets.assetTypes.some((facet) => facet.value === "fund"), "expected fund asset facet");
   assert(chartWall.facets.signals.some((facet) => facet.value === "breakout"), "expected signal facets");
@@ -174,9 +174,12 @@ try {
   assert(aShareWall.items.length >= 8 && aShareWall.items.every((item) => item.market === "A 股"), "expected A-share filtered chart wall");
   assert(fundWall.items.length >= 60 && fundWall.items.every((item) => item.assetType === "fund"), "expected expanded real fund/ETF chart wall");
   assert(fundWall.items.some((item) => item.market === "基金" && item.source === "eastmoney"), "expected China mutual funds from Eastmoney");
-  assert(commodityWall.items.length >= 30 && commodityWall.items.every((item) => item.market === "商品"), "expected expanded commodity chart wall");
+  assert(commodityWall.items.length >= 36 && commodityWall.items.every((item) => item.market === "商品"), "expected expanded commodity chart wall");
   assert(commodityWall.facets.tags.some((facet) => facet.value === "贵金属" && facet.count >= 8), "expected tag facets for precious metals");
   assert(commodityWall.facets.tags.some((facet) => facet.value === "农产品" && facet.count >= 6), "expected tag facets for agriculture");
+  assert(commodityWall.facets.tags.some((facet) => facet.value === "铀" && facet.count >= 1), "expected uranium commodity-chain tag facet");
+  assert(commodityWall.facets.tags.some((facet) => facet.value === "电池金属" && facet.count >= 1), "expected battery metals commodity-chain tag facet");
+  assert(commodityWall.facets.tags.some((facet) => facet.value === "碳信用" && facet.count >= 1), "expected carbon credit commodity-chain tag facet");
   assert(preciousMetalsWall.tag === "贵金属" && preciousMetalsWall.items.length >= 8 && preciousMetalsWall.items.every((item) => item.tags.includes("贵金属")), "expected precious metals tag-filtered commodity chart wall");
   assert(agricultureWall.tag === "农产品" && agricultureWall.items.length >= 6 && agricultureWall.items.every((item) => item.tags.includes("农产品")), "expected agriculture tag-filtered commodity chart wall");
   assert(isSortedDesc(sortedReturnWall.items, (item) => item.return1m), "expected return_1m sorting");
