@@ -96,6 +96,61 @@ export function formatNumber(value: number | null | undefined): string {
   return value === null || value === undefined ? "暂无" : value.toFixed(2);
 }
 
+export function formatCompactQuantity(value: number | null | undefined): string {
+  if (value === null || value === undefined) {
+    return "暂无";
+  }
+
+  return value.toLocaleString("en-US", {
+    maximumFractionDigits: value >= 1_000 ? 0 : 2,
+    notation: Math.abs(value) >= 1_000_000 ? "compact" : "standard"
+  });
+}
+
+export function formatRatio(value: number | null | undefined): string {
+  return value === null || value === undefined ? "暂无" : `${value.toFixed(2)}x`;
+}
+
+export function volumeRatioTone(value: number | null | undefined): Tone {
+  if (value === null || value === undefined) {
+    return "neutral";
+  }
+
+  if (value >= 1.5) {
+    return "amber";
+  }
+
+  if (value >= 1) {
+    return "positive";
+  }
+
+  if (value < 0.6) {
+    return "negative";
+  }
+
+  return "neutral";
+}
+
+export function volumeActivityLabel(value: number | null | undefined): string {
+  if (value === null || value === undefined) {
+    return "暂无";
+  }
+
+  if (value >= 1.5) {
+    return "明显放量";
+  }
+
+  if (value >= 1) {
+    return "高于均量";
+  }
+
+  if (value < 0.6) {
+    return "明显缩量";
+  }
+
+  return "接近均量";
+}
+
 export function buildReturnMetrics(item: ChartWallItem): DetailReturnMetric[] {
   return [
     { label: "1D", value: item.return1d },

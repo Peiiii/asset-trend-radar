@@ -4,7 +4,7 @@ import type { ChartWallItem } from "@gold-insights/market-domain";
 import { formatDateTime, formatPrice } from "@/shared/utils/format-number.utils";
 import { AssetChartCard } from "../asset-chart-card";
 import { getValuationDisplay, type ValuationDisplayStatus } from "../../utils/valuation-format.utils";
-import { assetTypeLabel, breakoutLabel, breakoutTone, buildReturnMetrics, drawdownTone, formatNumber, formatPercent, macdLabel, macdTone, returnTone } from "./asset-detail-section.utils";
+import { assetTypeLabel, breakoutLabel, breakoutTone, buildReturnMetrics, drawdownTone, formatCompactQuantity, formatNumber, formatPercent, formatRatio, macdLabel, macdTone, returnTone, volumeActivityLabel, volumeRatioTone } from "./asset-detail-section.utils";
 import "./asset-detail-section.css";
 
 type AssetDetailSectionProps = {
@@ -54,6 +54,7 @@ export function AssetDetailSection({ item, relatedItems, onSelect, onPin, onComp
             tone={valuationMetricTone(valuationDisplay.status)}
           />
           <DetailMetric label="区间涨幅" value={formatPercent(item.returnPct)} tone={returnTone(item.returnPct)} />
+          <DetailMetric label="量比" value={formatRatio(item.volumeRatio)} detail="最新量 / 20 日均量" tone={volumeRatioTone(item.volumeRatio)} />
           <DetailMetric label="趋势分" value={String(item.trendScore)} tone={item.trendScore >= 60 ? "positive" : item.trendScore <= 35 ? "negative" : "neutral"} />
           <DetailMetric label="当前回撤" value={formatPercent(item.drawdownPct)} tone={drawdownTone(item.drawdownPct)} />
         </div>
@@ -65,7 +66,7 @@ export function AssetDetailSection({ item, relatedItems, onSelect, onPin, onComp
             <SignalBadge label={item.trendLabel} tone={item.trendScore >= 60 ? "positive" : item.trendScore <= 35 ? "negative" : "neutral"} />
             <SignalBadge label={macdLabel(item.macdState)} tone={macdTone(item.macdState)} />
             <SignalBadge label={breakoutLabel(item.breakoutState)} tone={breakoutTone(item.breakoutState)} />
-            {typeof item.volumeRatio === "number" && <SignalBadge label={`量比 ${item.volumeRatio.toFixed(2)}x`} tone={item.volumeRatio >= 1.5 ? "amber" : "neutral"} />}
+            {typeof item.volumeRatio === "number" && <SignalBadge label={`量比 ${formatRatio(item.volumeRatio)}`} tone={volumeRatioTone(item.volumeRatio)} />}
             <SignalBadge label={`事件 ${item.events.length}`} tone={item.events.length > 0 ? "amber" : "neutral"} />
           </div>
           <TechnicalChart points={item.sparkline} indicators={item.indicators} height={430} showMacdSignalLines variant="detail" />
@@ -95,6 +96,15 @@ export function AssetDetailSection({ item, relatedItems, onSelect, onPin, onComp
               <DetailRow label="MA20 / MA50 / MA200" value={`${formatNumber(item.ma20)} / ${formatNumber(item.ma50)} / ${formatNumber(item.ma200)}`} />
               <DetailRow label="RSI14" value={formatNumber(item.rsi14)} />
               <DetailRow label="突破状态" value={breakoutLabel(item.breakoutState)} />
+            </dl>
+          </section>
+          <section>
+            <h2>成交活跃度</h2>
+            <dl>
+              <DetailRow label="最新成交量" value={formatCompactQuantity(item.latestVolume)} />
+              <DetailRow label="20 日均量" value={formatCompactQuantity(item.averageVolume20)} />
+              <DetailRow label="量比" value={formatRatio(item.volumeRatio)} />
+              <DetailRow label="活跃状态" value={volumeActivityLabel(item.volumeRatio)} />
               <DetailRow label="数据覆盖" value={`${formatDateTime(item.firstBarAt)} - ${formatDateTime(item.latestBarAt)}`} />
               <DetailRow label="数据点" value={(item.dataPointCount ?? item.sparkline.length).toLocaleString("en-US")} />
             </dl>
