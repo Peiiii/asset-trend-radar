@@ -1,15 +1,15 @@
-import type { ChartWallSummary } from "@gold-insights/market-domain";
+import type { ChartWallItem, ChartWallSummary } from "@gold-insights/market-domain";
 import type { ChartWallPageData } from "@/shared/types/api.types";
 import { formatDateTime } from "@/shared/utils/format-number.utils";
 
-export function SummaryStrip({ data, visibleSearchCount }: { data: ChartWallPageData; visibleSearchCount: number }): JSX.Element {
-  const summary = getSummary(data);
+export function SummaryStrip({ data, items }: { data: ChartWallPageData; items: ChartWallItem[] }): JSX.Element {
+  const runtimeSummary = getRuntimeSummary(data);
   const rawFileCount = data.dataHealth.rawFileCount ?? 0;
 
   return (
     <section className="summary-strip" aria-label="数据状态">
-      <SummaryCard label="可交易资产" value={`${summary.visibleItems}/${summary.totalUniverseAssets}`} />
-      <SummaryCard label="搜索可见" value={visibleSearchCount.toString()} />
+      <SummaryCard label="当前资产" value={items.length.toLocaleString("en-US")} />
+      <SummaryCard label="筛选资产" value={`${data.chartWall.items.length.toLocaleString("en-US")}/${runtimeSummary.totalUniverseAssets.toLocaleString("en-US")}`} />
       <SummaryCard label="K 线记录" value={data.dataHealth.barCount.toLocaleString("en-US")} />
       <SummaryCard label="Raw 文件" value={rawFileCount.toLocaleString("en-US")} />
       <SummaryCard label="最新 K 线" value={formatDateTime(data.dataHealth.latestBarAt)} />
@@ -18,8 +18,8 @@ export function SummaryStrip({ data, visibleSearchCount }: { data: ChartWallPage
   );
 }
 
-export function BreadthStrip({ data }: { data: ChartWallPageData }): JSX.Element {
-  const summary = getSummary(data);
+export function BreadthStrip({ items }: { items: ChartWallItem[] }): JSX.Element {
+  const summary = getVisibleSummary(items);
 
   return (
     <section className="breadth-strip" aria-label="市场宽度">
@@ -52,14 +52,17 @@ function MetricPill({ label, value, tone }: { label: string; value: number | str
   );
 }
 
-function getSummary(data: ChartWallPageData): ChartWallSummary {
+function getRuntimeSummary(data: ChartWallPageData): ChartWallSummary {
   const runtimeSummary = data.chartWall.summary as ChartWallSummary | undefined;
 
   if (runtimeSummary) {
     return runtimeSummary;
   }
 
-  const items = data.chartWall.items;
+  return getVisibleSummary(data.chartWall.items);
+}
+
+function getVisibleSummary(items: ChartWallItem[]): ChartWallSummary {
   const latestTimestamp = Math.max(
     ...items
       .map((item) => (item.latestBarAt ? new Date(item.latestBarAt).getTime() : NaN))

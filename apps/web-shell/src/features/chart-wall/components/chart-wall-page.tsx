@@ -398,7 +398,6 @@ export function ChartWallPage(): JSX.Element {
             <OverviewSection
               data={data}
               items={filteredItems}
-              visibleSearchCount={filteredItems.length}
               market={market}
               sort={sort}
               order={order}

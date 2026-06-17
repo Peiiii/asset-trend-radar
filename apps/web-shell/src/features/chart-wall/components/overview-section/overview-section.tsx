@@ -11,7 +11,6 @@ import "./overview-section.css";
 type OverviewSectionProps = {
   data: ChartWallPageData;
   items: ChartWallItem[];
-  visibleSearchCount: number;
   market: string;
   sort: string;
   order: ChartWallSortOrder;
@@ -20,15 +19,15 @@ type OverviewSectionProps = {
   onCompare(assetId: string): void;
 };
 
-export function OverviewSection({ data, items, visibleSearchCount, market, sort, order, onMarketSelect, onSelectAsset, onCompare }: OverviewSectionProps): JSX.Element {
+export function OverviewSection({ data, items, market, sort, order, onMarketSelect, onSelectAsset, onCompare }: OverviewSectionProps): JSX.Element {
   const visibleAssetIds = new Set(items.map((item) => item.id));
   const visibleEvents = data.scannerEvents.events.filter((event) => visibleAssetIds.has(event.assetId)).slice(0, 12);
 
   return (
     <section className="overview-section" aria-label="市场概览">
       <OverviewHeading generatedAt={data.chartWall.generatedAt} />
-      <SummaryStrip data={data} visibleSearchCount={visibleSearchCount} />
-      <BreadthStrip data={data} />
+      <SummaryStrip data={data} items={items} />
+      <BreadthStrip items={items} />
       <MarketPulseBoard items={items} activeMarket={market} onMarketSelect={onMarketSelect} />
       <SortAwareMoversStrip items={items} sort={sort} order={order} onSelect={onSelectAsset} onCompare={onCompare} />
       <OpportunityLeaderboard items={items} onSelect={onSelectAsset} onCompare={onCompare} />
