@@ -54,6 +54,17 @@
   justify-content: space-between;
 }
 
+.asset-directory-message {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid #d7dde7;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #516077;
+  font-size: 13px;
+  font-weight: 800;
+}
+
 .asset-directory-toolbar {
   justify-content: flex-start;
   padding: 10px;

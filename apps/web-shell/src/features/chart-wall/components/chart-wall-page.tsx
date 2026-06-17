@@ -20,7 +20,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { NavLink, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { AppShell, Button, ErrorState, IconButton, LoadingState, RangePicker, TimeframePicker } from "@gold-insights/ui";
 import type { ControlOption } from "@gold-insights/ui";
-import type { AssetDirectoryCategoryId, AssetDirectoryCoverage, AssetDirectorySortKey, AssetDirectoryStatusFilter, ChartWallSortOrder } from "@gold-insights/market-domain";
+import type { AssetDirectoryCategoryId, AssetDirectoryCoverage, AssetDirectoryItem, AssetDirectorySortKey, AssetDirectoryStatusFilter, ChartWallSortOrder } from "@gold-insights/market-domain";
 import type { ChartWallFilters, ChartWallPageData } from "@/shared/types/api.types";
 import { formatDateTime } from "@/shared/utils/format-number.utils";
 import { assetTypeFallbackOptions, defaultFilters, levelFallbackOptions, marketFallbackOptions, signalFallbackOptions, sortOptions, sortOrderOptions, tagFallbackOptions } from "../configs/chart-wall-page.config";
@@ -93,6 +93,8 @@ export function ChartWallPage(): JSX.Element {
   const compareSelection = useCompareSelection(range, timeframe);
   const [importingFundCode, setImportingFundCode] = useState<string | null>(null);
   const [fundImportMessage, setFundImportMessage] = useState<string | null>(null);
+  const [importingDirectoryItemId, setImportingDirectoryItemId] = useState<string | null>(null);
+  const [assetDirectoryMessage, setAssetDirectoryMessage] = useState<string | null>(null);
   const isAssetDirectoryView = activeView === "fund-directory" || activeView === "asset-directory";
   const directoryChartFilters = getDirectoryChartFilters(directoryCategoryId);
   const effectiveMarket = activeView === "asset-directory" ? directoryChartFilters.market : market;
@@ -232,6 +234,25 @@ export function ChartWallPage(): JSX.Element {
       setFundImportMessage(nextError instanceof Error ? nextError.message : "基金导入失败");
     } finally {
       setImportingFundCode(null);
+    }
+  };
+
+  const handleAssetDirectoryImport = async (item: AssetDirectoryItem): Promise<void> => {
+    if (!directoryCategoryId) {
+      return;
+    }
+
+    setImportingDirectoryItemId(item.id);
+    setAssetDirectoryMessage(null);
+    try {
+      const response = await chartWallApiService.importAssetDirectoryItem(directoryCategoryId, item.id);
+      setAssetDirectoryMessage(`${response.asset.name} 已加入走势池，导入 ${response.barsImported.toLocaleString("en-US")} 条日线数据`);
+      await assetDirectoryQuery.reload();
+      await taskCenterQuery.reload();
+    } catch (nextError) {
+      setAssetDirectoryMessage(nextError instanceof Error ? nextError.message : "加入走势池失败");
+    } finally {
+      setImportingDirectoryItemId(null);
     }
   };
 
@@ -521,9 +542,15 @@ export function ChartWallPage(): JSX.Element {
                 order={effectiveOrder}
                 search={search}
                 statusLabel={assetDirectoryQuery.data ? coverageLabel(assetDirectoryQuery.data.category.coverage) : "真实已入库 / 走势池"}
+                canImport={Boolean(assetDirectoryQuery.data?.category.capabilities.includes("import_to_pool"))}
+                importingItemId={importingDirectoryItemId}
+                message={assetDirectoryMessage}
                 onStatusChange={(value) => setQueryValue("status", value, "all")}
                 onSortChange={setSortQueryValue}
                 onReset={resetFilters}
+                onImport={(item) => {
+                  void handleAssetDirectoryImport(item);
+                }}
                 onSelect={selectAsset}
                 onCompare={compareSelection.toggleCompare}
               />

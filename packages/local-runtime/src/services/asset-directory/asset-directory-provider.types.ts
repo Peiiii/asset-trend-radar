@@ -1,4 +1,4 @@
-import type { AssetDirectoryCategory, AssetDirectoryCategoryId, AssetDirectoryPageResponse, AssetDirectorySortKey, AssetDirectorySortOrder, AssetDirectoryStatusFilter } from "@gold-insights/market-domain";
+import type { AssetDirectoryCategory, AssetDirectoryCategoryId, AssetDirectoryImportResponse, AssetDirectoryPageResponse, AssetDirectorySortKey, AssetDirectorySortOrder, AssetDirectoryStatusFilter } from "@gold-insights/market-domain";
 
 export type AssetDirectoryQuery = {
   keyword: string;
@@ -13,4 +13,5 @@ export type AssetDirectoryProvider = {
   readonly categoryId: AssetDirectoryCategoryId;
   getCategory(): Promise<AssetDirectoryCategory> | AssetDirectoryCategory;
   listItems(query: AssetDirectoryQuery): Promise<AssetDirectoryPageResponse> | AssetDirectoryPageResponse;
+  importItem?(itemId: string): Promise<AssetDirectoryImportResponse> | AssetDirectoryImportResponse;
 };

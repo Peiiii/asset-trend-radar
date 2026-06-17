@@ -15,6 +15,7 @@ import { assetUniverse, tradableAssetUniverse } from "../configs/asset-universe.
 import type { LocalRuntimeOptions, LocalRuntimeStartResult } from "../types/local-runtime-options.types";
 import { AssetDirectoryService } from "./asset-directory.service";
 import { CryptoAssetDirectoryProvider } from "./asset-directory/crypto-asset-directory.provider";
+import { CryptoAssetImportService } from "./asset-directory/crypto-asset-import.service";
 import { FundAssetDirectoryProvider } from "./asset-directory/fund-asset-directory.provider";
 import { TrendPoolAssetDirectoryProvider } from "./asset-directory/trend-pool-asset-directory.provider";
 import { ChartWallQueryService } from "./chart-wall-query.service";
@@ -71,9 +72,19 @@ export class LocalRuntimeService {
       ingestionJobRepository,
       rawFileRepository
     );
+    const cryptoCatalogProvider = new BinanceCryptoCatalogProvider();
+    const cryptoAssetImportService = new CryptoAssetImportService(
+      this.options.historyLimit,
+      cryptoCatalogProvider,
+      assetRepository,
+      marketDataRepository,
+      scannerEventRepository,
+      ingestionJobRepository,
+      rawFileRepository
+    );
     const assetDirectoryService = new AssetDirectoryService([
       new FundAssetDirectoryProvider(this.fundDiscoveryService),
-      new CryptoAssetDirectoryProvider(new BinanceCryptoCatalogProvider(), assetRepository, marketDataRepository),
+      new CryptoAssetDirectoryProvider(cryptoCatalogProvider, assetRepository, marketDataRepository, cryptoAssetImportService),
       new TrendPoolAssetDirectoryProvider({
         categoryId: "commodities",
         label: "商品目录",

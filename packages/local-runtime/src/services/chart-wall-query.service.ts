@@ -35,8 +35,6 @@ type RangedSeries = {
   workingBars: OhlcvBar[];
 };
 
-type ChartWallFacetDimension = "market" | "assetType" | "level" | "tag";
-
 export class ChartWallQueryService {
   private readonly itemSorter = new ChartWallItemSorter();
   private readonly facetBuilder = new ChartWallFacetBuilderService();
@@ -467,19 +465,15 @@ export class ChartWallQueryService {
   private isMarketDataAsset = (asset: AssetSummary): boolean => asset.level !== "asset-class" && asset.level !== "market";
 
   private getContextualFacets = (marketDataAssets: AssetSummary[], query: ChartWallQuery, toPricedItems: (assets: AssetSummary[]) => ChartWallItem[]): ChartWallFacets => {
-    const assetsFor = (dimension: ChartWallFacetDimension): AssetSummary[] =>
-      marketDataAssets.filter((asset) => this.matchesChartWallQuery(asset, query, dimension));
-    const signalFilteredAssetsFor = (dimension: ChartWallFacetDimension): ChartWallItem[] =>
-      this.facetBuilder.applySignalFilter(toPricedItems(assetsFor(dimension)), query.signal);
     const signalItems = toPricedItems(marketDataAssets.filter((asset) => this.matchesChartWallQuery(asset, query)));
-    const sourceItems = this.facetBuilder.applySignalFilter(signalItems, query.signal);
+    const globalItems = this.facetBuilder.applySignalFilter(toPricedItems(marketDataAssets), query.signal);
 
     return {
-      markets: this.facetBuilder.buildMarketFacets(signalFilteredAssetsFor("market")),
-      assetTypes: this.facetBuilder.buildAssetTypeFacets(signalFilteredAssetsFor("assetType")),
-      levels: this.facetBuilder.buildLevelFacets(signalFilteredAssetsFor("level")),
-      tags: this.facetBuilder.buildTagFacets(signalFilteredAssetsFor("tag")),
-      sources: this.facetBuilder.buildSourceFacets(sourceItems),
+      markets: this.facetBuilder.buildMarketFacets(globalItems),
+      assetTypes: this.facetBuilder.buildAssetTypeFacets(globalItems),
+      levels: this.facetBuilder.buildLevelFacets(globalItems),
+      tags: this.facetBuilder.buildTagFacets(globalItems),
+      sources: this.facetBuilder.buildSourceFacets(globalItems),
       signals: this.facetBuilder.buildSignalFacets(signalItems)
     };
   };
@@ -487,24 +481,24 @@ export class ChartWallQueryService {
   private matchesChartWallUniverseQuery = (asset: AssetSummary, query: ChartWallQuery): boolean =>
     query.universe === "global" || asset.market === query.universe || asset.parentId === query.universe;
 
-  private matchesChartWallQuery = (asset: AssetSummary, query: ChartWallQuery, ignoredDimension?: ChartWallFacetDimension): boolean => {
+  private matchesChartWallQuery = (asset: AssetSummary, query: ChartWallQuery): boolean => {
     if (!this.matchesChartWallUniverseQuery(asset, query)) {
       return false;
     }
 
-    if (ignoredDimension !== "level" && query.level !== "all" && asset.level !== query.level) {
+    if (query.level !== "all" && asset.level !== query.level) {
       return false;
     }
 
-    if (ignoredDimension !== "market" && query.market !== "all" && asset.market !== query.market) {
+    if (query.market !== "all" && asset.market !== query.market) {
       return false;
     }
 
-    if (ignoredDimension !== "assetType" && query.assetType !== "all" && asset.assetType !== query.assetType) {
+    if (query.assetType !== "all" && asset.assetType !== query.assetType) {
       return false;
     }
 
-    if (ignoredDimension !== "tag" && query.tag !== "all" && !(asset.tags ?? []).includes(query.tag)) {
+    if (query.tag !== "all" && !(asset.tags ?? []).includes(query.tag)) {
       return false;
     }
 

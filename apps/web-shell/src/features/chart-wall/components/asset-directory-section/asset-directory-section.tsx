@@ -1,4 +1,4 @@
-import { GitCompare, Search } from "lucide-react";
+import { GitCompare, Plus, Search } from "lucide-react";
 import { Button, DataTableFrame, EmptyState, Select, SignalBadge } from "@gold-insights/ui";
 import type { ControlOption } from "@gold-insights/ui";
 import type { AssetDirectoryItem, AssetDirectorySortKey, AssetDirectorySortOrder, AssetDirectoryStatusFilter } from "@gold-insights/market-domain";
@@ -18,9 +18,13 @@ type AssetDirectorySectionProps = {
   order: AssetDirectorySortOrder;
   search: string;
   statusLabel: string;
+  canImport: boolean;
+  importingItemId: string | null;
+  message: string | null;
   onStatusChange(status: AssetDirectoryStatusFilter): void;
   onSortChange(sort: AssetDirectorySortKey, order?: AssetDirectorySortOrder): void;
   onReset(): void;
+  onImport(item: AssetDirectoryItem): void;
   onSelect(assetId: string): void;
   onCompare(assetId: string): void;
 };
@@ -47,7 +51,7 @@ const directoryOrderOptions: ControlOption[] = [
   { value: "asc", label: "升序" }
 ];
 
-export function AssetDirectorySection({ title, description, items, totalCount, categoryItemCount, categoryInPoolCount, status, sort, order, search, statusLabel, onStatusChange, onSortChange, onReset, onSelect, onCompare }: AssetDirectorySectionProps): JSX.Element {
+export function AssetDirectorySection({ title, description, items, totalCount, categoryItemCount, categoryInPoolCount, status, sort, order, search, statusLabel, canImport, importingItemId, message, onStatusChange, onSortChange, onReset, onImport, onSelect, onCompare }: AssetDirectorySectionProps): JSX.Element {
   const positiveCount = items.filter((item) => (item.returns.return1m ?? item.returns.return1d ?? 0) > 0).length;
   const sourceCount = new Set(items.map((item) => item.provider)).size;
   const hasHiddenItems = totalCount > items.length;
@@ -73,6 +77,8 @@ export function AssetDirectorySection({ title, description, items, totalCount, c
         <Select id="asset-directory-order" label="方向" value={order} options={directoryOrderOptions} onChange={(value) => onSortChange(sort, getDirectoryOrder(value))} />
         <Button type="button" variant="ghost" onClick={onReset}>重置</Button>
       </div>
+
+      {message && <p className="asset-directory-message">{message}</p>}
 
       <div className="asset-directory-result-bar">
         <span>当前筛选 {totalCount.toLocaleString("en-US")} 个</span>
@@ -135,6 +141,12 @@ export function AssetDirectorySection({ title, description, items, totalCount, c
                 </td>
                 <td>
                   <div className="asset-directory-actions">
+                    {canImport && item.poolState !== "in_pool" && (
+                      <Button type="button" variant="secondary" disabled={importingItemId !== null} onClick={() => onImport(item)}>
+                        <Plus size={14} aria-hidden="true" />
+                        {importingItemId === item.id ? "导入中" : "加入走势池"}
+                      </Button>
+                    )}
                     <Button type="button" variant="ghost" disabled={!item.assetId} onClick={() => item.assetId && onSelect(item.assetId)}>详情</Button>
                     <Button type="button" variant="ghost" disabled={!item.assetId} onClick={() => item.assetId && onCompare(item.assetId)}>
                       <GitCompare size={14} aria-hidden="true" />

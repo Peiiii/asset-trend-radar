@@ -1,34 +1,15 @@
 import type { BinanceCryptoCatalogItem, BinanceCryptoCatalogProvider } from "@gold-insights/data-adapters";
 import type { SqliteAssetRepository, SqliteMarketDataRepository } from "@gold-insights/data-storage";
 import type { AssetDirectoryCategory, AssetDirectoryItem, AssetDirectoryPageResponse, AssetSummary } from "@gold-insights/market-domain";
+import type { CryptoAssetImportService } from "./crypto-asset-import.service";
 import { AssetDirectoryItemListService } from "./asset-directory-item-list.service";
 import { AssetDirectoryItemMetricsService } from "./asset-directory-item-metrics.service";
 import type { AssetDirectoryProvider, AssetDirectoryQuery } from "./asset-directory-provider.types";
+import { getCryptoAssetLabel } from "./crypto-asset-labels.config";
 
 type CryptoCatalogLoadResult = {
   catalogItems: BinanceCryptoCatalogItem[];
   isCatalogAvailable: boolean;
-};
-
-const cryptoNameByBaseAsset: Record<string, string> = {
-  BTC: "Bitcoin",
-  ETH: "Ethereum",
-  BNB: "BNB",
-  SOL: "Solana",
-  XRP: "XRP",
-  ADA: "Cardano",
-  DOGE: "Dogecoin",
-  AVAX: "Avalanche",
-  TRX: "TRON",
-  LINK: "Chainlink",
-  DOT: "Polkadot",
-  TON: "Toncoin",
-  BCH: "Bitcoin Cash",
-  LTC: "Litecoin",
-  UNI: "Uniswap",
-  AAVE: "Aave",
-  NEAR: "NEAR Protocol",
-  ETC: "Ethereum Classic"
 };
 
 export class CryptoAssetDirectoryProvider implements AssetDirectoryProvider {
@@ -39,7 +20,8 @@ export class CryptoAssetDirectoryProvider implements AssetDirectoryProvider {
   public constructor(
     private readonly catalogProvider: BinanceCryptoCatalogProvider,
     private readonly assetRepository: SqliteAssetRepository,
-    marketDataRepository: SqliteMarketDataRepository
+    marketDataRepository: SqliteMarketDataRepository,
+    private readonly importService: CryptoAssetImportService
   ) {
     this.itemMetricsService = new AssetDirectoryItemMetricsService(marketDataRepository);
   }
@@ -58,7 +40,7 @@ export class CryptoAssetDirectoryProvider implements AssetDirectoryProvider {
       assetTypes: ["crypto"],
       markets: ["加密"],
       coverage: loadResult.isCatalogAvailable ? "partial" : "trend_pool_only",
-      capabilities: ["search", "facets", "snapshot_metrics", "compare", "open_detail"],
+      capabilities: ["search", "facets", "snapshot_metrics", "import_to_pool", "compare", "open_detail"],
       itemCount: items.length,
       inPoolCount: items.filter((item) => item.poolState === "in_pool").length,
       lastSyncedAt: latestSyncedAt
@@ -102,6 +84,9 @@ export class CryptoAssetDirectoryProvider implements AssetDirectoryProvider {
       }
     };
   };
+
+  public importItem = async (itemId: string) =>
+    this.importService.importItem(itemId);
 
   private loadCatalog = async (): Promise<CryptoCatalogLoadResult> => {
     try {
@@ -148,7 +133,7 @@ export class CryptoAssetDirectoryProvider implements AssetDirectoryProvider {
   private toSnapshotItem = (item: BinanceCryptoCatalogItem): AssetDirectoryItem => ({
     id: `${this.categoryId}:binance:${item.symbol}`,
     categoryId: this.categoryId,
-    label: cryptoNameByBaseAsset[item.baseAsset] ?? item.baseAsset,
+    label: getCryptoAssetLabel(item.baseAsset),
     symbol: item.displaySymbol,
     market: "加密",
     assetType: "crypto",

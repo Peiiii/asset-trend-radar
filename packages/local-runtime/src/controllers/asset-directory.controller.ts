@@ -37,6 +37,24 @@ export class AssetDirectoryController {
     );
   };
 
+  public handleImportItem = async (categoryId: string, itemId: string, response: ServerResponse): Promise<void> => {
+    const resolvedCategoryId = this.getCategoryId(categoryId);
+
+    if (!resolvedCategoryId) {
+      this.errorResponseProvider.writeNotFound(response);
+      return;
+    }
+
+    const result = await this.assetDirectoryService.importItem(resolvedCategoryId, decodeURIComponent(itemId));
+
+    if (!result) {
+      this.errorResponseProvider.writeBadRequest(response, "该目录暂不支持加入走势池");
+      return;
+    }
+
+    this.jsonResponseProvider.writeJson(response, result);
+  };
+
   private getCategoryId = (value: string): AssetDirectoryCategoryId | null => {
     const supported: AssetDirectoryCategoryId[] = ["funds", "crypto", "commodities", "us-equity", "a-share", "hk-equity", "macro"];
     return supported.includes(value as AssetDirectoryCategoryId) ? (value as AssetDirectoryCategoryId) : null;

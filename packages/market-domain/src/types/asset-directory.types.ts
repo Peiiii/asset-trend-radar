@@ -1,4 +1,4 @@
-import type { AssetType } from "./asset.types";
+import type { AssetSummary, AssetType } from "./asset.types";
 
 export type AssetDirectoryCategoryId = "funds" | "crypto" | "commodities" | "us-equity" | "a-share" | "hk-equity" | "macro";
 export type AssetDirectoryCoverage = "full" | "partial" | "trend_pool_only";
@@ -78,4 +78,16 @@ export type AssetDirectoryPageResponse = {
     assetTypes: AssetDirectoryFacet[];
     statuses: Array<AssetDirectoryFacet & { value: AssetDirectoryStatusFilter }>;
   };
+};
+
+export type AssetDirectoryImportResponse = {
+  generatedAt: string;
+  categoryId: AssetDirectoryCategoryId;
+  itemId: string;
+  asset: AssetSummary;
+  barsImported: number;
+  firstBarAt: string | null;
+  latestBarAt: string | null;
+  source: string;
+  failures: string[];
 };

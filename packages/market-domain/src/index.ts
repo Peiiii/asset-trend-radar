@@ -7,6 +7,7 @@ export type {
   AssetDirectoryCoverage,
   AssetDirectoryDataState,
   AssetDirectoryFacet,
+  AssetDirectoryImportResponse,
   AssetDirectoryItem,
   AssetDirectoryPageResponse,
   AssetDirectoryPoolState,

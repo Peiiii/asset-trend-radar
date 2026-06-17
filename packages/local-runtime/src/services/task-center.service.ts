@@ -158,6 +158,11 @@ export class TaskCenterService {
       return `基金走势导入 ${code}`;
     }
 
+    if (job.vendor === "binance" && job.dataset.startsWith("crypto-import")) {
+      const symbol = typeof job.metadata.symbol === "string" ? job.metadata.symbol : job.dataset.replace("crypto-import:", "");
+      return `加密走势导入 ${symbol}`;
+    }
+
     return `${job.vendor} / ${job.dataset}`;
   };
 }

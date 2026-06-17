@@ -1,4 +1,4 @@
-import type { AssetDetailResponse, AssetDirectoryPageResponse, ChartWallResponse, CompareResponse, DataHealthResponse, FundCatalogPageResponse, FundCatalogSummaryResponse, FundCatalogSyncResponse, FundImportResponse, FundSearchResponse, RuntimeTaskStartResponse, ScannerEventsResponse, TaskCenterResponse, UniverseTreeResponse, WatchlistsResponse } from "@gold-insights/market-domain";
+import type { AssetDetailResponse, AssetDirectoryImportResponse, AssetDirectoryPageResponse, ChartWallResponse, CompareResponse, DataHealthResponse, FundCatalogPageResponse, FundCatalogSummaryResponse, FundCatalogSyncResponse, FundImportResponse, FundSearchResponse, RuntimeTaskStartResponse, ScannerEventsResponse, TaskCenterResponse, UniverseTreeResponse, WatchlistsResponse } from "@gold-insights/market-domain";
 import type { AssetDirectoryPageFilters, ChartWallFilters, ChartWallPageData, FundCatalogPageFilters } from "@/shared/types/api.types";
 
 export class ChartWallApiService {
@@ -59,6 +59,11 @@ export class ChartWallApiService {
     return this.fetchJson<AssetDirectoryPageResponse>(`/api/directories/${encodeURIComponent(filters.categoryId)}/items?${query}`, signal);
   };
 
+  public importAssetDirectoryItem = async (categoryId: string, itemId: string): Promise<AssetDirectoryImportResponse> =>
+    this.fetchJson<AssetDirectoryImportResponse>(`/api/directories/${encodeURIComponent(categoryId)}/items/${encodeURIComponent(itemId)}/import`, {
+      method: "POST"
+    });
+
   public searchEastmoneyFunds = async (keyword: string): Promise<FundSearchResponse> =>
     this.fetchJson<FundSearchResponse>(`/api/funds/eastmoney/search?keyword=${encodeURIComponent(keyword)}&limit=24`);
 
@@ -108,10 +113,19 @@ export class ChartWallApiService {
     const response = await fetch(url, init);
 
     if (!response.ok) {
-      throw new Error(`接口请求失败: ${response.status}`);
+      throw new Error(await this.getErrorMessage(response));
     }
 
     return (await response.json()) as TData;
+  };
+
+  private getErrorMessage = async (response: Response): Promise<string> => {
+    try {
+      const payload = (await response.json()) as { error?: { message?: string } };
+      return payload.error?.message ?? `接口请求失败: ${response.status}`;
+    } catch {
+      return `接口请求失败: ${response.status}`;
+    }
   };
 }
 

@@ -121,6 +121,12 @@ export class LocalApiServerService {
         return;
       }
 
+      const assetDirectoryItemImportMatch = /^\/api\/directories\/([^/]+)\/items\/([^/]+)\/import$/.exec(url.pathname);
+      if (request.method === "POST" && assetDirectoryItemImportMatch) {
+        await this.assetDirectoryController.handleImportItem(assetDirectoryItemImportMatch[1], assetDirectoryItemImportMatch[2], response);
+        return;
+      }
+
       if (request.method === "POST" && url.pathname === "/api/watchlists") {
         await this.watchlistsController.handleCreate(request, response);
         return;
