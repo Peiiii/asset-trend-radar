@@ -1,0 +1,249 @@
+.opportunity-digest {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.opportunity-digest__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.opportunity-digest__heading h2 {
+  margin: 0;
+}
+
+.opportunity-digest__heading p {
+  margin: 5px 0 0;
+  color: #657184;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.opportunity-digest__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(184px, 1fr));
+  gap: 10px;
+}
+
+.opportunity-digest-card {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  min-height: 178px;
+  border: 1px solid #d7dde7;
+  border-radius: 8px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.opportunity-digest-card::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  content: "";
+  background: #cbd5e1;
+}
+
+.opportunity-digest-card:hover,
+.opportunity-digest-card:focus-within {
+  border-color: #b9c5d4;
+  box-shadow: 0 10px 24px rgba(23, 32, 51, 0.07);
+}
+
+.opportunity-digest-card--positive::before {
+  background: #1f8a70;
+}
+
+.opportunity-digest-card--negative::before {
+  background: #b33a3a;
+}
+
+.opportunity-digest-card--amber::before {
+  background: #bd7a16;
+}
+
+.opportunity-digest-card--blue::before {
+  background: #2b6fae;
+}
+
+.opportunity-digest-card__main {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  padding: 13px 13px 48px 17px;
+  border: 0;
+  background: transparent;
+  color: #172033;
+  cursor: pointer;
+  text-align: left;
+}
+
+.opportunity-digest-card__main:hover {
+  background: #fbfdff;
+}
+
+.opportunity-digest-card__main:focus-visible,
+.opportunity-digest-card__compare:focus-visible {
+  outline: 2px solid #8fc9bd;
+  outline-offset: -2px;
+}
+
+.opportunity-digest-card__main--static {
+  cursor: default;
+}
+
+.opportunity-digest-card__main--static:hover {
+  background: transparent;
+}
+
+.opportunity-digest-card__topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  color: #56637a;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.opportunity-digest-card__icon {
+  display: inline-grid;
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 8px;
+  background: #edf2f7;
+  color: #4d5a70;
+}
+
+.opportunity-digest-card--positive .opportunity-digest-card__icon {
+  background: #e2f5ee;
+  color: #146a58;
+}
+
+.opportunity-digest-card--negative .opportunity-digest-card__icon {
+  background: #fff0f0;
+  color: #a43131;
+}
+
+.opportunity-digest-card--amber .opportunity-digest-card__icon {
+  background: #fff5dc;
+  color: #986211;
+}
+
+.opportunity-digest-card--blue .opportunity-digest-card__icon {
+  background: #edf6ff;
+  color: #2b6fae;
+}
+
+.opportunity-digest-card__body {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.opportunity-digest-card__body > span {
+  overflow: hidden;
+  color: #728096;
+  font-size: 12px;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.opportunity-digest-card__body strong {
+  overflow: hidden;
+  color: #172033;
+  font-size: 20px;
+  font-weight: 950;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.opportunity-digest-card__body p {
+  display: -webkit-box;
+  min-height: 38px;
+  margin: 0;
+  overflow: hidden;
+  color: #536076;
+  font-size: 12px;
+  font-weight: 780;
+  line-height: 1.55;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.opportunity-digest-card__metric {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 34px;
+  padding: 7px 8px;
+  border-radius: 8px;
+  background: #f6f8fb;
+}
+
+.opportunity-digest-card__metric > span {
+  color: #657184;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.opportunity-digest-card__arrow {
+  position: absolute;
+  right: 14px;
+  top: 14px;
+  color: #7a8799;
+}
+
+.opportunity-digest-card__compare {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 30px;
+  padding: 0 9px;
+  border: 1px solid #d7dde7;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #556276;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.opportunity-digest-card__compare:hover {
+  border-color: #9ccdc3;
+  background: #e8f3ef;
+  color: #1f6f5f;
+}
+
+@media (max-width: 1180px) {
+  .opportunity-digest__grid {
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .opportunity-digest__heading {
+    display: grid;
+  }
+
+  .opportunity-digest__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .opportunity-digest-card {
+    min-height: 164px;
+  }
+}

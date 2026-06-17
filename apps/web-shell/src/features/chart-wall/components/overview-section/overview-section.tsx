@@ -4,6 +4,7 @@ import type { ChartWallPageData } from "@/shared/types/api.types";
 import { formatDateTime } from "@/shared/utils/format-number.utils";
 import { BreadthStrip, SummaryStrip } from "../dashboard-strips";
 import { MarketPulseBoard } from "../market-pulse-board/market-pulse-board";
+import { OpportunityDigest } from "../opportunity-digest/opportunity-digest";
 import { OpportunityLeaderboard } from "../opportunity-leaderboard/opportunity-leaderboard";
 import { eventTone, eventTypeLabel, severityTone } from "../scanner-section/scanner-section.utils";
 import { SortAwareMoversStrip } from "../sort-aware-movers-strip/sort-aware-movers-strip";
@@ -32,6 +33,7 @@ export function OverviewSection({ data, items, market, sort, order, onMarketSele
     <section className="overview-section" aria-label="市场概览">
       <OverviewHeading generatedAt={data.chartWall.generatedAt} />
       <SummaryStrip data={data} items={items} />
+      <OpportunityDigest items={items} onMarketSelect={onMarketSelect} onSelect={onSelectAsset} onCompare={onCompare} />
       <BreadthStrip items={items} />
       <MarketPulseBoard items={items} activeMarket={market} onMarketSelect={onMarketSelect} />
       <SortAwareMoversStrip items={items} sort={sort} order={order} onSelect={onSelectAsset} onCompare={onCompare} />
