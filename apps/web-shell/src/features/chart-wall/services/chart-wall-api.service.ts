@@ -49,6 +49,8 @@ export class ChartWallApiService {
   public fetchAssetDirectoryPage = async (filters: AssetDirectoryPageFilters, signal?: AbortSignal): Promise<AssetDirectoryPageResponse> => {
     const query = new URLSearchParams({
       keyword: filters.keyword,
+      market: filters.market,
+      assetType: filters.assetType,
       status: filters.status,
       sort: filters.sort,
       order: filters.order,

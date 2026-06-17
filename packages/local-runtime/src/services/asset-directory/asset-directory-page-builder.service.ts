@@ -16,13 +16,19 @@ export class AssetDirectoryPageBuilderService {
   public buildPage = ({ category, items, query, getSearchText }: AssetDirectoryPageBuildRequest): AssetDirectoryPageResponse => {
     const keyword = query.keyword.trim().toLowerCase();
     const keywordItems = this.filterByKeyword(items, keyword, getSearchText);
-    const matchedItems = this.filterByStatus(keywordItems, query);
+    const marketItems = this.filterByMarket(keywordItems, query.market);
+    const assetTypeItems = this.filterByAssetType(marketItems, query.assetType);
+    const matchedItems = this.filterByStatus(assetTypeItems, query);
     const sortedItems = this.itemListService.sortItems(matchedItems, query.sort, query.order);
+    const marketFacetItems = this.filterByStatus(this.filterByAssetType(keywordItems, query.assetType), query);
+    const assetTypeFacetItems = this.filterByStatus(this.filterByMarket(keywordItems, query.market), query);
 
     return {
       generatedAt: new Date().toISOString(),
       category,
       keyword: query.keyword,
+      market: query.market,
+      assetType: query.assetType,
       status: query.status,
       sort: query.sort,
       order: query.order,
@@ -31,12 +37,12 @@ export class AssetDirectoryPageBuilderService {
       totalCount: matchedItems.length,
       items: sortedItems.slice(query.offset, query.offset + query.limit),
       facets: {
-        markets: this.itemListService.toFacets(keywordItems, (item) => item.market),
-        assetTypes: this.itemListService.toFacets(keywordItems, (item) => item.assetType, getAssetTypeLabel),
+        markets: this.itemListService.toFacets(marketFacetItems, (item) => item.market),
+        assetTypes: this.itemListService.toFacets(assetTypeFacetItems, (item) => item.assetType, getAssetTypeLabel),
         statuses: [
-          { value: "all", label: "全部状态", count: keywordItems.length },
-          { value: "in_pool", label: "已加入走势池", count: keywordItems.filter((item) => item.poolState === "in_pool").length },
-          { value: "not_in_pool", label: "待加入走势池", count: keywordItems.filter((item) => item.poolState === "not_in_pool").length }
+          { value: "all", label: "全部状态", count: assetTypeItems.length },
+          { value: "in_pool", label: "已加入走势池", count: assetTypeItems.filter((item) => item.poolState === "in_pool").length },
+          { value: "not_in_pool", label: "待加入走势池", count: assetTypeItems.filter((item) => item.poolState === "not_in_pool").length }
         ]
       }
     };
@@ -48,6 +54,22 @@ export class AssetDirectoryPageBuilderService {
     }
 
     return items.filter((item) => getSearchText(item).toLowerCase().includes(keyword));
+  };
+
+  private filterByMarket = (items: AssetDirectoryItem[], market: string): AssetDirectoryItem[] => {
+    if (market === "all") {
+      return items;
+    }
+
+    return items.filter((item) => item.market === market);
+  };
+
+  private filterByAssetType = (items: AssetDirectoryItem[], assetType: AssetDirectoryQuery["assetType"]): AssetDirectoryItem[] => {
+    if (assetType === "all") {
+      return items;
+    }
+
+    return items.filter((item) => item.assetType === assetType);
   };
 
   private filterByStatus = (items: AssetDirectoryItem[], query: AssetDirectoryQuery): AssetDirectoryItem[] => {

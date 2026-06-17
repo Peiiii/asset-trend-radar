@@ -1,5 +1,5 @@
 import type { ServerResponse } from "node:http";
-import type { AssetDirectoryCategoryId, AssetDirectorySortKey, AssetDirectorySortOrder, AssetDirectoryStatusFilter } from "@gold-insights/market-domain";
+import type { AssetDirectoryAssetTypeFilter, AssetDirectoryCategoryId, AssetDirectorySortKey, AssetDirectorySortOrder, AssetDirectoryStatusFilter } from "@gold-insights/market-domain";
 import { ErrorResponseProvider } from "../providers/error-response.provider";
 import { JsonResponseProvider } from "../providers/json-response.provider";
 import type { AssetDirectoryService } from "../services/asset-directory.service";
@@ -28,6 +28,8 @@ export class AssetDirectoryController {
       response,
       await this.assetDirectoryService.listItems(resolvedCategoryId, {
         keyword: getStringQueryParam(url, "keyword", "").trim(),
+        market: getStringQueryParam(url, "market", "all").trim() || "all",
+        assetType: this.getAssetType(getStringQueryParam(url, "assetType", "all")),
         status: this.getStatus(getStringQueryParam(url, "status", "all")),
         sort: this.getSort(getStringQueryParam(url, "sort", "relevance")),
         order: this.getOrder(getStringQueryParam(url, "order", "desc")),
@@ -66,6 +68,11 @@ export class AssetDirectoryController {
     }
 
     return "all";
+  };
+
+  private getAssetType = (value: string): AssetDirectoryAssetTypeFilter => {
+    const supported: AssetDirectoryAssetTypeFilter[] = ["all", "crypto", "equity", "index", "fund", "commodity", "macro"];
+    return supported.includes(value as AssetDirectoryAssetTypeFilter) ? (value as AssetDirectoryAssetTypeFilter) : "all";
   };
 
   private getSort = (value: string): AssetDirectorySortKey => {

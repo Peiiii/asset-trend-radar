@@ -45,6 +45,12 @@ export class FundAssetDirectoryProvider implements AssetDirectoryProvider {
   };
 
   public listItems = async (query: AssetDirectoryQuery): Promise<AssetDirectoryPageResponse> => {
+    const category = await this.getCategory();
+
+    if (!this.matchesDirectoryFacets(query)) {
+      return this.emptyPage(category, query);
+    }
+
     const page = await this.fundDiscoveryService.listCatalogPage({
       keyword: query.keyword,
       fundType: "all",
@@ -57,8 +63,10 @@ export class FundAssetDirectoryProvider implements AssetDirectoryProvider {
 
     return {
       generatedAt: new Date().toISOString(),
-      category: await this.getCategory(),
+      category,
       keyword: query.keyword,
+      market: query.market,
+      assetType: query.assetType,
       status: query.status,
       sort: query.sort,
       order: query.order,
@@ -77,6 +85,33 @@ export class FundAssetDirectoryProvider implements AssetDirectoryProvider {
       }
     };
   };
+
+  private matchesDirectoryFacets = (query: AssetDirectoryQuery): boolean =>
+    (query.market === "all" || query.market === "基金") && (query.assetType === "all" || query.assetType === "fund");
+
+  private emptyPage = (category: AssetDirectoryCategory, query: AssetDirectoryQuery): AssetDirectoryPageResponse => ({
+    generatedAt: new Date().toISOString(),
+    category,
+    keyword: query.keyword,
+    market: query.market,
+    assetType: query.assetType,
+    status: query.status,
+    sort: query.sort,
+    order: query.order,
+    limit: query.limit,
+    offset: query.offset,
+    totalCount: 0,
+    items: [],
+    facets: {
+      markets: [],
+      assetTypes: [],
+      statuses: [
+        { value: "all", label: "全部状态", count: 0 },
+        { value: "in_pool", label: "已加入走势池", count: 0 },
+        { value: "not_in_pool", label: "待加入走势池", count: 0 }
+      ]
+    }
+  });
 
   private toDirectoryItem = (item: FundCatalogPageItem): AssetDirectoryItem => ({
     id: `${this.categoryId}:${item.code}`,

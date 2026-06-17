@@ -1,7 +1,7 @@
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { Button, EmptyState, Select } from "@gold-insights/ui";
 import type { ControlOption } from "@gold-insights/ui";
-import type { AssetDirectoryItem, AssetDirectoryPageResponse, AssetDirectorySortKey, AssetDirectorySortOrder, AssetDirectoryStatusFilter } from "@gold-insights/market-domain";
+import type { AssetDirectoryAssetTypeFilter, AssetDirectoryItem, AssetDirectoryPageResponse, AssetDirectorySortKey, AssetDirectorySortOrder, AssetDirectoryStatusFilter } from "@gold-insights/market-domain";
 import { DirectoryRankingSummary } from "../directory-ranking-summary/directory-ranking-summary";
 import { ValuationCoverageSummary } from "../valuation-coverage-summary/valuation-coverage-summary";
 import { AssetDirectoryTable } from "./asset-directory-table";
@@ -14,11 +14,15 @@ type AssetDirectorySectionProps = {
   totalCount: number;
   categoryItemCount: number;
   categoryInPoolCount: number;
+  market: string;
+  assetType: AssetDirectoryAssetTypeFilter;
   status: AssetDirectoryStatusFilter;
   sort: AssetDirectorySortKey;
   order: AssetDirectorySortOrder;
   search: string;
   statusLabel: string;
+  marketFacets: AssetDirectoryPageResponse["facets"]["markets"];
+  assetTypeFacets: AssetDirectoryPageResponse["facets"]["assetTypes"];
   statusFacets: AssetDirectoryPageResponse["facets"]["statuses"];
   page: number;
   limit: number;
@@ -28,6 +32,8 @@ type AssetDirectorySectionProps = {
   canImport: boolean;
   importingItemId: string | null;
   message: string | null;
+  onMarketChange(market: string): void;
+  onAssetTypeChange(assetType: AssetDirectoryAssetTypeFilter): void;
   onStatusChange(status: AssetDirectoryStatusFilter): void;
   onSortChange(sort: AssetDirectorySortKey, order?: AssetDirectorySortOrder): void;
   onReset(): void;
@@ -60,12 +66,14 @@ const directoryOrderOptions: ControlOption[] = [
   { value: "asc", label: "升序" }
 ];
 
-export function AssetDirectorySection({ title, description, items, totalCount, categoryItemCount, categoryInPoolCount, status, sort, order, search, statusLabel, statusFacets, page, limit, tableMinWidth, firstColumnMinWidth, lastColumnMinWidth, canImport, importingItemId, message, onStatusChange, onSortChange, onReset, onPageChange, onImport, onSelect, onCompare }: AssetDirectorySectionProps): JSX.Element {
+export function AssetDirectorySection({ title, description, items, totalCount, categoryItemCount, categoryInPoolCount, market, assetType, status, sort, order, search, statusLabel, marketFacets, assetTypeFacets, statusFacets, page, limit, tableMinWidth, firstColumnMinWidth, lastColumnMinWidth, canImport, importingItemId, message, onMarketChange, onAssetTypeChange, onStatusChange, onSortChange, onReset, onPageChange, onImport, onSelect, onCompare }: AssetDirectorySectionProps): JSX.Element {
   const positiveCount = items.filter((item) => (item.returns.return1m ?? item.returns.return1d ?? 0) > 0).length;
   const sourceCount = new Set(items.map((item) => item.provider)).size;
   const totalPages = Math.max(Math.ceil(totalCount / limit), 1);
   const fromIndex = totalCount === 0 ? 0 : (page - 1) * limit + 1;
   const toIndex = Math.min(page * limit, totalCount);
+  const marketOptions = getDirectoryFacetOptions("全部市场", marketFacets, market);
+  const assetTypeOptions = getDirectoryFacetOptions("全部品种", assetTypeFacets, assetType);
   const statusOptions = getDirectoryStatusOptions(statusFacets);
   const handleHeaderSort = (nextSort: AssetDirectorySortKey): void => {
     onSortChange(nextSort, nextSort === sort ? toggleDirectoryOrder(order) : getDefaultDirectoryOrder(nextSort));
@@ -87,6 +95,8 @@ export function AssetDirectorySection({ title, description, items, totalCount, c
       </div>
 
       <div className="asset-directory-toolbar">
+        <Select id="asset-directory-market" label="市场" value={market} options={marketOptions} onChange={onMarketChange} />
+        <Select id="asset-directory-asset-type" label="品种" value={assetType} options={assetTypeOptions} onChange={(value) => onAssetTypeChange(getDirectoryAssetType(value))} />
         <Select id="asset-directory-status" label="状态" value={status} options={statusOptions} onChange={(value) => onStatusChange(getDirectoryStatus(value))} />
         <Select id="asset-directory-sort" label="排序" value={sort} options={directorySortOptions} onChange={(value) => onSortChange(getDirectorySort(value), getDefaultDirectoryOrder(value))} />
         <Select id="asset-directory-order" label="方向" value={order} options={directoryOrderOptions} onChange={(value) => onSortChange(sort, getDirectoryOrder(value))} />
@@ -154,6 +164,24 @@ export function AssetDirectorySection({ title, description, items, totalCount, c
 
 function getDirectoryStatus(value: string): AssetDirectoryStatusFilter {
   return value === "in_pool" || value === "not_in_pool" ? value : "all";
+}
+
+function getDirectoryAssetType(value: string): AssetDirectoryAssetTypeFilter {
+  const supported: AssetDirectoryAssetTypeFilter[] = ["all", "crypto", "equity", "index", "fund", "commodity", "macro"];
+  return supported.includes(value as AssetDirectoryAssetTypeFilter) ? (value as AssetDirectoryAssetTypeFilter) : "all";
+}
+
+function getDirectoryFacetOptions(allLabel: string, facets: AssetDirectoryPageResponse["facets"]["markets"], selectedValue: string): ControlOption[] {
+  const options: ControlOption[] = [
+    { value: "all", label: allLabel, count: facets.reduce((total, facet) => total + facet.count, 0) },
+    ...facets.map((facet) => ({ value: facet.value, label: facet.label, count: facet.count }))
+  ];
+
+  if (selectedValue !== "all" && !options.some((option) => option.value === selectedValue)) {
+    options.push({ value: selectedValue, label: selectedValue, count: 0 });
+  }
+
+  return options;
 }
 
 function getDirectoryStatusOptions(statusFacets: AssetDirectoryPageResponse["facets"]["statuses"]): ControlOption[] {

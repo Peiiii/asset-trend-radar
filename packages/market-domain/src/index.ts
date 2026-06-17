@@ -1,6 +1,7 @@
 export type { AssetLevel, AssetSummary, AssetType, AssetValuation, MarketDataSource } from "./types/asset.types";
 export type {
   AssetDirectoryCategoriesResponse,
+  AssetDirectoryAssetTypeFilter,
   AssetDirectoryCapability,
   AssetDirectoryCategory,
   AssetDirectoryCategoryId,
