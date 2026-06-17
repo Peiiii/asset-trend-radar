@@ -6,6 +6,7 @@ import { formatPrice } from "@/shared/utils/format-number.utils";
 import { DirectoryReturnCell, getDirectoryActiveSortCellClassName } from "../directory-table/directory-return-pill";
 import { DirectoryTableColumns } from "../directory-table/directory-table-columns";
 import { DirectorySortableHeader } from "../directory-table/directory-sortable-header";
+import { DirectoryValuationCell } from "../directory-table/directory-valuation-cell";
 import "./asset-directory-section.css";
 
 type AssetDirectorySectionProps = {
@@ -50,6 +51,7 @@ const directorySortOptions: ControlOption[] = [
   { value: "return_3m", label: "3M 涨幅" },
   { value: "return_6m", label: "6M 涨幅" },
   { value: "return_1y", label: "1Y 涨幅" },
+  { value: "market_cap", label: "市值" },
   { value: "latest_value", label: "最新价" },
   { value: "data_point_count", label: "数据点" },
   { value: "label", label: "名称" }
@@ -112,13 +114,14 @@ export function AssetDirectorySection({ title, description, items, totalCount, c
         <EmptyState title="没有匹配资产" description="换一个关键词或回到图表墙调整筛选条件。" />
       ) : (
         <DataTableFrame rowCount={items.length} className="directory-table-wrapper asset-directory-table-wrapper" minWidth={tableMinWidth} firstColumnMinWidth={firstColumnMinWidth} lastColumnMinWidth={lastColumnMinWidth}>
-          <DirectoryTableColumns />
+          <DirectoryTableColumns includeValuationColumn />
           <thead>
             <tr>
               <DirectorySortableHeader label="资产" sortValue="label" currentSort={sort} order={order} onSort={handleHeaderSort} />
               <th>类型</th>
               <th>状态</th>
               <DirectorySortableHeader label="最新价" sortValue="latest_value" currentSort={sort} order={order} onSort={handleHeaderSort} />
+              <DirectorySortableHeader label="市值" sortValue="market_cap" currentSort={sort} order={order} onSort={handleHeaderSort} />
               <DirectorySortableHeader label="1D" sortValue="return_1d" currentSort={sort} order={order} onSort={handleHeaderSort} />
               <DirectorySortableHeader label="1M" sortValue="return_1m" currentSort={sort} order={order} onSort={handleHeaderSort} />
               <DirectorySortableHeader label="3M" sortValue="return_3m" currentSort={sort} order={order} onSort={handleHeaderSort} />
@@ -145,6 +148,7 @@ export function AssetDirectorySection({ title, description, items, totalCount, c
                 </td>
                 <td><SignalBadge label={poolStateLabel(item.poolState)} tone={item.poolState === "in_pool" ? "positive" : "amber"} /></td>
                 <td className={getDirectoryActiveSortCellClassName(sort === "latest_value")}>{formatPrice(item.latestValue, item.currency)}</td>
+                <DirectoryValuationCell item={item} active={sort === "market_cap"} />
                 <DirectoryReturnCell value={item.returns.return1d} active={sort === "return_1d"} />
                 <DirectoryReturnCell value={item.returns.return1m} active={sort === "return_1m"} />
                 <DirectoryReturnCell value={item.returns.return3m} active={sort === "return_3m"} />
@@ -241,7 +245,7 @@ function getDirectoryStatusOptions(statusFacets: AssetDirectoryPageResponse["fac
 }
 
 function getDirectorySort(value: string): AssetDirectorySortKey {
-  const supported: AssetDirectorySortKey[] = ["label", "latest_value", "return_1d", "return_1m", "return_3m", "return_6m", "return_1y", "data_point_count"];
+  const supported: AssetDirectorySortKey[] = ["label", "latest_value", "market_cap", "return_1d", "return_1m", "return_3m", "return_6m", "return_1y", "data_point_count"];
   return supported.includes(value as AssetDirectorySortKey) ? (value as AssetDirectorySortKey) : "return_1m";
 }
 

@@ -1,24 +1,29 @@
-import type { BinanceCryptoCatalogItem, BinanceCryptoCatalogProvider } from "@gold-insights/data-adapters";
+import type { BinanceCryptoCatalogItem, BinanceCryptoCatalogProvider, CoinGeckoCryptoMarketItem, CoinGeckoCryptoMarketsProvider } from "@gold-insights/data-adapters";
 import type { SqliteAssetRepository, SqliteMarketDataRepository } from "@gold-insights/data-storage";
-import type { AssetDirectoryCategory, AssetDirectoryItem, AssetDirectoryPageResponse, AssetSummary } from "@gold-insights/market-domain";
+import type { AssetDirectoryCategory, AssetDirectoryItem, AssetDirectoryPageResponse, AssetDirectoryValuation, AssetSummary } from "@gold-insights/market-domain";
 import type { CryptoAssetImportService } from "./crypto-asset-import.service";
 import { AssetDirectoryItemMetricsService } from "./asset-directory-item-metrics.service";
 import { AssetDirectoryPageBuilderService } from "./asset-directory-page-builder.service";
 import type { AssetDirectoryProvider, AssetDirectoryQuery } from "./asset-directory-provider.types";
 import { getCryptoAssetLabel } from "./crypto-asset-labels.config";
+import { AssetDirectoryValuationFactory } from "./shared/asset-directory-valuation.factory";
 
 type CryptoCatalogLoadResult = {
   catalogItems: BinanceCryptoCatalogItem[];
+  valuationsBySymbol: Map<string, CoinGeckoCryptoMarketItem>;
   isCatalogAvailable: boolean;
+  isValuationAvailable: boolean;
 };
 
 export class CryptoAssetDirectoryProvider implements AssetDirectoryProvider {
   public readonly categoryId = "crypto";
   private readonly pageBuilderService = new AssetDirectoryPageBuilderService();
   private readonly itemMetricsService: AssetDirectoryItemMetricsService;
+  private readonly valuationFactory = new AssetDirectoryValuationFactory();
 
   public constructor(
     private readonly catalogProvider: BinanceCryptoCatalogProvider,
+    private readonly valuationProvider: CoinGeckoCryptoMarketsProvider,
     private readonly assetRepository: SqliteAssetRepository,
     marketDataRepository: SqliteMarketDataRepository,
     private readonly importService: CryptoAssetImportService
@@ -48,25 +53,32 @@ export class CryptoAssetDirectoryProvider implements AssetDirectoryProvider {
     this.importService.importItem(itemId);
 
   private loadCatalog = async (): Promise<CryptoCatalogLoadResult> => {
-    try {
-      return {
-        catalogItems: await this.catalogProvider.listUsdtSpotCatalog(),
-        isCatalogAvailable: true
-      };
-    } catch (error) {
-      console.warn(error);
-      return {
-        catalogItems: [],
-        isCatalogAvailable: false
-      };
+    const [catalogResult, valuationResult] = await Promise.allSettled([
+      this.catalogProvider.listUsdtSpotCatalog(),
+      this.valuationProvider.listMarketsBySymbol()
+    ]);
+
+    if (catalogResult.status === "rejected") {
+      console.warn(catalogResult.reason);
     }
+
+    if (valuationResult.status === "rejected") {
+      console.warn(valuationResult.reason);
+    }
+
+    return {
+      catalogItems: catalogResult.status === "fulfilled" ? catalogResult.value : [],
+      valuationsBySymbol: valuationResult.status === "fulfilled" ? valuationResult.value : new Map(),
+      isCatalogAvailable: catalogResult.status === "fulfilled",
+      isValuationAvailable: valuationResult.status === "fulfilled"
+    };
   };
 
   private buildCategory = (loadResult: CryptoCatalogLoadResult, items: AssetDirectoryItem[]): AssetDirectoryCategory => ({
     id: this.categoryId,
     label: "加密目录",
     description: loadResult.isCatalogAvailable
-      ? "Binance USDT 现货轻量候选目录；已入池资产展示完整走势，未入池资产展示 24h 快照。"
+      ? `Binance USDT 现货候选目录；${loadResult.isValuationAvailable ? "CoinGecko 市值" : "市值源暂不可用"}，已入池资产展示完整走势。`
       : "Binance 候选目录暂不可用，当前回退展示本地走势池里的加密资产。",
     assetTypes: ["crypto"],
     markets: ["加密"],
@@ -83,13 +95,14 @@ export class CryptoAssetDirectoryProvider implements AssetDirectoryProvider {
     const usedLocalAssetIds = new Set<string>();
     const catalogItems = loadResult.catalogItems.map((catalogItem) => {
       const localAsset = localAssetsBySymbol.get(this.normalizeSymbol(catalogItem.symbol));
+      const valuation = this.toCryptoValuation(catalogItem, loadResult.valuationsBySymbol.get(this.normalizeSymbol(catalogItem.baseAsset)) ?? null);
 
       if (localAsset) {
         usedLocalAssetIds.add(localAsset.id);
-        return this.itemMetricsService.toInPoolItem(this.categoryId, localAsset);
+        return this.withValuation(this.itemMetricsService.toInPoolItem(this.categoryId, localAsset), valuation);
       }
 
-      return this.toSnapshotItem(catalogItem);
+      return this.toSnapshotItem(catalogItem, valuation);
     });
     const localOnlyItems = localAssets
       .filter((asset) => !usedLocalAssetIds.has(asset.id))
@@ -104,7 +117,7 @@ export class CryptoAssetDirectoryProvider implements AssetDirectoryProvider {
       .filter((asset) => asset.assetType === "crypto")
       .filter((asset) => asset.level !== "asset-class" && asset.level !== "market");
 
-  private toSnapshotItem = (item: BinanceCryptoCatalogItem): AssetDirectoryItem => ({
+  private toSnapshotItem = (item: BinanceCryptoCatalogItem, valuation: AssetDirectoryValuation): AssetDirectoryItem => ({
     id: `${this.categoryId}:binance:${item.symbol}`,
     categoryId: this.categoryId,
     label: getCryptoAssetLabel(item.baseAsset),
@@ -124,6 +137,7 @@ export class CryptoAssetDirectoryProvider implements AssetDirectoryProvider {
       return6m: null,
       return1y: null
     },
+    valuation,
     poolState: "not_in_pool",
     dataState: "snapshot",
     dataPointCount: 0,
@@ -138,6 +152,22 @@ export class CryptoAssetDirectoryProvider implements AssetDirectoryProvider {
 
   private normalizeSymbol = (value: string): string =>
     value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+
+  private toCryptoValuation = (catalogItem: BinanceCryptoCatalogItem, marketItem: CoinGeckoCryptoMarketItem | null): AssetDirectoryValuation => ({
+    ...this.valuationFactory.empty(),
+    marketCap: marketItem?.marketCap ?? null,
+    fullyDilutedValuation: marketItem?.fullyDilutedValuation ?? null,
+    turnover24h: marketItem?.turnover24h ?? catalogItem.quoteVolume,
+    marketCapRank: marketItem?.marketCapRank ?? null,
+    currency: marketItem?.currency ?? catalogItem.quoteAsset,
+    source: marketItem?.source ?? catalogItem.source,
+    updatedAt: marketItem?.latestAt ?? catalogItem.latestAt
+  });
+
+  private withValuation = (item: AssetDirectoryItem, valuation: AssetDirectoryValuation): AssetDirectoryItem => ({
+    ...item,
+    valuation
+  });
 
   private getSearchText = (item: AssetDirectoryItem): string =>
     `${item.label} ${item.symbol} ${item.market} ${item.exchange} ${item.provider} ${item.tags.join(" ")}`;

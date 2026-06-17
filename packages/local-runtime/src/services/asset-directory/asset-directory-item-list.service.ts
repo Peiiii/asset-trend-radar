@@ -22,6 +22,8 @@ export class AssetDirectoryItemListService {
     switch (sort) {
       case "latest_value":
         return item.latestValue;
+      case "market_cap":
+        return item.valuation.marketCap;
       case "return_1d":
         return item.returns.return1d;
       case "return_1m":

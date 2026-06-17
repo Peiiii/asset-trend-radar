@@ -1,9 +1,10 @@
 import type { EastmoneyAshareCatalogItem, EastmoneyAshareCatalogProvider } from "@gold-insights/data-adapters";
 import type { SqliteAssetRepository, SqliteMarketDataRepository } from "@gold-insights/data-storage";
-import type { AssetDirectoryCategory, AssetDirectoryItem, AssetDirectoryPageResponse, AssetSummary } from "@gold-insights/market-domain";
+import type { AssetDirectoryCategory, AssetDirectoryItem, AssetDirectoryPageResponse, AssetDirectoryValuation, AssetSummary } from "@gold-insights/market-domain";
 import { AssetDirectoryItemMetricsService } from "../asset-directory-item-metrics.service";
 import { AssetDirectoryPageBuilderService } from "../asset-directory-page-builder.service";
 import type { AssetDirectoryProvider, AssetDirectoryQuery } from "../asset-directory-provider.types";
+import { AssetDirectoryValuationFactory } from "../shared/asset-directory-valuation.factory";
 import type { EastmoneyAshareImportService } from "./eastmoney-a-share-import.service";
 
 type EastmoneyAshareCatalogLoadResult = {
@@ -15,6 +16,7 @@ export class EastmoneyAshareDirectoryProvider implements AssetDirectoryProvider 
   public readonly categoryId = "a-share";
   private readonly pageBuilderService = new AssetDirectoryPageBuilderService();
   private readonly itemMetricsService: AssetDirectoryItemMetricsService;
+  private readonly valuationFactory = new AssetDirectoryValuationFactory();
 
   public constructor(
     private readonly catalogProvider: EastmoneyAshareCatalogProvider,
@@ -85,7 +87,7 @@ export class EastmoneyAshareDirectoryProvider implements AssetDirectoryProvider 
 
       if (localAsset) {
         usedLocalAssetIds.add(localAsset.id);
-        return this.itemMetricsService.toInPoolItem(this.categoryId, localAsset);
+        return this.withValuation(this.itemMetricsService.toInPoolItem(this.categoryId, localAsset), this.toValuation(catalogItem));
       }
 
       return this.toSnapshotItem(catalogItem);
@@ -123,6 +125,7 @@ export class EastmoneyAshareDirectoryProvider implements AssetDirectoryProvider 
       return6m: null,
       return1y: null
     },
+    valuation: this.toValuation(item),
     poolState: "not_in_pool",
     dataState: "snapshot",
     dataPointCount: 0,
@@ -136,6 +139,20 @@ export class EastmoneyAshareDirectoryProvider implements AssetDirectoryProvider 
       .filter((value) => value.length > 0);
 
   private normalizeSymbol = (value: string): string => value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+
+  private toValuation = (item: EastmoneyAshareCatalogItem): AssetDirectoryValuation => ({
+    ...this.valuationFactory.empty(),
+    marketCap: item.marketCap,
+    floatMarketCap: item.floatMarketCap,
+    currency: item.currency,
+    source: item.source,
+    updatedAt: item.latestAt
+  });
+
+  private withValuation = (item: AssetDirectoryItem, valuation: AssetDirectoryValuation): AssetDirectoryItem => ({
+    ...item,
+    valuation
+  });
 
   private getSearchText = (item: AssetDirectoryItem): string =>
     `${item.label} ${item.symbol} ${item.market} ${item.exchange} ${item.provider} ${item.tags.join(" ")}`;

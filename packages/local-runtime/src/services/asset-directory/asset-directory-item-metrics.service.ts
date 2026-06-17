@@ -2,8 +2,11 @@ import type { SqliteMarketDataRepository } from "@gold-insights/data-storage";
 import type { AssetDirectoryCategoryId, AssetDirectoryItem, AssetSummary, OhlcvBar } from "@gold-insights/market-domain";
 import { filterByCalendarRange, getRangeFetchLimit, toIsoDateTime } from "@gold-insights/market-domain";
 import { getReturnPct } from "@gold-insights/scanner-engine";
+import { AssetDirectoryValuationFactory } from "./shared/asset-directory-valuation.factory";
 
 export class AssetDirectoryItemMetricsService {
+  private readonly valuationFactory = new AssetDirectoryValuationFactory();
+
   public constructor(private readonly marketDataRepository: SqliteMarketDataRepository) {}
 
   public toInPoolItem = (categoryId: AssetDirectoryCategoryId, asset: AssetSummary): AssetDirectoryItem => {
@@ -30,6 +33,7 @@ export class AssetDirectoryItemMetricsService {
         return6m: this.getCalendarReturn(bars, "6m"),
         return1y: this.getCalendarReturn(bars, "1y")
       },
+      valuation: this.valuationFactory.empty(),
       poolState: "in_pool",
       dataState: bars.length > 0 ? "full_history" : "missing",
       dataPointCount: bars.length,

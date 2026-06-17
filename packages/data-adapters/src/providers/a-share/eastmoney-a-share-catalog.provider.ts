@@ -6,6 +6,8 @@ type EastmoneyAshareCatalogRow = {
   f12?: string;
   f13?: number;
   f14?: string;
+  f20?: number | string;
+  f21?: number | string;
   f100?: string;
 };
 
@@ -26,6 +28,8 @@ export type EastmoneyAshareCatalogItem = {
   currency: "CNY";
   latestPrice: number | null;
   return1d: number | null;
+  marketCap: number | null;
+  floatMarketCap: number | null;
   latestAt: string | null;
   source: "eastmoney";
   tags: string[];
@@ -76,7 +80,7 @@ export class EastmoneyAshareCatalogProvider {
     url.searchParams.set("invt", "2");
     url.searchParams.set("fid", "f3");
     url.searchParams.set("fs", "m:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23");
-    url.searchParams.set("fields", "f2,f3,f12,f13,f14,f100");
+    url.searchParams.set("fields", "f2,f3,f12,f13,f14,f20,f21,f100");
     url.searchParams.set("ut", "fa5fd1943c7b386f172d6893dbfba10b");
     url.searchParams.set("dect", "1");
 
@@ -138,6 +142,8 @@ export class EastmoneyAshareCatalogProvider {
       currency: "CNY",
       latestPrice: this.toNullableNumber(row.f2),
       return1d: this.toNullableNumber(row.f3),
+      marketCap: this.toNullableNumber(row.f20),
+      floatMarketCap: this.toNullableNumber(row.f21),
       latestAt: new Date().toISOString(),
       source: "eastmoney",
       tags: ["股票", exchange, ...(sector ? [sector] : [])]

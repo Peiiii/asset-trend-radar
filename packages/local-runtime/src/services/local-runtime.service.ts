@@ -1,4 +1,4 @@
-import { BinanceCryptoCatalogProvider, EastmoneyAshareCatalogProvider, NasdaqUsEquityCatalogProvider } from "@gold-insights/data-adapters";
+import { BinanceCryptoCatalogProvider, CoinGeckoCryptoMarketsProvider, EastmoneyAshareCatalogProvider, NasdaqUsEquityCatalogProvider } from "@gold-insights/data-adapters";
 import { LocalRawFileRepository, SqliteAssetRepository, SqliteDatabaseService, SqliteFundCatalogRepository, SqliteIngestionJobRepository, SqliteMarketDataRepository, SqliteScannerEventRepository, SqliteWatchlistRepository } from "@gold-insights/data-storage";
 import { AssetDirectoryController } from "../controllers/asset-directory.controller";
 import { AssetsController } from "../controllers/assets.controller";
@@ -78,6 +78,7 @@ export class LocalRuntimeService {
       rawFileRepository
     );
     const cryptoCatalogProvider = new BinanceCryptoCatalogProvider();
+    const cryptoMarketsProvider = new CoinGeckoCryptoMarketsProvider();
     const nasdaqUsEquityCatalogProvider = new NasdaqUsEquityCatalogProvider();
     const eastmoneyAshareCatalogProvider = new EastmoneyAshareCatalogProvider();
     const assetDirectoryHistoryImportService = new AssetDirectoryHistoryImportService(
@@ -106,7 +107,7 @@ export class LocalRuntimeService {
     );
     const assetDirectoryService = new AssetDirectoryService([
       new FundAssetDirectoryProvider(this.fundDiscoveryService),
-      new CryptoAssetDirectoryProvider(cryptoCatalogProvider, assetRepository, marketDataRepository, cryptoAssetImportService),
+      new CryptoAssetDirectoryProvider(cryptoCatalogProvider, cryptoMarketsProvider, assetRepository, marketDataRepository, cryptoAssetImportService),
       new TrendPoolAssetDirectoryProvider({
         categoryId: "commodities",
         label: "商品目录",

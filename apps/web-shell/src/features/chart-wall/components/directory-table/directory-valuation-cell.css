@@ -1,0 +1,30 @@
+.directory-valuation-cell {
+  display: inline-flex;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.directory-valuation-cell strong {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  color: #1d293b;
+  font-size: 12px;
+  font-weight: 950;
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+}
+
+.directory-valuation-cell small {
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  color: #687386;
+  font-size: 11px;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

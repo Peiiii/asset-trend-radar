@@ -2,6 +2,8 @@ export { AkshareMarketDataProvider } from "./providers/akshare-market-data.provi
 export { BinanceCryptoCatalogProvider } from "./providers/binance-crypto-catalog.provider";
 export type { BinanceCryptoCatalogItem } from "./providers/binance-crypto-catalog.provider";
 export { BinanceMarketDataProvider } from "./providers/binance-market-data.provider";
+export { CoinGeckoCryptoMarketsProvider } from "./providers/crypto/coingecko-crypto-markets.provider";
+export type { CoinGeckoCryptoMarketItem } from "./providers/crypto/coingecko-crypto-markets.provider";
 export { EastmoneyAshareCatalogProvider } from "./providers/a-share/eastmoney-a-share-catalog.provider";
 export type { EastmoneyAshareCatalogItem } from "./providers/a-share/eastmoney-a-share-catalog.provider";
 export { EastmoneyFundCatalogProvider } from "./providers/eastmoney-fund-catalog.provider";

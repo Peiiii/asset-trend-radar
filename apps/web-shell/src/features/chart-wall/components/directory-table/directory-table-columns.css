@@ -25,6 +25,10 @@
   width: 124px;
 }
 
+.directory-table-column--valuation {
+  width: 132px;
+}
+
 .directory-table-column--return {
   width: 104px;
 }

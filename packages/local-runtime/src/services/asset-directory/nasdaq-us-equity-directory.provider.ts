@@ -5,6 +5,7 @@ import type { NasdaqUsEquityImportService } from "./nasdaq-us-equity-import.serv
 import { AssetDirectoryItemMetricsService } from "./asset-directory-item-metrics.service";
 import { AssetDirectoryPageBuilderService } from "./asset-directory-page-builder.service";
 import type { AssetDirectoryProvider, AssetDirectoryQuery } from "./asset-directory-provider.types";
+import { AssetDirectoryValuationFactory } from "./shared/asset-directory-valuation.factory";
 
 type NasdaqCatalogLoadResult = {
   catalogItems: NasdaqUsEquityCatalogItem[];
@@ -15,6 +16,7 @@ export class NasdaqUsEquityDirectoryProvider implements AssetDirectoryProvider {
   public readonly categoryId = "us-equity";
   private readonly pageBuilderService = new AssetDirectoryPageBuilderService();
   private readonly itemMetricsService: AssetDirectoryItemMetricsService;
+  private readonly valuationFactory = new AssetDirectoryValuationFactory();
 
   public constructor(
     private readonly catalogProvider: NasdaqUsEquityCatalogProvider,
@@ -123,6 +125,7 @@ export class NasdaqUsEquityDirectoryProvider implements AssetDirectoryProvider {
       return6m: null,
       return1y: null
     },
+    valuation: this.valuationFactory.empty(),
     poolState: "not_in_pool",
     dataState: "missing",
     dataPointCount: 0,

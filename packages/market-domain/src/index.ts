@@ -14,7 +14,8 @@ export type {
   AssetDirectoryReturns,
   AssetDirectorySortKey,
   AssetDirectorySortOrder,
-  AssetDirectoryStatusFilter
+  AssetDirectoryStatusFilter,
+  AssetDirectoryValuation
 } from "./types/asset-directory.types";
 export type { OhlcvBar, SparklinePoint, Timeframe } from "./types/bar.types";
 export type {

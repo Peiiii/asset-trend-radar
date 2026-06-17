@@ -11,9 +11,11 @@ import type {
 } from "@gold-insights/market-domain";
 import type { FundDiscoveryService } from "../fund-discovery.service";
 import type { AssetDirectoryProvider, AssetDirectoryQuery } from "./asset-directory-provider.types";
+import { AssetDirectoryValuationFactory } from "./shared/asset-directory-valuation.factory";
 
 export class FundAssetDirectoryProvider implements AssetDirectoryProvider {
   public readonly categoryId = "funds";
+  private readonly valuationFactory = new AssetDirectoryValuationFactory();
 
   public constructor(private readonly fundDiscoveryService: FundDiscoveryService) {}
 
@@ -96,6 +98,7 @@ export class FundAssetDirectoryProvider implements AssetDirectoryProvider {
       return6m: item.return6m,
       return1y: item.return1y
     },
+    valuation: this.valuationFactory.empty(),
     poolState: item.isImported ? "in_pool" : "not_in_pool",
     dataState: this.toDataState(item),
     dataPointCount: item.dataPointCount,
@@ -144,6 +147,7 @@ export class FundAssetDirectoryProvider implements AssetDirectoryProvider {
       relevance: "relevance",
       label: "name",
       latest_value: "latest_nav",
+      market_cap: "relevance",
       return_1d: "return_1d",
       return_1m: "return_1m",
       return_3m: "return_3m",
