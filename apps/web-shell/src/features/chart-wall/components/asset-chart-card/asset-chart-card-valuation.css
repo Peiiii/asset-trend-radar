@@ -1,0 +1,37 @@
+.asset-chart-card__valuation-row {
+  display: grid;
+  grid-template-columns: auto minmax(76px, 1fr) minmax(0, 0.9fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  margin-bottom: 10px;
+  padding: 5px 8px;
+  border: 1px solid #d7e3f0;
+  border-radius: 6px;
+  background: #f4f8fc;
+  color: #516174;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.asset-chart-card__valuation-row strong,
+.asset-chart-card__valuation-row small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.asset-chart-card__valuation-row strong {
+  color: #1f2a3b;
+  text-align: right;
+}
+
+.asset-chart-card__valuation-row small {
+  color: #667386;
+}
+
+.asset-chart-card__valuation-row--turnover_only {
+  border-color: #ead7ab;
+  background: #fff8e8;
+}

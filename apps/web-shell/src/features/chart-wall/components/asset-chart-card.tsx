@@ -5,6 +5,8 @@ import { formatPrice } from "@/shared/utils/format-number.utils";
 import { getValuationDisplay } from "../utils/valuation-format.utils";
 import { DataQualityIndicator } from "./data-quality/data-quality-indicator";
 import "./asset-chart-card.css";
+import "./asset-chart-card/asset-chart-card-identity.css";
+import "./asset-chart-card/asset-chart-card-valuation.css";
 
 type AssetChartCardProps = {
   item: ChartWallItem;
