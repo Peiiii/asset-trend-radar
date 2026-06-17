@@ -81,6 +81,7 @@ h3 {
   display: flex;
   flex-direction: column;
   gap: 24px;
+  min-width: 0;
   height: 100vh;
   padding: 22px 16px;
   border-right: 1px solid #d7dde7;
@@ -139,6 +140,7 @@ h3 {
 .sidebar-nav {
   flex-direction: column;
   gap: 8px;
+  min-width: 0;
 }
 
 .sidebar-nav__group {
@@ -1131,7 +1133,9 @@ h3 {
 
   .gi-sidebar {
     position: static;
+    gap: 14px;
     height: auto;
+    overflow: hidden;
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
@@ -1139,8 +1143,45 @@ h3 {
     border-bottom: 1px solid #d7dde7;
   }
 
+  .brand-block {
+    flex: 0 0 auto;
+  }
+
   .sidebar-nav {
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
     flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 6px;
+    padding-bottom: 3px;
+    scrollbar-width: thin;
+  }
+
+  .sidebar-nav__group {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .sidebar-nav__group-header,
+  .sidebar-nav__item {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  .sidebar-nav__group-children {
+    display: flex;
+    gap: 4px;
+    margin-left: 0;
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .sidebar-nav__item {
+    width: auto;
   }
 
   .market-layout {
@@ -1221,13 +1262,12 @@ h3 {
   }
 
   .gi-sidebar {
-    align-items: stretch;
-    flex-direction: column;
+    align-items: center;
+    flex-direction: row;
   }
 
   .sidebar-nav {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    display: flex;
   }
 
   .sidebar-nav__item {
