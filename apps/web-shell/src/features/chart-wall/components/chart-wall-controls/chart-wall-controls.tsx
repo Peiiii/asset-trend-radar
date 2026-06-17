@@ -1,4 +1,5 @@
 import { Grid3X3, Table2 } from "lucide-react";
+import type { ReactNode } from "react";
 import { Button, IconButton, RangePicker, Select, TimeframePicker } from "@gold-insights/ui";
 import type { ControlOption } from "@gold-insights/ui";
 import type { ChartWallFacet, ChartWallSortOrder } from "@gold-insights/market-domain";
@@ -54,6 +55,7 @@ type ChartWallControlsProps = {
   };
   isRefreshing: boolean;
   showViewMode?: boolean;
+  activeFilterSlot?: ReactNode;
   onQueryChange(name: string, value: string, fallback?: string): void;
   onSortChange(sort: string, order?: ChartWallSortOrder): void;
   onDefaultOrder(sort: string): ChartWallSortOrder;
@@ -62,7 +64,7 @@ type ChartWallControlsProps = {
   onRefresh(): void;
 };
 
-export function ChartWallControls({ values, defaults, facets, options, summary, isRefreshing, showViewMode = true, onQueryChange, onSortChange, onDefaultOrder, onParseOrder, onReset, onRefresh }: ChartWallControlsProps): JSX.Element {
+export function ChartWallControls({ values, defaults, facets, options, summary, isRefreshing, showViewMode = true, activeFilterSlot, onQueryChange, onSortChange, onDefaultOrder, onParseOrder, onReset, onRefresh }: ChartWallControlsProps): JSX.Element {
   return (
     <section className="chart-wall-controls" aria-label="图表控制">
       <div className="chart-wall-controls__filters">
@@ -106,6 +108,12 @@ export function ChartWallControls({ values, defaults, facets, options, summary, 
         <Button variant="ghost" onClick={onReset}>重置</Button>
         <Button variant="ghost" onClick={onRefresh} disabled={isRefreshing}>{isRefreshing ? "刷新中" : "重新采集"}</Button>
       </div>
+
+      {activeFilterSlot && (
+        <div className="chart-wall-controls__active-filters">
+          {activeFilterSlot}
+        </div>
+      )}
     </section>
   );
 }

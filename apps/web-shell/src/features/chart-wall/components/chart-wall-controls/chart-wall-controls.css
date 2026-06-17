@@ -16,6 +16,7 @@
 }
 
 .chart-wall-controls__filters,
+.chart-wall-controls__active-filters,
 .chart-wall-controls__summary,
 .chart-wall-controls__timeline,
 .chart-wall-controls__actions,
@@ -73,6 +74,18 @@
   justify-self: end;
 }
 
+.chart-wall-controls__active-filters {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  padding-top: 2px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.chart-wall-controls__active-filters:empty {
+  display: none;
+}
+
 .chart-wall-controls__timeline {
   grid-column: 2;
   grid-row: 2;
@@ -105,6 +118,7 @@
   }
 
   .chart-wall-controls__summary,
+  .chart-wall-controls__active-filters,
   .chart-wall-controls__timeline,
   .chart-wall-controls__actions {
     grid-column: auto;
@@ -130,6 +144,7 @@
   }
 
   .chart-wall-controls__summary,
+  .chart-wall-controls__active-filters,
   .chart-wall-controls__timeline {
     flex-wrap: nowrap;
     overflow-x: auto;

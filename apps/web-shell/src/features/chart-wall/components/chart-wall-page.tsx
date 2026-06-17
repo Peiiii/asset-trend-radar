@@ -449,6 +449,15 @@ export function ChartWallPage(): JSX.Element {
             summary={{ visibleCount: filteredItems.length, apiCount: chartItems.length, sortLabel: sortDisplayLabel(sort), orderLabel: sortOrderLabel(order) }}
             isRefreshing={isGlobalSyncing}
             showViewMode={activeView === "chart-wall"}
+            activeFilterSlot={(
+              <ActiveFilterChips
+                filters={{ market, assetType, level, tag, signal, sort, order, search }}
+                defaults={{ sort: defaultFilters.sort, order: defaultFilters.order }}
+                options={{ assetTypes: assetTypeFallbackOptions, levels: levelFallbackOptions, tags: tagFallbackOptions, signals: signalFallbackOptions, sorts: sortOptions, orders: sortOrderOptions }}
+                onRemove={removeFilterChip}
+                onReset={resetFilters}
+              />
+            )}
             onQueryChange={setQueryValue}
             onSortChange={setSortQueryValue}
             onDefaultOrder={defaultOrderForSort}
@@ -462,14 +471,6 @@ export function ChartWallPage(): JSX.Element {
           {(activeView === "overview" || activeView === "chart-wall") && (
             <StrategyPresetStrip currentFilters={{ market, assetType, tag, signal, sort, order, range, timeframe }} onApply={applyStrategyPreset} />
           )}
-
-          <ActiveFilterChips
-            filters={{ market, assetType, level, tag, signal, sort, order, search }}
-            defaults={{ sort: defaultFilters.sort, order: defaultFilters.order }}
-            options={{ assetTypes: assetTypeFallbackOptions, levels: levelFallbackOptions, tags: tagFallbackOptions, signals: signalFallbackOptions, sorts: sortOptions, orders: sortOrderOptions }}
-            onRemove={removeFilterChip}
-            onReset={resetFilters}
-          />
         </>
       )}
       {data && activeView === "chart-wall" && assetType === "fund" && <FundScopeStrip data={data} market={market} />}

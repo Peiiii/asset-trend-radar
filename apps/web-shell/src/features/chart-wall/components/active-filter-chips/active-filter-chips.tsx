@@ -1,6 +1,7 @@
 import { FilterChip } from "@gold-insights/ui";
 import type { ControlOption } from "@gold-insights/ui";
 import type { ChartWallSortOrder } from "@gold-insights/market-domain";
+import "./active-filter-chips.css";
 
 type ActiveFilterKey = "market" | "assetType" | "level" | "tag" | "signal" | "sort" | "order" | "search";
 
@@ -37,14 +38,15 @@ export function ActiveFilterChips({ filters, defaults, options, onRemove, onRese
 
   return (
     <section className="active-filter-strip" aria-label="当前筛选">
+      <FilterChip className="active-filter-strip__count" label={`已筛选 ${activeEntries.length}`} />
       {activeEntries.map(([key, value]) => {
         const filterKey = key as ActiveFilterKey;
         const label = `${filterLabel(filterKey)}: ${activeFilterValueLabel(filterKey, value, options)}`;
         return (
-          <FilterChip key={key} label={label} onClick={() => onRemove(filterKey)} title={`移除${label}`} aria-label={`移除${label}`} />
+          <FilterChip key={key} className="active-filter-strip__chip" label={label} onClick={() => onRemove(filterKey)} title={`移除${label}`} aria-label={`移除${label}`} />
         );
       })}
-      <FilterChip label="清空筛选" onClick={onReset} />
+      <FilterChip className="active-filter-strip__reset" label="清空筛选" onClick={onReset} />
     </section>
   );
 }

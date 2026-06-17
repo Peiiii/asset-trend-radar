@@ -1,0 +1,42 @@
+.active-filter-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: -4px 0 14px;
+  min-width: 0;
+}
+
+.chart-wall-controls__active-filters .active-filter-strip {
+  flex-wrap: nowrap;
+  margin: 0;
+}
+
+.active-filter-strip__count {
+  border-color: #dce4ef;
+  background: #f5f8fc;
+  color: #637088;
+}
+
+.active-filter-strip__chip {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.active-filter-strip__reset {
+  border-color: #bfd2e8;
+  background: #eef5ff;
+  color: #24517d;
+}
+
+.active-filter-strip__reset:hover,
+.active-filter-strip__reset:focus-visible {
+  border-color: #97b7da;
+  background: #e3f0ff;
+}
+
+@media (max-width: 760px) {
+  .active-filter-strip__chip {
+    max-width: 180px;
+  }
+}
