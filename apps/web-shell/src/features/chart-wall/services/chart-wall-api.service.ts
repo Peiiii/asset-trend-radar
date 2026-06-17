@@ -53,6 +53,7 @@ export class ChartWallApiService {
       market: filters.market,
       assetType: filters.assetType,
       dataState: filters.dataState,
+      valuationStatus: filters.valuationStatus,
       status: filters.status,
       sort: filters.sort,
       order: filters.order,

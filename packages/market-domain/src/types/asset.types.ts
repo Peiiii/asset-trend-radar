@@ -3,6 +3,7 @@ export type AssetType = "crypto" | "equity" | "index" | "fund" | "commodity" | "
 export type AssetLevel = "asset-class" | "market" | "broad-index" | "sector-index" | "theme-basket" | "company" | "instrument" | "macro-indicator";
 
 export type MarketDataSource = "binance" | "yahoo" | "eastmoney" | "fred";
+export type AssetValuationStatus = "available" | "turnover_only" | "not_applicable" | "source_missing_value" | "source_unavailable";
 
 export type AssetSummary = {
   id: string;

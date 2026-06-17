@@ -1,4 +1,5 @@
-import type { AssetDirectoryCategory, AssetDirectoryItem, AssetDirectoryPageResponse } from "@gold-insights/market-domain";
+import { getAssetValuationStatus } from "@gold-insights/market-domain";
+import type { AssetDirectoryCategory, AssetDirectoryItem, AssetDirectoryPageResponse, AssetValuationStatus } from "@gold-insights/market-domain";
 import { getAssetTypeLabel } from "../../utils/asset-label.utils";
 import { AssetDirectoryItemListService } from "./asset-directory-item-list.service";
 import type { AssetDirectoryQuery } from "./asset-directory-provider.types";
@@ -19,12 +20,14 @@ export class AssetDirectoryPageBuilderService {
     const marketItems = this.filterByMarket(keywordItems, query.market);
     const assetTypeItems = this.filterByAssetType(marketItems, query.assetType);
     const dataStateItems = this.filterByDataState(assetTypeItems, query.dataState);
-    const matchedItems = this.filterByStatus(dataStateItems, query);
+    const valuationStatusItems = this.filterByValuationStatus(dataStateItems, query.valuationStatus);
+    const matchedItems = this.filterByStatus(valuationStatusItems, query);
     const sortedItems = this.itemListService.sortItems(matchedItems, query.sort, query.order);
-    const marketFacetItems = this.filterByStatus(this.filterByDataState(this.filterByAssetType(keywordItems, query.assetType), query.dataState), query);
-    const assetTypeFacetItems = this.filterByStatus(this.filterByDataState(this.filterByMarket(keywordItems, query.market), query.dataState), query);
-    const dataStateFacetItems = this.filterByStatus(assetTypeItems, query);
-    const statusFacetItems = dataStateItems;
+    const marketFacetItems = this.filterByStatus(this.filterByValuationStatus(this.filterByDataState(this.filterByAssetType(keywordItems, query.assetType), query.dataState), query.valuationStatus), query);
+    const assetTypeFacetItems = this.filterByStatus(this.filterByValuationStatus(this.filterByDataState(this.filterByMarket(keywordItems, query.market), query.dataState), query.valuationStatus), query);
+    const dataStateFacetItems = this.filterByStatus(this.filterByValuationStatus(assetTypeItems, query.valuationStatus), query);
+    const valuationStatusFacetItems = this.filterByStatus(dataStateItems, query);
+    const statusFacetItems = valuationStatusItems;
 
     return {
       generatedAt: new Date().toISOString(),
@@ -33,6 +36,7 @@ export class AssetDirectoryPageBuilderService {
       market: query.market,
       assetType: query.assetType,
       dataState: query.dataState,
+      valuationStatus: query.valuationStatus,
       status: query.status,
       sort: query.sort,
       order: query.order,
@@ -44,6 +48,7 @@ export class AssetDirectoryPageBuilderService {
         markets: this.itemListService.toFacets(marketFacetItems, (item) => item.market),
         assetTypes: this.itemListService.toFacets(assetTypeFacetItems, (item) => item.assetType, getAssetTypeLabel),
         dataStates: this.toDataStateFacets(dataStateFacetItems),
+        valuationStatuses: this.toValuationStatusFacets(valuationStatusFacetItems),
         statuses: [
           { value: "all", label: "全部状态", count: statusFacetItems.length },
           { value: "in_pool", label: "已加入走势池", count: statusFacetItems.filter((item) => item.poolState === "in_pool").length },
@@ -85,6 +90,14 @@ export class AssetDirectoryPageBuilderService {
     return items.filter((item) => item.dataState === dataState);
   };
 
+  private filterByValuationStatus = (items: AssetDirectoryItem[], valuationStatus: AssetDirectoryQuery["valuationStatus"]): AssetDirectoryItem[] => {
+    if (valuationStatus === "all") {
+      return items;
+    }
+
+    return items.filter((item) => getAssetValuationStatus(item.valuation, { assetType: item.assetType }) === valuationStatus);
+  };
+
   private filterByStatus = (items: AssetDirectoryItem[], query: AssetDirectoryQuery): AssetDirectoryItem[] => {
     if (query.status === "all") {
       return items;
@@ -105,6 +118,23 @@ export class AssetDirectoryPageBuilderService {
       { value: "snapshot", label: "目录快照", count: counts.get("snapshot") ?? 0 },
       { value: "missing", label: "待拉取", count: counts.get("missing") ?? 0 },
       { value: "stale", label: "待更新", count: counts.get("stale") ?? 0 }
+    ];
+  };
+
+  private toValuationStatusFacets = (items: AssetDirectoryItem[]): AssetDirectoryPageResponse["facets"]["valuationStatuses"] => {
+    const counts = items.reduce((entries, item) => {
+      const status = getAssetValuationStatus(item.valuation, { assetType: item.assetType });
+      entries.set(status, (entries.get(status) ?? 0) + 1);
+      return entries;
+    }, new Map<AssetValuationStatus, number>());
+
+    return [
+      { value: "all", label: "全部规模", count: items.length },
+      { value: "available", label: "有市值", count: counts.get("available") ?? 0 },
+      { value: "turnover_only", label: "仅成交额", count: counts.get("turnover_only") ?? 0 },
+      { value: "source_missing_value", label: "源缺值", count: counts.get("source_missing_value") ?? 0 },
+      { value: "source_unavailable", label: "未覆盖", count: counts.get("source_unavailable") ?? 0 },
+      { value: "not_applicable", label: "不适用", count: counts.get("not_applicable") ?? 0 }
     ];
   };
 }

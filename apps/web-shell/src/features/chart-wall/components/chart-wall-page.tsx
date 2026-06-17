@@ -20,7 +20,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { NavLink, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { AppShell, Button, ErrorState, IconButton, LoadingState, RangePicker, TimeframePicker } from "@gold-insights/ui";
 import type { ControlOption } from "@gold-insights/ui";
-import type { AssetDirectoryAssetTypeFilter, AssetDirectoryCategoryId, AssetDirectoryCoverage, AssetDirectoryDataStateFilter, AssetDirectoryItem, AssetDirectorySortKey, AssetDirectoryStatusFilter, ChartWallSortOrder } from "@gold-insights/market-domain";
+import type { AssetDirectoryAssetTypeFilter, AssetDirectoryCategoryId, AssetDirectoryCoverage, AssetDirectoryDataStateFilter, AssetDirectoryItem, AssetDirectorySortKey, AssetDirectoryStatusFilter, AssetDirectoryValuationStatusFilter, ChartWallSortOrder } from "@gold-insights/market-domain";
 import type { ChartWallFilters, ChartWallPageData } from "@/shared/types/api.types";
 import { formatDateTime } from "@/shared/utils/format-number.utils";
 import { assetTypeFallbackOptions, defaultFilters, levelFallbackOptions, marketFallbackOptions, signalFallbackOptions, sortOptions, sortOrderOptions, tagFallbackOptions } from "../configs/chart-wall-page.config";
@@ -107,6 +107,7 @@ export function ChartWallPage(): JSX.Element {
   const assetDirectoryMarket = getSearchValue(searchParams, "directoryMarket", "all");
   const assetDirectoryAssetType = getAssetDirectoryAssetType(getSearchValue(searchParams, "directoryAssetType", "all"));
   const assetDirectoryDataState = getAssetDirectoryDataState(getSearchValue(searchParams, "dataState", "all"));
+  const assetDirectoryValuationStatus = getAssetDirectoryValuationStatus(getSearchValue(searchParams, "valuationStatus", "all"));
   const assetDirectoryStatus = getAssetDirectoryStatus(getSearchValue(searchParams, "status", "all"));
   const assetDirectoryPage = getPositiveIntegerSearchValue(searchParams, "directoryPage", 1);
   const assetDirectoryTableSizing = getAssetDirectoryTableSizing(directoryCategoryId);
@@ -181,13 +182,14 @@ export function ChartWallPage(): JSX.Element {
       market: assetDirectoryMarket,
       assetType: assetDirectoryAssetType,
       dataState: assetDirectoryDataState,
+      valuationStatus: assetDirectoryValuationStatus,
       status: assetDirectoryStatus,
       sort: getAssetDirectorySort(effectiveSort),
       order: effectiveOrder,
       limit: assetDirectoryLimit,
       offset: (assetDirectoryPage - 1) * assetDirectoryLimit
     }) as const,
-    [assetDirectoryAssetType, assetDirectoryDataState, assetDirectoryMarket, assetDirectoryPage, assetDirectoryStatus, directoryCategoryId, effectiveOrder, effectiveSort, search]
+    [assetDirectoryAssetType, assetDirectoryDataState, assetDirectoryMarket, assetDirectoryPage, assetDirectoryStatus, assetDirectoryValuationStatus, directoryCategoryId, effectiveOrder, effectiveSort, search]
   );
   const assetDirectoryQuery = useAssetDirectoryQuery(assetDirectoryFilters, activeView === "asset-directory");
   const taskCenterQuery = useTaskCenterQuery(true);
@@ -564,6 +566,7 @@ export function ChartWallPage(): JSX.Element {
                 market={assetDirectoryMarket}
                 assetType={assetDirectoryAssetType}
                 dataState={assetDirectoryDataState}
+                valuationStatus={assetDirectoryValuationStatus}
                 status={assetDirectoryStatus}
                 sort={getAssetDirectorySort(effectiveSort)}
                 order={effectiveOrder}
@@ -572,6 +575,7 @@ export function ChartWallPage(): JSX.Element {
                 marketFacets={assetDirectoryQuery.data?.facets.markets ?? []}
                 assetTypeFacets={assetDirectoryQuery.data?.facets.assetTypes ?? []}
                 dataStateFacets={assetDirectoryQuery.data?.facets.dataStates ?? []}
+                valuationStatusFacets={assetDirectoryQuery.data?.facets.valuationStatuses ?? []}
                 statusFacets={assetDirectoryQuery.data?.facets.statuses ?? []}
                 page={assetDirectoryPage}
                 limit={assetDirectoryLimit}
@@ -584,6 +588,7 @@ export function ChartWallPage(): JSX.Element {
                 onMarketChange={(value) => setQueryValue("directoryMarket", value, "all")}
                 onAssetTypeChange={(value) => setQueryValue("directoryAssetType", value, "all")}
                 onDataStateChange={(value) => setQueryValue("dataState", value, "all")}
+                onValuationStatusChange={(value) => setQueryValue("valuationStatus", value, "all")}
                 onStatusChange={(value) => setQueryValue("status", value, "all")}
                 onSortChange={setSortQueryValue}
                 onReset={resetFilters}
@@ -914,7 +919,7 @@ function getFundDirectorySearch(searchParams: URLSearchParams): string {
 function getAssetDirectorySearch(searchParams: URLSearchParams): string {
   const next = new URLSearchParams();
 
-  for (const name of ["range", "timeframe", "q", "directoryMarket", "directoryAssetType", "dataState", "status", "sort", "order", "directoryPage"]) {
+  for (const name of ["range", "timeframe", "q", "directoryMarket", "directoryAssetType", "dataState", "valuationStatus", "status", "sort", "order", "directoryPage"]) {
     const value = searchParams.get(name);
     if (value) {
       next.set(name, value);
@@ -1031,6 +1036,11 @@ function getAssetDirectoryAssetType(assetType: string): AssetDirectoryAssetTypeF
 function getAssetDirectoryDataState(dataState: string): AssetDirectoryDataStateFilter {
   const supported: AssetDirectoryDataStateFilter[] = ["all", "full_history", "snapshot", "missing", "stale"];
   return supported.includes(dataState as AssetDirectoryDataStateFilter) ? (dataState as AssetDirectoryDataStateFilter) : "all";
+}
+
+function getAssetDirectoryValuationStatus(valuationStatus: string): AssetDirectoryValuationStatusFilter {
+  const supported: AssetDirectoryValuationStatusFilter[] = ["all", "available", "turnover_only", "source_missing_value", "source_unavailable", "not_applicable"];
+  return supported.includes(valuationStatus as AssetDirectoryValuationStatusFilter) ? (valuationStatus as AssetDirectoryValuationStatusFilter) : "all";
 }
 
 function coverageLabel(coverage: AssetDirectoryCoverage): string {

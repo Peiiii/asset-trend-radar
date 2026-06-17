@@ -1,4 +1,4 @@
-export type { AssetLevel, AssetSummary, AssetType, AssetValuation, MarketDataSource } from "./types/asset.types";
+export type { AssetLevel, AssetSummary, AssetType, AssetValuation, AssetValuationStatus, MarketDataSource } from "./types/asset.types";
 export type {
   AssetDirectoryCategoriesResponse,
   AssetDirectoryAssetTypeFilter,
@@ -17,6 +17,7 @@ export type {
   AssetDirectorySortKey,
   AssetDirectorySortOrder,
   AssetDirectoryStatusFilter,
+  AssetDirectoryValuationStatusFilter,
   AssetDirectoryValuation
 } from "./types/asset-directory.types";
 export type { OhlcvBar, SparklinePoint, Timeframe } from "./types/bar.types";
@@ -58,5 +59,6 @@ export type {
 export type { RuntimeTask, RuntimeTaskAction, RuntimeTaskActionKey, RuntimeTaskActionStatus, RuntimeTaskPipelineSummary, RuntimeTaskStartResponse, RuntimeTaskStartStatus, RuntimeTaskStatus, TaskCenterResponse } from "./types/task.types";
 export type { ScannerEvent, ScannerEventType } from "./types/scanner-event.types";
 export type { DataQualityInput, DataQualityRule, DataQualityStatus } from "./utils/data-quality.utils";
+export { getAssetValuationStatus } from "./utils/asset-valuation-status.utils";
 export { getDataQualityStatus } from "./utils/data-quality.utils";
 export { dayMs, filterByCalendarRange, getRangeCalendarDayEstimate, getRangeFetchLimit, getRangeMonthEstimate, getRangePointLimit, getRangeStartTimestamp, toIsoDateTime } from "./utils/timeframe.utils";

@@ -1,5 +1,5 @@
 import type { ServerResponse } from "node:http";
-import type { AssetDirectoryAssetTypeFilter, AssetDirectoryCategoryId, AssetDirectoryDataStateFilter, AssetDirectorySortKey, AssetDirectorySortOrder, AssetDirectoryStatusFilter } from "@gold-insights/market-domain";
+import type { AssetDirectoryAssetTypeFilter, AssetDirectoryCategoryId, AssetDirectoryDataStateFilter, AssetDirectorySortKey, AssetDirectorySortOrder, AssetDirectoryStatusFilter, AssetDirectoryValuationStatusFilter } from "@gold-insights/market-domain";
 import { ErrorResponseProvider } from "../providers/error-response.provider";
 import { JsonResponseProvider } from "../providers/json-response.provider";
 import type { AssetDirectoryService } from "../services/asset-directory.service";
@@ -31,6 +31,7 @@ export class AssetDirectoryController {
         market: getStringQueryParam(url, "market", "all").trim() || "all",
         assetType: this.getAssetType(getStringQueryParam(url, "assetType", "all")),
         dataState: this.getDataState(getStringQueryParam(url, "dataState", "all")),
+        valuationStatus: this.getValuationStatus(getStringQueryParam(url, "valuationStatus", "all")),
         status: this.getStatus(getStringQueryParam(url, "status", "all")),
         sort: this.getSort(getStringQueryParam(url, "sort", "relevance")),
         order: this.getOrder(getStringQueryParam(url, "order", "desc")),
@@ -79,6 +80,11 @@ export class AssetDirectoryController {
   private getDataState = (value: string): AssetDirectoryDataStateFilter => {
     const supported: AssetDirectoryDataStateFilter[] = ["all", "full_history", "snapshot", "missing", "stale"];
     return supported.includes(value as AssetDirectoryDataStateFilter) ? (value as AssetDirectoryDataStateFilter) : "all";
+  };
+
+  private getValuationStatus = (value: string): AssetDirectoryValuationStatusFilter => {
+    const supported: AssetDirectoryValuationStatusFilter[] = ["all", "available", "turnover_only", "source_missing_value", "source_unavailable", "not_applicable"];
+    return supported.includes(value as AssetDirectoryValuationStatusFilter) ? (value as AssetDirectoryValuationStatusFilter) : "all";
   };
 
   private getSort = (value: string): AssetDirectorySortKey => {

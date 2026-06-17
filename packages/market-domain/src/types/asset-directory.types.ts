@@ -1,4 +1,4 @@
-import type { AssetSummary, AssetType, AssetValuation } from "./asset.types";
+import type { AssetSummary, AssetType, AssetValuation, AssetValuationStatus } from "./asset.types";
 
 export type AssetDirectoryCategoryId = "funds" | "crypto" | "commodities" | "us-equity" | "a-share" | "hk-equity" | "macro";
 export type AssetDirectoryCoverage = "full" | "partial" | "trend_pool_only";
@@ -8,6 +8,7 @@ export type AssetDirectoryDataState = "snapshot" | "full_history" | "missing" | 
 export type AssetDirectoryStatusFilter = "all" | "in_pool" | "not_in_pool";
 export type AssetDirectoryAssetTypeFilter = AssetType | "all";
 export type AssetDirectoryDataStateFilter = AssetDirectoryDataState | "all";
+export type AssetDirectoryValuationStatusFilter = AssetValuationStatus | "all";
 export type AssetDirectorySortKey = "relevance" | "label" | "latest_value" | "market_cap" | "return_1d" | "return_1m" | "return_3m" | "return_6m" | "return_1y" | "data_point_count";
 export type AssetDirectorySortOrder = "asc" | "desc";
 
@@ -74,6 +75,7 @@ export type AssetDirectoryPageResponse = {
   market: string;
   assetType: AssetDirectoryAssetTypeFilter;
   dataState: AssetDirectoryDataStateFilter;
+  valuationStatus: AssetDirectoryValuationStatusFilter;
   status: AssetDirectoryStatusFilter;
   sort: AssetDirectorySortKey;
   order: AssetDirectorySortOrder;
@@ -85,6 +87,7 @@ export type AssetDirectoryPageResponse = {
     markets: AssetDirectoryFacet[];
     assetTypes: AssetDirectoryFacet[];
     dataStates: Array<AssetDirectoryFacet & { value: AssetDirectoryDataStateFilter }>;
+    valuationStatuses: Array<AssetDirectoryFacet & { value: AssetDirectoryValuationStatusFilter }>;
     statuses: Array<AssetDirectoryFacet & { value: AssetDirectoryStatusFilter }>;
   };
 };

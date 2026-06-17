@@ -69,6 +69,7 @@ export class FundAssetDirectoryProvider implements AssetDirectoryProvider {
       market: query.market,
       assetType: query.assetType,
       dataState: query.dataState,
+      valuationStatus: query.valuationStatus,
       status: query.status,
       sort: query.sort,
       order: query.order,
@@ -80,6 +81,7 @@ export class FundAssetDirectoryProvider implements AssetDirectoryProvider {
         markets: [{ value: "基金", label: "基金", count: page.totalCount }],
         assetTypes: [{ value: "fund", label: "基金", count: page.totalCount }],
         dataStates: page.dataStateFacets,
+        valuationStatuses: this.toFundValuationStatusFacets(page.totalCount),
         statuses: page.statusFacets.map((facet) => ({
           value: this.fromFundStatus(facet.value),
           label: facet.label,
@@ -90,7 +92,9 @@ export class FundAssetDirectoryProvider implements AssetDirectoryProvider {
   };
 
   private matchesDirectoryFacets = (query: AssetDirectoryQuery): boolean =>
-    (query.market === "all" || query.market === "基金") && (query.assetType === "all" || query.assetType === "fund");
+    (query.market === "all" || query.market === "基金") &&
+    (query.assetType === "all" || query.assetType === "fund") &&
+    (query.valuationStatus === "all" || query.valuationStatus === "source_unavailable");
 
   private emptyPage = (category: AssetDirectoryCategory, query: AssetDirectoryQuery): AssetDirectoryPageResponse => ({
     generatedAt: new Date().toISOString(),
@@ -99,6 +103,7 @@ export class FundAssetDirectoryProvider implements AssetDirectoryProvider {
     market: query.market,
     assetType: query.assetType,
     dataState: query.dataState,
+    valuationStatus: query.valuationStatus,
     status: query.status,
     sort: query.sort,
     order: query.order,
@@ -116,6 +121,7 @@ export class FundAssetDirectoryProvider implements AssetDirectoryProvider {
         { value: "missing", label: "待拉取", count: 0 },
         { value: "stale", label: "待更新", count: 0 }
       ],
+      valuationStatuses: this.toFundValuationStatusFacets(0),
       statuses: [
         { value: "all", label: "全部状态", count: 0 },
         { value: "in_pool", label: "已加入走势池", count: 0 },
@@ -123,6 +129,15 @@ export class FundAssetDirectoryProvider implements AssetDirectoryProvider {
       ]
     }
   });
+
+  private toFundValuationStatusFacets = (sourceUnavailableCount: number): AssetDirectoryPageResponse["facets"]["valuationStatuses"] => [
+    { value: "all", label: "全部规模", count: sourceUnavailableCount },
+    { value: "available", label: "有市值", count: 0 },
+    { value: "turnover_only", label: "仅成交额", count: 0 },
+    { value: "source_missing_value", label: "源缺值", count: 0 },
+    { value: "source_unavailable", label: "未覆盖", count: sourceUnavailableCount },
+    { value: "not_applicable", label: "不适用", count: 0 }
+  ];
 
   private toDirectoryItem = (item: FundCatalogPageItem): AssetDirectoryItem => ({
     id: `${this.categoryId}:${item.code}`,

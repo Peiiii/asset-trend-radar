@@ -1,6 +1,7 @@
-import type { AssetType, AssetValuation } from "@gold-insights/market-domain";
+import { getAssetValuationStatus } from "@gold-insights/market-domain";
+import type { AssetType, AssetValuation, AssetValuationStatus } from "@gold-insights/market-domain";
 
-export type ValuationDisplayStatus = "available" | "turnover_only" | "not_applicable" | "source_missing_value" | "source_unavailable";
+export type ValuationDisplayStatus = AssetValuationStatus;
 
 export type ValuationDisplay = {
   label: string;
@@ -17,30 +18,31 @@ export function getValuationDisplay(valuation: AssetValuation, fallbackCurrency:
   const fallbackValue = valuation.turnover24h;
   const value = primaryValue ?? fallbackValue;
   const rankLabel = valuation.marketCapRank ? `#${valuation.marketCapRank}` : null;
+  const status = getAssetValuationStatus(valuation, context);
 
-  if (primaryValue !== null) {
+  if (status === "available") {
     return {
       label: formatLargeMoney(primaryValue, currency),
       detail: getValuationDetail(valuation, currency),
       title: getValuationTitle(valuation, currency),
       rankLabel,
       value: primaryValue,
-      status: "available"
+      status
     };
   }
 
-  if (fallbackValue !== null) {
+  if (status === "turnover_only") {
     return {
       label: formatLargeMoney(fallbackValue, currency),
       detail: "24h 成交额",
       title: getValuationTitle(valuation, currency),
       rankLabel,
       value: fallbackValue,
-      status: "turnover_only"
+      status
     };
   }
 
-  if (isNonValuationAssetType(context.assetType) && valuation.source === null) {
+  if (status === "not_applicable") {
     const detail = getNotApplicableDetail(context.assetType);
 
     return {
@@ -49,11 +51,11 @@ export function getValuationDisplay(valuation: AssetValuation, fallbackCurrency:
       title: `${detail}，不是后台加载中`,
       rankLabel: null,
       value,
-      status: "not_applicable"
+      status
     };
   }
 
-  if (valuation.source === null) {
+  if (status === "source_unavailable") {
     const detail = getSourceUnavailableDetail(context.assetType);
 
     return {
@@ -62,7 +64,7 @@ export function getValuationDisplay(valuation: AssetValuation, fallbackCurrency:
       title: `${detail}；当前目录已有资产符号，但没有接入可用的规模/市值快照，不是后台加载中`,
       rankLabel: null,
       value,
-      status: "source_unavailable"
+      status
     };
   }
 
@@ -72,7 +74,7 @@ export function getValuationDisplay(valuation: AssetValuation, fallbackCurrency:
     title: "当前来源已返回快照，但没有提供规模/市值字段，不是后台加载中",
     rankLabel: null,
     value,
-    status: "source_missing_value"
+    status
   };
 }
 
@@ -156,10 +158,6 @@ function getValuationTitle(valuation: AssetValuation, currency: string): string 
 
 function isUsdLikeCurrency(currency: string): boolean {
   return currency === "USD" || currency === "USDT" || currency === "USDC";
-}
-
-function isNonValuationAssetType(assetType: AssetType | undefined): boolean {
-  return assetType === "index" || assetType === "commodity" || assetType === "macro";
 }
 
 function getNotApplicableDetail(assetType: AssetType | undefined): string {

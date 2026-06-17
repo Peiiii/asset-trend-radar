@@ -1,7 +1,7 @@
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { Button, EmptyState, Select } from "@gold-insights/ui";
 import type { ControlOption } from "@gold-insights/ui";
-import type { AssetDirectoryAssetTypeFilter, AssetDirectoryDataStateFilter, AssetDirectoryItem, AssetDirectoryPageResponse, AssetDirectorySortKey, AssetDirectorySortOrder, AssetDirectoryStatusFilter } from "@gold-insights/market-domain";
+import type { AssetDirectoryAssetTypeFilter, AssetDirectoryDataStateFilter, AssetDirectoryItem, AssetDirectoryPageResponse, AssetDirectorySortKey, AssetDirectorySortOrder, AssetDirectoryStatusFilter, AssetDirectoryValuationStatusFilter } from "@gold-insights/market-domain";
 import { DirectoryRankingSummary } from "../directory-ranking-summary/directory-ranking-summary";
 import { ValuationCoverageSummary } from "../valuation-coverage-summary/valuation-coverage-summary";
 import { AssetDirectoryTable } from "./asset-directory-table";
@@ -17,6 +17,7 @@ type AssetDirectorySectionProps = {
   market: string;
   assetType: AssetDirectoryAssetTypeFilter;
   dataState: AssetDirectoryDataStateFilter;
+  valuationStatus: AssetDirectoryValuationStatusFilter;
   status: AssetDirectoryStatusFilter;
   sort: AssetDirectorySortKey;
   order: AssetDirectorySortOrder;
@@ -25,6 +26,7 @@ type AssetDirectorySectionProps = {
   marketFacets: AssetDirectoryPageResponse["facets"]["markets"];
   assetTypeFacets: AssetDirectoryPageResponse["facets"]["assetTypes"];
   dataStateFacets: AssetDirectoryPageResponse["facets"]["dataStates"];
+  valuationStatusFacets: AssetDirectoryPageResponse["facets"]["valuationStatuses"];
   statusFacets: AssetDirectoryPageResponse["facets"]["statuses"];
   page: number;
   limit: number;
@@ -37,6 +39,7 @@ type AssetDirectorySectionProps = {
   onMarketChange(market: string): void;
   onAssetTypeChange(assetType: AssetDirectoryAssetTypeFilter): void;
   onDataStateChange(dataState: AssetDirectoryDataStateFilter): void;
+  onValuationStatusChange(valuationStatus: AssetDirectoryValuationStatusFilter): void;
   onStatusChange(status: AssetDirectoryStatusFilter): void;
   onSortChange(sort: AssetDirectorySortKey, order?: AssetDirectorySortOrder): void;
   onReset(): void;
@@ -69,7 +72,7 @@ const directoryOrderOptions: ControlOption[] = [
   { value: "asc", label: "升序" }
 ];
 
-export function AssetDirectorySection({ title, description, items, totalCount, categoryItemCount, categoryInPoolCount, market, assetType, dataState, status, sort, order, search, statusLabel, marketFacets, assetTypeFacets, dataStateFacets, statusFacets, page, limit, tableMinWidth, firstColumnMinWidth, lastColumnMinWidth, canImport, importingItemId, message, onMarketChange, onAssetTypeChange, onDataStateChange, onStatusChange, onSortChange, onReset, onPageChange, onImport, onSelect, onCompare }: AssetDirectorySectionProps): JSX.Element {
+export function AssetDirectorySection({ title, description, items, totalCount, categoryItemCount, categoryInPoolCount, market, assetType, dataState, valuationStatus, status, sort, order, search, statusLabel, marketFacets, assetTypeFacets, dataStateFacets, valuationStatusFacets, statusFacets, page, limit, tableMinWidth, firstColumnMinWidth, lastColumnMinWidth, canImport, importingItemId, message, onMarketChange, onAssetTypeChange, onDataStateChange, onValuationStatusChange, onStatusChange, onSortChange, onReset, onPageChange, onImport, onSelect, onCompare }: AssetDirectorySectionProps): JSX.Element {
   const positiveCount = items.filter((item) => (item.returns.return1m ?? item.returns.return1d ?? 0) > 0).length;
   const sourceCount = new Set(items.map((item) => item.provider)).size;
   const totalPages = Math.max(Math.ceil(totalCount / limit), 1);
@@ -78,6 +81,7 @@ export function AssetDirectorySection({ title, description, items, totalCount, c
   const marketOptions = getDirectoryFacetOptions("全部市场", marketFacets, market);
   const assetTypeOptions = getDirectoryFacetOptions("全部品种", assetTypeFacets, assetType);
   const dataStateOptions = getDirectoryDataStateOptions(dataStateFacets);
+  const valuationStatusOptions = getDirectoryValuationStatusOptions(valuationStatusFacets);
   const statusOptions = getDirectoryStatusOptions(statusFacets);
   const handleHeaderSort = (nextSort: AssetDirectorySortKey): void => {
     onSortChange(nextSort, nextSort === sort ? toggleDirectoryOrder(order) : getDefaultDirectoryOrder(nextSort));
@@ -102,6 +106,7 @@ export function AssetDirectorySection({ title, description, items, totalCount, c
         <Select id="asset-directory-market" label="市场" value={market} options={marketOptions} onChange={onMarketChange} />
         <Select id="asset-directory-asset-type" label="品种" value={assetType} options={assetTypeOptions} onChange={(value) => onAssetTypeChange(getDirectoryAssetType(value))} />
         <Select id="asset-directory-data-state" label="数据" value={dataState} options={dataStateOptions} onChange={(value) => onDataStateChange(getDirectoryDataState(value))} />
+        <Select id="asset-directory-valuation-status" label="规模" value={valuationStatus} options={valuationStatusOptions} onChange={(value) => onValuationStatusChange(getDirectoryValuationStatus(value))} />
         <Select id="asset-directory-status" label="状态" value={status} options={statusOptions} onChange={(value) => onStatusChange(getDirectoryStatus(value))} />
         <Select id="asset-directory-sort" label="排序" value={sort} options={directorySortOptions} onChange={(value) => onSortChange(getDirectorySort(value), getDefaultDirectoryOrder(value))} />
         <Select id="asset-directory-order" label="方向" value={order} options={directoryOrderOptions} onChange={(value) => onSortChange(sort, getDirectoryOrder(value))} />
@@ -181,6 +186,11 @@ function getDirectoryDataState(value: string): AssetDirectoryDataStateFilter {
   return supported.includes(value as AssetDirectoryDataStateFilter) ? (value as AssetDirectoryDataStateFilter) : "all";
 }
 
+function getDirectoryValuationStatus(value: string): AssetDirectoryValuationStatusFilter {
+  const supported: AssetDirectoryValuationStatusFilter[] = ["all", "available", "turnover_only", "source_missing_value", "source_unavailable", "not_applicable"];
+  return supported.includes(value as AssetDirectoryValuationStatusFilter) ? (value as AssetDirectoryValuationStatusFilter) : "all";
+}
+
 function getDirectoryFacetOptions(allLabel: string, facets: AssetDirectoryPageResponse["facets"]["markets"], selectedValue: string): ControlOption[] {
   const options: ControlOption[] = [
     { value: "all", label: allLabel, count: facets.reduce((total, facet) => total + facet.count, 0) },
@@ -196,6 +206,14 @@ function getDirectoryFacetOptions(allLabel: string, facets: AssetDirectoryPageRe
 
 function getDirectoryDataStateOptions(dataStateFacets: AssetDirectoryPageResponse["facets"]["dataStates"]): ControlOption[] {
   return dataStateFacets.map((facet) => ({
+    value: facet.value,
+    label: facet.label,
+    count: facet.count
+  }));
+}
+
+function getDirectoryValuationStatusOptions(valuationStatusFacets: AssetDirectoryPageResponse["facets"]["valuationStatuses"]): ControlOption[] {
+  return valuationStatusFacets.map((facet) => ({
     value: facet.value,
     label: facet.label,
     count: facet.count
