@@ -67,7 +67,7 @@ export function getValuationDisplay(valuation: AssetValuation, fallbackCurrency:
     const detail = getSourceUnavailableDetail(context.assetType);
 
     return {
-      label: "未接入源",
+      label: "未覆盖",
       detail,
       title: `${detail}；当前目录已有资产符号，但没有接入可用的规模/市值快照，不是后台加载中`,
       rankLabel: null,
@@ -79,7 +79,7 @@ export function getValuationDisplay(valuation: AssetValuation, fallbackCurrency:
   }
 
   return {
-    label: "源未返回",
+    label: "源缺值",
     detail: `${formatSourceName(valuation.source)} 无规模`,
     title: "当前来源已返回快照，但没有提供规模/市值字段，不是后台加载中",
     rankLabel: null,

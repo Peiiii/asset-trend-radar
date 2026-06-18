@@ -14,6 +14,7 @@ export function DirectoryValuationCell({ item, active }: DirectoryValuationCellP
   return (
     <td className={getDirectoryActiveSortCellClassName(active)}>
       <div className={`directory-valuation-cell directory-valuation-cell--${display.status}`} title={display.title} aria-label={`${display.statusLabel}: ${display.label} ${display.detail}`}>
+        {display.status !== "available" && display.statusLabel !== display.label && <span className="directory-valuation-cell__status">{display.statusLabel}</span>}
         <span className="directory-valuation-cell__main">
           <strong>{display.label}</strong>
           {display.hintLabel && <em>{display.hintLabel}</em>}

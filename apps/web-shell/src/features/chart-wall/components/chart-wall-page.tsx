@@ -320,9 +320,16 @@ export function ChartWallPage(): JSX.Element {
     setSearchParams(next);
   };
 
-  const currentSearch = getSearchWithout(searchParams, ["from"]);
+  const chartContextSearch = getChartContextSearch(searchParams, activeView);
+  const universeSearch = getUniverseSearch(searchParams);
+  const scannerSearch = getScannerSearch(searchParams);
   const fundDirectorySearch = getFundDirectorySearch(searchParams);
-  const assetDirectorySearch = getAssetDirectorySearch(searchParams);
+  const cryptoDirectorySearch = getAssetDirectorySearch(searchParams, "crypto", directoryCategoryId);
+  const commoditiesDirectorySearch = getAssetDirectorySearch(searchParams, "commodities", directoryCategoryId);
+  const usEquityDirectorySearch = getAssetDirectorySearch(searchParams, "us-equity", directoryCategoryId);
+  const aShareDirectorySearch = getAssetDirectorySearch(searchParams, "a-share", directoryCategoryId);
+  const hkEquityDirectorySearch = getAssetDirectorySearch(searchParams, "hk-equity", directoryCategoryId);
+  const macroDirectorySearch = getAssetDirectorySearch(searchParams, "macro", directoryCategoryId);
   const assetDetailReturnPath = getAssetDetailReturnPath(searchParams);
   const assetDetailReturnLabel = getAssetDetailReturnLabel(assetDetailReturnPath);
   const headerDataSourceLabel = getHeaderDataSourceLabel(activeView, data, assetDirectoryQuery.data?.category.coverage);
@@ -349,48 +356,48 @@ export function ChartWallPage(): JSX.Element {
             </div>
           </div>
           <nav className="sidebar-nav" aria-label="主导航">
-            <SidebarButton active={activeView === "overview"} label="概览" title="全市场概览" to={`/overview${currentSearch}`}>
+            <SidebarButton active={activeView === "overview"} label="概览" title="全市场概览" to={`/overview${chartContextSearch}`}>
               <Gauge size={18} aria-hidden="true" />
             </SidebarButton>
-            <SidebarButton active={activeView === "chart-wall"} label="图表墙" title="全市场图表墙" to={`/chart-wall${currentSearch}`}>
+            <SidebarButton active={activeView === "chart-wall"} label="图表墙" title="全市场图表墙" to={`/chart-wall${chartContextSearch}`}>
               <BarChart3 size={18} aria-hidden="true" />
             </SidebarButton>
             <SidebarGroup active={isAssetDirectoryView} label="资产目录" title="资产目录" icon={<FolderOpen size={18} aria-hidden="true" />}>
               <SidebarButton active={activeView === "fund-directory"} label="基金目录" title="基金目录" to={`/directories/funds${fundDirectorySearch}`} level="child">
                 <BookOpen size={16} aria-hidden="true" />
               </SidebarButton>
-              <SidebarButton active={activeView === "asset-directory" && directoryCategoryId === "crypto"} label="加密目录" title="加密目录" to={`/directories/crypto${assetDirectorySearch}`} level="child">
+              <SidebarButton active={activeView === "asset-directory" && directoryCategoryId === "crypto"} label="加密目录" title="加密目录" to={`/directories/crypto${cryptoDirectorySearch}`} level="child">
                 <Bitcoin size={16} aria-hidden="true" />
               </SidebarButton>
-              <SidebarButton active={activeView === "asset-directory" && directoryCategoryId === "commodities"} label="商品目录" title="商品目录" to={`/directories/commodities${assetDirectorySearch}`} level="child">
+              <SidebarButton active={activeView === "asset-directory" && directoryCategoryId === "commodities"} label="商品目录" title="商品目录" to={`/directories/commodities${commoditiesDirectorySearch}`} level="child">
                 <BarChart3 size={16} aria-hidden="true" />
               </SidebarButton>
-              <SidebarButton active={activeView === "asset-directory" && directoryCategoryId === "us-equity"} label="美股目录" title="美股目录" to={`/directories/us-equity${assetDirectorySearch}`} level="child">
+              <SidebarButton active={activeView === "asset-directory" && directoryCategoryId === "us-equity"} label="美股目录" title="美股目录" to={`/directories/us-equity${usEquityDirectorySearch}`} level="child">
                 <BarChart3 size={16} aria-hidden="true" />
               </SidebarButton>
-              <SidebarButton active={activeView === "asset-directory" && directoryCategoryId === "a-share"} label="A 股目录" title="A 股目录" to={`/directories/a-share${assetDirectorySearch}`} level="child">
+              <SidebarButton active={activeView === "asset-directory" && directoryCategoryId === "a-share"} label="A 股目录" title="A 股目录" to={`/directories/a-share${aShareDirectorySearch}`} level="child">
                 <BarChart3 size={16} aria-hidden="true" />
               </SidebarButton>
-              <SidebarButton active={activeView === "asset-directory" && directoryCategoryId === "hk-equity"} label="港股目录" title="港股目录" to={`/directories/hk-equity${assetDirectorySearch}`} level="child">
+              <SidebarButton active={activeView === "asset-directory" && directoryCategoryId === "hk-equity"} label="港股目录" title="港股目录" to={`/directories/hk-equity${hkEquityDirectorySearch}`} level="child">
                 <BarChart3 size={16} aria-hidden="true" />
               </SidebarButton>
-              <SidebarButton active={activeView === "asset-directory" && directoryCategoryId === "macro"} label="宏观目录" title="宏观目录" to={`/directories/macro${assetDirectorySearch}`} level="child">
+              <SidebarButton active={activeView === "asset-directory" && directoryCategoryId === "macro"} label="宏观目录" title="宏观目录" to={`/directories/macro${macroDirectorySearch}`} level="child">
                 <Gauge size={16} aria-hidden="true" />
               </SidebarButton>
             </SidebarGroup>
-            <SidebarButton active={activeView === "universe"} label="资产宇宙" title="资产宇宙" to={`/universe${currentSearch}`}>
+            <SidebarButton active={activeView === "universe"} label="资产宇宙" title="资产宇宙" to={`/universe${universeSearch}`}>
               <Network size={18} aria-hidden="true" />
             </SidebarButton>
-            <SidebarButton active={activeView === "scanner"} label="机会扫描" title="机会扫描" to={`/scanner${currentSearch}`}>
+            <SidebarButton active={activeView === "scanner"} label="机会扫描" title="机会扫描" to={`/scanner${scannerSearch}`}>
               <Sparkles size={18} aria-hidden="true" />
             </SidebarButton>
-            <SidebarButton active={activeView === "watchlist"} label="自选" title="自选图表墙" to={`/watchlist${currentSearch}`}>
+            <SidebarButton active={activeView === "watchlist"} label="自选" title="自选图表墙" to={`/watchlist${chartContextSearch}`}>
               <Star size={18} aria-hidden="true" />
             </SidebarButton>
-            <SidebarButton active={activeView === "tasks"} label="任务中心" title="任务中心" to={`/tasks${currentSearch}`}>
+            <SidebarButton active={activeView === "tasks"} label="任务中心" title="任务中心" to="/tasks">
               <ListChecks size={18} aria-hidden="true" />
             </SidebarButton>
-            <SidebarButton active={activeView === "data-health"} label="数据状态" title="数据源与任务状态" to={`/data-health${currentSearch}`}>
+            <SidebarButton active={activeView === "data-health"} label="数据状态" title="数据源与任务状态" to={`/data-health${chartContextSearch}`}>
               <Database size={18} aria-hidden="true" />
             </SidebarButton>
           </nav>
@@ -427,7 +434,7 @@ export function ChartWallPage(): JSX.Element {
             lastLoadedAt={taskCenterQuery.lastLoadedAt}
             pollIntervalMs={taskCenterQuery.pollIntervalMs}
             onClick={() => {
-              navigate(`/tasks${currentSearch}`);
+              navigate("/tasks");
             }}
           />
           <IconButton label="刷新数据" onClick={handleRefresh} disabled={isGlobalSyncing}>
@@ -442,7 +449,7 @@ export function ChartWallPage(): JSX.Element {
           error={taskCenterQuery.error}
           isLoading={taskCenterQuery.isLoading}
           onOpen={() => {
-            navigate(`/tasks${currentSearch}`);
+            navigate("/tasks");
           }}
         />
       )}
@@ -900,6 +907,35 @@ function getReturnSourcePath(pathname: string, searchParams: URLSearchParams): s
   return `${pathname}${search}`;
 }
 
+function getChartContextSearch(searchParams: URLSearchParams, activeView: ActiveView): string {
+  const names = activeView === "asset-directory" || activeView === "fund-directory"
+    ? ["range", "timeframe", "q"]
+    : ["range", "timeframe", "market", "assetType", "level", "tag", "sort", "order", "signal", "dataQuality", "valuationStatus", "view", "q"];
+
+  return getSearchWithOnly(searchParams, names);
+}
+
+function getUniverseSearch(searchParams: URLSearchParams): string {
+  return getSearchWithOnly(searchParams, ["q", "market", "assetType", "level"]);
+}
+
+function getScannerSearch(searchParams: URLSearchParams): string {
+  return getSearchWithOnly(searchParams, ["eventType", "severity", "scannerMarket", "scannerQ"]);
+}
+
+function getSearchWithOnly(searchParams: URLSearchParams, names: string[]): string {
+  const next = new URLSearchParams();
+
+  for (const name of names) {
+    const value = searchParams.get(name);
+    if (value) {
+      next.set(name, value);
+    }
+  }
+
+  return toSearchString(next);
+}
+
 function getSearchWithout(searchParams: URLSearchParams, excludedNames: string[]): string {
   const next = new URLSearchParams(searchParams);
 
@@ -932,10 +968,15 @@ function getFundDirectorySearch(searchParams: URLSearchParams): string {
   return toSearchString(next);
 }
 
-function getAssetDirectorySearch(searchParams: URLSearchParams): string {
+function getAssetDirectorySearch(searchParams: URLSearchParams, targetCategoryId: AssetDirectoryCategoryId, currentCategoryId: AssetDirectoryCategoryId | null): string {
   const next = new URLSearchParams();
+  const shouldPreservePage = targetCategoryId === currentCategoryId;
 
   for (const name of ["range", "timeframe", "q", "directoryMarket", "directoryAssetType", "dataState", "valuationStatus", "status", "sort", "order", "directoryPage"]) {
+    if (name === "directoryPage" && !shouldPreservePage) {
+      continue;
+    }
+
     const value = searchParams.get(name);
     if (value) {
       next.set(name, value);
