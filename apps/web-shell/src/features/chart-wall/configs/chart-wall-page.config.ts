@@ -111,7 +111,7 @@ export const dataQualityFallbackOptions: ControlOption[] = [
 export const valuationStatusFallbackOptions: ControlOption[] = [
   { value: "available", label: "有市值" },
   { value: "turnover_only", label: "仅成交额" },
-  { value: "source_missing_value", label: "源缺值" },
-  { value: "source_unavailable", label: "未覆盖" },
+  { value: "source_missing_value", label: "源未返回" },
+  { value: "source_unavailable", label: "未接入源" },
   { value: "not_applicable", label: "不适用" }
 ];

@@ -59,7 +59,7 @@ export function getValuationDisplay(valuation: AssetValuation, fallbackCurrency:
     const detail = getSourceUnavailableDetail(context.assetType);
 
     return {
-      label: "未覆盖",
+      label: "未接入源",
       detail,
       title: `${detail}；当前目录已有资产符号，但没有接入可用的规模/市值快照，不是后台加载中`,
       rankLabel: null,
@@ -69,8 +69,8 @@ export function getValuationDisplay(valuation: AssetValuation, fallbackCurrency:
   }
 
   return {
-    label: "源缺值",
-    detail: `${valuation.source} 未给规模`,
+    label: "源未返回",
+    detail: `${formatSourceName(valuation.source)} 无规模`,
     title: "当前来源已返回快照，但没有提供规模/市值字段，不是后台加载中",
     rankLabel: null,
     value,
@@ -174,7 +174,7 @@ function getNotApplicableDetail(assetType: AssetType | undefined): string {
 
 function getSourceUnavailableDetail(assetType: AssetType | undefined): string {
   if (assetType === "fund") {
-    return "未接入 AUM/规模源";
+    return "未接入 AUM/ETF 规模源";
   }
 
   if (assetType === "equity" || assetType === "crypto") {
@@ -182,6 +182,18 @@ function getSourceUnavailableDetail(assetType: AssetType | undefined): string {
   }
 
   return "未接入规模源";
+}
+
+function formatSourceName(source: string | null): string {
+  if (!source) {
+    return "来源";
+  }
+
+  if (source.toLowerCase() === "nasdaq") {
+    return "NASDAQ";
+  }
+
+  return source;
 }
 
 function formatCompactNumber(value: number): string {

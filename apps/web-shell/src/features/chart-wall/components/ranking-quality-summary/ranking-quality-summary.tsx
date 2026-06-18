@@ -117,8 +117,8 @@ function buildRankSummary(items: ChartWallItem[], metric: SortMetricDefinition):
 
 const valuationMissingLabels: Record<Exclude<ValuationDisplayStatus, "available">, string> = {
   turnover_only: "仅成交额",
-  source_missing_value: "源无规模",
-  source_unavailable: "未覆盖",
+  source_missing_value: "源未返回",
+  source_unavailable: "未接入源",
   not_applicable: "不适用"
 };
 

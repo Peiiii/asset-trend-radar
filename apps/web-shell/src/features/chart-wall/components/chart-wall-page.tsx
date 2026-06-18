@@ -42,6 +42,7 @@ import { TaskActivityNotice } from "./task-center/task-activity-notice";
 import { TaskCenterSection } from "./task-center/task-center-section";
 import { TaskStatusButton } from "./task-center/task-status-button";
 import { UniverseSection } from "./universe-section/universe-section";
+import { ValuationCoverageSummary } from "./valuation-coverage-summary/valuation-coverage-summary";
 import { WatchlistSection } from "./watchlist-section/watchlist-section";
 import { chartWallApiService } from "../services/chart-wall-api.service";
 import { useAssetDirectoryQuery } from "../hooks/use-asset-directory-query";
@@ -516,6 +517,14 @@ export function ChartWallPage(): JSX.Element {
                 generatedAt={data.chartWall.generatedAt}
               />
               <ComparePanel compareData={compareSelection.compareData} compareAssetIds={compareSelection.compareAssetIds} allItems={chartItems} onRemove={compareSelection.toggleCompare} onClear={compareSelection.clearCompare} />
+              {shouldShowChartWallValuationSummary(sort, valuationStatus) && (
+                <ValuationCoverageSummary
+                  items={filteredItems}
+                  title="市值/规模覆盖"
+                  description="按当前图表墙筛选口径统计；美股股票优先使用 NASDAQ 市值快照，ETF/AUM 源未完整接入，指数/商品/宏观不适用，空态不是后台加载中。"
+                  variant="compact"
+                />
+              )}
               {viewMode === "grid" ? (
                 <ChartGrid items={filteredItems} sort={sort} order={order} onSelect={selectAsset} onPin={handlePin} onCompare={compareSelection.toggleCompare} onResetFilters={resetFilters} />
               ) : (
@@ -1026,6 +1035,10 @@ function shouldIncludeValuations(activeView: ActiveView, market: string, assetTy
   }
 
   return isValuationCandidateMarket(market) || isValuationCandidateAssetType(assetType);
+}
+
+function shouldShowChartWallValuationSummary(sort: string, valuationStatus: ChartWallValuationStatusFilter): boolean {
+  return sort === "market_cap" || valuationStatus !== "all";
 }
 
 function isValuationCandidateMarket(market: string): boolean {
