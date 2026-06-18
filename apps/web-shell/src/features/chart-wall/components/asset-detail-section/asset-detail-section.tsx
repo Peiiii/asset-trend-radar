@@ -50,7 +50,7 @@ export function AssetDetailSection({ item, relatedItems, onSelect, onPin, onComp
           <DetailMetric
             label="市值/规模"
             value={valuationDisplay.label}
-            detail={valuationDisplay.detail}
+            detail={[valuationDisplay.detail, valuationDisplay.hintLabel].filter(Boolean).join(" / ")}
             title={valuationDisplay.title}
             tone={valuationMetricTone(valuationDisplay.status)}
           />

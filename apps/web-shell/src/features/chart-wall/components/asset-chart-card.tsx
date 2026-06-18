@@ -108,7 +108,7 @@ export function AssetChartCard({ item, sort, rank, onSelect, onPin, onCompare }:
         <div className={`asset-chart-card__valuation-row asset-chart-card__valuation-row--${valuationDisplay.status}`} title={valuationDisplay.title}>
           <span>{valuationRowLabel(valuationDisplay.status)}</span>
           <strong>{valuationDisplay.label}</strong>
-          <small>{[valuationDisplay.detail, valuationDisplay.rankLabel].filter(Boolean).join(" / ")}</small>
+          <small>{[valuationDisplay.detail, valuationDisplay.rankLabel, valuationDisplay.hintLabel].filter(Boolean).join(" / ")}</small>
         </div>
       )}
       <DataQualityIndicator item={item} />

@@ -10,6 +10,8 @@ export type ValuationDisplay = {
   rankLabel: string | null;
   value: number | null;
   status: ValuationDisplayStatus;
+  statusLabel: string;
+  hintLabel: string | null;
 };
 
 export function getValuationDisplay(valuation: AssetValuation, fallbackCurrency: string, context: { assetType?: AssetType } = {}): ValuationDisplay {
@@ -27,7 +29,9 @@ export function getValuationDisplay(valuation: AssetValuation, fallbackCurrency:
       title: getValuationTitle(valuation, currency),
       rankLabel,
       value: primaryValue,
-      status
+      status,
+      statusLabel: "已覆盖",
+      hintLabel: null
     };
   }
 
@@ -38,7 +42,9 @@ export function getValuationDisplay(valuation: AssetValuation, fallbackCurrency:
       title: getValuationTitle(valuation, currency),
       rankLabel,
       value: fallbackValue,
-      status
+      status,
+      statusLabel: "仅成交额",
+      hintLabel: "非市值"
     };
   }
 
@@ -51,7 +57,9 @@ export function getValuationDisplay(valuation: AssetValuation, fallbackCurrency:
       title: `${detail}，不是后台加载中`,
       rankLabel: null,
       value,
-      status
+      status,
+      statusLabel: "不适用",
+      hintLabel: "非后台任务"
     };
   }
 
@@ -64,7 +72,9 @@ export function getValuationDisplay(valuation: AssetValuation, fallbackCurrency:
       title: `${detail}；当前目录已有资产符号，但没有接入可用的规模/市值快照，不是后台加载中`,
       rankLabel: null,
       value,
-      status
+      status,
+      statusLabel: "未覆盖",
+      hintLabel: "非后台任务"
     };
   }
 
@@ -74,7 +84,9 @@ export function getValuationDisplay(valuation: AssetValuation, fallbackCurrency:
     title: "当前来源已返回快照，但没有提供规模/市值字段，不是后台加载中",
     rankLabel: null,
     value,
-    status
+    status,
+    statusLabel: "源缺值",
+    hintLabel: "非后台任务"
   };
 }
 

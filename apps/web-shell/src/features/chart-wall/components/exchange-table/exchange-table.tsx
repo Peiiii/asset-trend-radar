@@ -181,6 +181,7 @@ function ValuationCell({ item, active }: { item: ChartWallItem; active: boolean 
     <td className={`${activeSortCellClassName(active, "exchange-table__valuation")} exchange-table__valuation--${display.status}`} title={display.title}>
       <strong>{display.label}</strong>
       <small>{[display.detail, display.rankLabel].filter(Boolean).join(" / ")}</small>
+      {display.hintLabel && <em>{display.hintLabel}</em>}
     </td>
   );
 }

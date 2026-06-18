@@ -13,8 +13,11 @@ export function DirectoryValuationCell({ item, active }: DirectoryValuationCellP
 
   return (
     <td className={getDirectoryActiveSortCellClassName(active)}>
-      <div className={`directory-valuation-cell directory-valuation-cell--${display.status}`} title={display.title}>
-        <strong>{display.label}</strong>
+      <div className={`directory-valuation-cell directory-valuation-cell--${display.status}`} title={display.title} aria-label={`${display.statusLabel}: ${display.label} ${display.detail}`}>
+        <span className="directory-valuation-cell__main">
+          <strong>{display.label}</strong>
+          {display.hintLabel && <em>{display.hintLabel}</em>}
+        </span>
         <small>{[display.detail, display.rankLabel].filter(Boolean).join(" / ")}</small>
       </div>
     </td>
