@@ -60,13 +60,13 @@ const statusDefinitions: Record<ValuationDisplayStatus, Omit<ValuationCoverageSt
   },
   source_missing_value: {
     status: "source_missing_value",
-    label: "源未返回",
+    label: "源缺值",
     description: "来源存在但无规模字段",
     tone: "amber"
   },
   source_unavailable: {
     status: "source_unavailable",
-    label: "未接入源",
+    label: "未覆盖",
     description: "当前资产没有规模源",
     tone: "negative"
   },

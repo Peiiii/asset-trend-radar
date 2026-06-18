@@ -11,7 +11,7 @@ type ValuationCoverageSummaryProps = {
 
 const summaryBuilder = new ValuationCoverageSummaryBuilder();
 
-export function ValuationCoverageSummary({ items, title = "估值覆盖", description = "市值空态按当前筛选口径统计；“源未返回 / 未接入源 / 不适用”都不是后台加载中。", variant = "full" }: ValuationCoverageSummaryProps): JSX.Element {
+export function ValuationCoverageSummary({ items, title = "估值覆盖", description = "市值空态按当前筛选口径统计；“源缺值 / 未覆盖 / 不适用”都不是后台加载中。", variant = "full" }: ValuationCoverageSummaryProps): JSX.Element {
   const summary = useMemo(() => summaryBuilder.build(items), [items]);
   const coverageLabel = `${Math.round(summary.coverageRatio * 100)}%`;
 

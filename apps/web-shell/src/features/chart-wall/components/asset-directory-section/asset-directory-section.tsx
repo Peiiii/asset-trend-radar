@@ -63,7 +63,7 @@ const directorySortOptions: ControlOption[] = [
   { value: "return_3m", label: "3M 涨幅" },
   { value: "return_6m", label: "6M 涨幅" },
   { value: "return_1y", label: "1Y 涨幅" },
-  { value: "market_cap", label: "市值" },
+  { value: "market_cap", label: "市值/规模" },
   { value: "latest_value", label: "最新价" },
   { value: "data_point_count", label: "数据点" },
   { value: "label", label: "名称" }
@@ -86,6 +86,7 @@ export function AssetDirectorySection({ title, description, items, totalCount, c
   const dataStateOptions = getDirectoryDataStateOptions(dataStateFacets);
   const valuationStatusOptions = getDirectoryValuationStatusOptions(valuationStatusFacets);
   const statusOptions = getDirectoryStatusOptions(statusFacets);
+  const valuationCounts = getDirectoryValuationCounts(valuationStatusFacets);
   const handleHeaderSort = (nextSort: AssetDirectorySortKey): void => {
     onSortChange(nextSort, nextSort === sort ? toggleDirectoryOrder(order) : getDefaultDirectoryOrder(nextSort));
   };
@@ -103,6 +104,9 @@ export function AssetDirectorySection({ title, description, items, totalCount, c
         </div>
         <div className="asset-directory-hero__metrics">
           <span>目录 {categoryItemCount.toLocaleString("en-US")}</span>
+          <span>有规模 {valuationCounts.available.toLocaleString("en-US")}</span>
+          <span>源缺值 {valuationCounts.sourceMissingValue.toLocaleString("en-US")}</span>
+          <span>未覆盖 {valuationCounts.sourceUnavailable.toLocaleString("en-US")}</span>
           <span>本页上涨 {positiveCount.toLocaleString("en-US")}</span>
           <span>走势池 {categoryInPoolCount.toLocaleString("en-US")}</span>
           <span>本页来源 {sourceCount.toLocaleString("en-US")}</span>
@@ -166,7 +170,7 @@ export function AssetDirectorySection({ title, description, items, totalCount, c
         <ValuationCoverageSummary
           items={items}
           title="本页市值覆盖"
-          description="按当前页统计可排序市值、源未返回、未接入源和不适用；这些空态不是后台加载中。"
+          description="按当前页统计可排序市值/规模、源缺值、未覆盖和不适用；这些空态不是后台加载中。"
           variant="compact"
         />
       )}
@@ -259,6 +263,16 @@ function getDirectoryStatusOptions(statusFacets: AssetDirectoryPageResponse["fac
     ...option,
     count: counts.get(getDirectoryStatus(option.value))
   }));
+}
+
+function getDirectoryValuationCounts(valuationStatusFacets: AssetDirectoryPageResponse["facets"]["valuationStatuses"]): { available: number; sourceMissingValue: number; sourceUnavailable: number } {
+  const counts = new Map(valuationStatusFacets.map((facet) => [facet.value, facet.count]));
+
+  return {
+    available: counts.get("available") ?? 0,
+    sourceMissingValue: counts.get("source_missing_value") ?? 0,
+    sourceUnavailable: counts.get("source_unavailable") ?? 0
+  };
 }
 
 function getDirectorySort(value: string): AssetDirectorySortKey {

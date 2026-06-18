@@ -48,7 +48,9 @@ type NasdaqValuationCache = {
 export class NasdaqUsEquityValuationProvider {
   private readonly baseUrl = "https://api.nasdaq.com";
   private readonly cacheTtlMs = 5 * 60 * 1000;
+  private readonly fetchRetryDelaysMs = [750, 1500, 3000];
   private readonly quoteSummaryLimit = 80;
+  private readonly quoteSummaryConcurrency = 4;
   private stockCache: NasdaqValuationCache | null = null;
   private readonly quoteSummaryCache = new Map<string, { loadedAt: number; item: NasdaqUsEquityValuationItem | null }>();
 
@@ -65,7 +67,19 @@ export class NasdaqUsEquityValuationProvider {
     url.searchParams.set("offset", "0");
     url.searchParams.set("download", "true");
 
-    const payload = await this.fetchJson<NasdaqStockScreenerPayload>(url, "NASDAQ stock screener");
+    let payload: NasdaqStockScreenerPayload;
+
+    try {
+      payload = await this.fetchJson<NasdaqStockScreenerPayload>(url, "NASDAQ stock screener");
+    } catch (error) {
+      if (this.stockCache) {
+        console.warn(error);
+        return this.stockCache.itemsBySymbol;
+      }
+
+      throw error;
+    }
+
     const loadedAt = new Date().toISOString();
     const itemsBySymbol = new Map(
       (payload.data?.rows ?? [])
@@ -98,7 +112,7 @@ export class NasdaqUsEquityValuationProvider {
       }
     }
 
-    const summaryItems = await Promise.all(missingSymbols.slice(0, this.quoteSummaryLimit).map(this.fetchQuoteSummaryValuation));
+    const summaryItems = await this.listQuoteSummaryValuations(missingSymbols.slice(0, this.quoteSummaryLimit));
 
     for (const item of summaryItems) {
       if (item) {
@@ -109,6 +123,17 @@ export class NasdaqUsEquityValuationProvider {
     return requestedItemsBySymbol;
   };
 
+  private listQuoteSummaryValuations = async (symbols: string[]): Promise<Array<NasdaqUsEquityValuationItem | null>> => {
+    const items: Array<NasdaqUsEquityValuationItem | null> = [];
+
+    for (let index = 0; index < symbols.length; index += this.quoteSummaryConcurrency) {
+      const batch = symbols.slice(index, index + this.quoteSummaryConcurrency);
+      items.push(...await Promise.all(batch.map(this.fetchQuoteSummaryValuation)));
+    }
+
+    return items;
+  };
+
   private fetchQuoteSummaryValuation = async (symbol: string): Promise<NasdaqUsEquityValuationItem | null> => {
     const cached = this.quoteSummaryCache.get(symbol);
     const now = Date.now();
@@ -117,9 +142,14 @@ export class NasdaqUsEquityValuationProvider {
       return cached.item;
     }
 
-    const item = await this.tryFetchQuoteSummary(symbol, "stocks") ?? await this.tryFetchQuoteSummary(symbol, "etf");
-    this.quoteSummaryCache.set(symbol, { loadedAt: now, item });
-    return item;
+    try {
+      const item = await this.tryFetchQuoteSummary(symbol, "stocks") ?? await this.tryFetchQuoteSummary(symbol, "etf");
+      this.quoteSummaryCache.set(symbol, { loadedAt: now, item });
+      return item;
+    } catch (error) {
+      console.warn(error);
+      return cached?.item ?? null;
+    }
   };
 
   private tryFetchQuoteSummary = async (symbol: string, assetClass: "stocks" | "etf"): Promise<NasdaqUsEquityValuationItem | null> => {
@@ -152,22 +182,42 @@ export class NasdaqUsEquityValuationProvider {
   };
 
   private fetchJson = async <TData,>(url: URL, label: string): Promise<TData> => {
-    const response = await fetch(url, {
-      headers: {
-        accept: "application/json,text/plain,*/*",
-        origin: "https://www.nasdaq.com",
-        referer: "https://www.nasdaq.com/market-activity/stocks/screener",
-        "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36"
-      },
-      signal: AbortSignal.timeout(20000)
-    });
+    let lastError: Error | null = null;
 
-    if (!response.ok) {
-      throw new Error(`${label} request failed: ${response.status} ${response.statusText}`);
+    for (let attempt = 0; attempt <= this.fetchRetryDelaysMs.length; attempt += 1) {
+      try {
+        const response = await fetch(url, {
+          headers: {
+            accept: "application/json,text/plain,*/*",
+            origin: "https://www.nasdaq.com",
+            referer: "https://www.nasdaq.com/market-activity/stocks/screener",
+            "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36"
+          },
+          signal: AbortSignal.timeout(20000)
+        });
+
+        if (response.ok) {
+          return (await response.json()) as TData;
+        }
+
+        lastError = new Error(`${label} request failed: ${response.status} ${response.statusText}`);
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(`${label} request failed`);
+      }
+
+      const delayMs = this.fetchRetryDelaysMs[attempt];
+      if (delayMs !== undefined) {
+        await this.delay(delayMs);
+      }
     }
 
-    return (await response.json()) as TData;
+    throw lastError ?? new Error(`${label} request failed`);
   };
+
+  private delay = async (delayMs: number): Promise<void> =>
+    new Promise((resolve) => {
+      setTimeout(resolve, delayMs);
+    });
 
   private toScreenerValuation = (row: NasdaqScreenerStockRow, loadedAt: string): NasdaqUsEquityValuationItem | null => {
     const symbol = row.symbol?.trim().toUpperCase() ?? "";
