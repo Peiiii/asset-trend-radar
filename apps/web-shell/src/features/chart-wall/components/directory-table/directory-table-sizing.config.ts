@@ -14,8 +14,8 @@ export const fundDirectoryTableSizing: DirectoryTableSizing = {
 
 export function getAssetDirectoryTableSizing(categoryId: AssetDirectoryCategoryId | null): DirectoryTableSizing {
   return {
-    tableMinWidth: categoryId === "us-equity" ? 1560 : 1520,
+    tableMinWidth: categoryId === "us-equity" ? 1650 : 1608,
     firstColumnMinWidth: categoryId === "us-equity" ? 252 : 210,
-    lastColumnMinWidth: 174
+    lastColumnMinWidth: 264
   };
 }

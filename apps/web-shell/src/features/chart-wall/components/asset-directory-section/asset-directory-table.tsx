@@ -1,8 +1,9 @@
 import { GitCompare, Plus } from "lucide-react";
-import { Button, DataTableFrame, SignalBadge } from "@gold-insights/ui";
+import { DataTableFrame, SignalBadge } from "@gold-insights/ui";
 import type { AssetDirectoryItem, AssetDirectorySortKey, AssetDirectorySortOrder } from "@gold-insights/market-domain";
 import { formatPrice } from "@/shared/utils/format-number.utils";
 import { DirectoryReturnCell, getDirectoryActiveSortCellClassName } from "../directory-table/directory-return-pill";
+import { DirectoryActionButton, DirectoryRowActions } from "../directory-table/directory-row-actions";
 import { DirectoryTableColumns } from "../directory-table/directory-table-columns";
 import { DirectorySortableHeader } from "../directory-table/directory-sortable-header";
 import { DirectoryValuationCell } from "../directory-table/directory-valuation-cell";
@@ -72,30 +73,26 @@ export function AssetDirectoryTable({ items, sort, order, tableMinWidth, firstCo
               </div>
             </td>
             <td>
-              <div className="asset-directory-actions">
+              <DirectoryRowActions>
                 {canImport && item.poolState !== "in_pool" && (
-                  <Button
-                    type="button"
+                  <DirectoryActionButton
                     variant="secondary"
+                    className="directory-action-button--pool"
+                    icon={<Plus size={14} aria-hidden="true" />}
+                    label={importingItemId === item.id ? "导入中" : "加入走势池"}
                     title={importingItemId === item.id ? `正在导入：${item.label}` : `加入走势池：${item.label}`}
                     aria-label={importingItemId === item.id ? `正在导入：${item.label}` : `加入走势池：${item.label}`}
                     disabled={importingItemId !== null}
                     onClick={() => onImport(item)}
-                  >
-                    <Plus size={14} aria-hidden="true" />
-                    {importingItemId === item.id ? "导入中" : "加入走势池"}
-                  </Button>
+                  />
                 )}
                 {item.assetId && (
                   <>
-                    <Button type="button" variant="ghost" onClick={() => onSelect(item.assetId ?? "")}>详情</Button>
-                    <Button type="button" variant="ghost" onClick={() => onCompare(item.assetId ?? "")}>
-                      <GitCompare size={14} aria-hidden="true" />
-                      对比
-                    </Button>
+                    <DirectoryActionButton label="详情" title={`查看走势：${item.label}`} variant="ghost" onClick={() => onSelect(item.assetId ?? "")} />
+                    <DirectoryActionButton label="对比" title={`加入对比：${item.label}`} variant="ghost" icon={<GitCompare size={14} aria-hidden="true" />} onClick={() => onCompare(item.assetId ?? "")} />
                   </>
                 )}
-              </div>
+              </DirectoryRowActions>
             </td>
           </tr>
         ))}

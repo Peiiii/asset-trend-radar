@@ -1,6 +1,7 @@
 import { ExternalLink, Plus, RefreshCcw } from "lucide-react";
 import type { FundCatalogPageItem, FundCatalogSortKey } from "@gold-insights/market-domain";
 import { DirectoryReturnCell, getDirectoryActiveSortCellClassName } from "./directory-table/directory-return-pill";
+import { DirectoryActionButton, DirectoryRowActions } from "./directory-table/directory-row-actions";
 
 type FundDirectoryRowProps = {
   item: FundCatalogPageItem;
@@ -51,18 +52,21 @@ export function FundDirectoryRow({ item, importingCode, sort, onImport, onSelect
         )}
       </td>
       <td>
-        <div className="row-actions">
-          <button type="button" title={importActionLabel} aria-label={importActionLabel} disabled={isImporting} onClick={() => onImport(item.code)}>
-            {item.isImported ? <RefreshCcw size={13} aria-hidden="true" /> : <Plus size={13} aria-hidden="true" />}
-            {isImporting ? "处理中" : item.isImported ? "更新净值" : "加入走势池"}
-          </button>
+        <DirectoryRowActions>
+          <DirectoryActionButton
+            className={!item.isImported ? "directory-action-button--pool" : undefined}
+            variant="secondary"
+            icon={item.isImported ? <RefreshCcw size={13} aria-hidden="true" /> : <Plus size={13} aria-hidden="true" />}
+            label={isImporting ? "处理中" : item.isImported ? "更新净值" : "加入走势池"}
+            title={importActionLabel}
+            aria-label={importActionLabel}
+            disabled={isImporting}
+            onClick={() => onImport(item.code)}
+          />
           {item.assetId && (
-            <button type="button" onClick={() => onSelectAsset(item.assetId ?? "")}>
-              <ExternalLink size={13} aria-hidden="true" />
-              查看走势
-            </button>
+            <DirectoryActionButton label="查看走势" title={`查看走势：${item.name}`} variant="ghost" icon={<ExternalLink size={13} aria-hidden="true" />} onClick={() => onSelectAsset(item.assetId ?? "")} />
           )}
-        </div>
+        </DirectoryRowActions>
       </td>
     </tr>
   );

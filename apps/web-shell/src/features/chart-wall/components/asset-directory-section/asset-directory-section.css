@@ -155,24 +155,6 @@
   max-width: 58px;
 }
 
-.asset-directory-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.asset-directory-actions .gi-button {
-  gap: 5px;
-}
-
-.gi-data-table-frame.asset-directory-table-wrapper .gi-button {
-  min-height: 28px;
-  padding: 0 9px;
-  border-radius: 7px;
-  font-size: 12px;
-  font-weight: 800;
-}
-
 .asset-directory-pagination {
   justify-content: flex-end;
   gap: 10px;

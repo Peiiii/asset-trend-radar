@@ -168,20 +168,6 @@
   gap: 10px;
 }
 
-.fund-directory-section .row-actions button {
-  gap: 5px;
-}
-
-.fund-directory-section .row-actions button:disabled {
-  cursor: not-allowed;
-  opacity: 0.58;
-}
-
-.fund-directory-section .row-actions button:disabled:hover {
-  border-color: #d4dce8;
-  background: #ffffff;
-}
-
 @media (max-width: 760px) {
   .fund-directory-toolbar,
   .fund-directory-hero,
