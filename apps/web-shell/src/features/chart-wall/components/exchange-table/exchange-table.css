@@ -5,10 +5,12 @@
 
 .exchange-table-wrapper {
   position: relative;
-  overflow-x: auto;
+  max-height: min(72vh, 860px);
+  overflow: auto;
   border: 1px solid #d7dde7;
   border-radius: 8px;
   background: #ffffff;
+  scrollbar-gutter: stable;
 }
 
 .exchange-table {
@@ -27,7 +29,11 @@
 }
 
 .exchange-table th {
+  position: sticky;
+  top: 0;
+  z-index: 5;
   background: #ffffff;
+  box-shadow: 0 1px 0 #e5eaf1;
   color: #657184;
   font-size: 12px;
   font-weight: 900;

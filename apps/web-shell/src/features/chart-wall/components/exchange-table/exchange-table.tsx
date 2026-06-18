@@ -1,10 +1,9 @@
-import { ArrowDown, ArrowUp, Eye, GitCompare, Star } from "lucide-react";
-import { EmptyState, PriceChange, SignalBadge, TrendBadge, useTableScrollShadows } from "@gold-insights/ui";
+import { ArrowDown, ArrowUp } from "lucide-react";
+import { EmptyState, useTableScrollShadows } from "@gold-insights/ui";
 import type { ChartWallItem, ChartWallSortOrder } from "@gold-insights/market-domain";
-import { formatPrice } from "@/shared/utils/format-number.utils";
-import { getValuationDisplay } from "../../utils/valuation-format.utils";
-import { DataQualityIndicator } from "../data-quality/data-quality-indicator";
 import { RankingQualitySummary } from "../ranking-quality-summary/ranking-quality-summary";
+import { defaultOrderForSort, sortLabels, toggleSortOrder } from "./exchange-table-formatters";
+import { ExchangeTableRow } from "./exchange-table-row";
 import "./exchange-table-active-sort.css";
 import "./exchange-table-toolbar.css";
 import "./exchange-table-sticky.css";
@@ -18,41 +17,6 @@ type ExchangeTableProps = {
   onSelect(assetId: string): void;
   onPin(assetId: string): void;
   onCompare(assetId: string): void;
-};
-
-const assetTypeLabels: Record<string, string> = {
-  index: "指数",
-  fund: "基金/ETF",
-  equity: "公司",
-  commodity: "商品",
-  macro: "宏观/外汇/债券",
-  crypto: "加密"
-};
-
-const macdLabels: Record<string, string> = {
-  "bullish-cross": "金叉",
-  "bearish-cross": "死叉",
-  "above-zero": "零轴上",
-  "below-zero": "零轴下",
-  neutral: "中性"
-};
-
-const sortLabels: Record<string, string> = {
-  symbol: "资产",
-  market: "市场",
-  asset_type: "品种",
-  return: "区间涨幅",
-  return_1d: "1D 涨幅",
-  return_1m: "1M 涨幅",
-  return_3m: "3M 涨幅",
-  return_6m: "6M 涨幅",
-  return_1y: "1Y 涨幅",
-  market_cap: "市值",
-  volume_ratio: "量比",
-  drawdown: "回撤",
-  trend_score: "趋势",
-  event_count: "事件",
-  data_point_count: "数据"
 };
 
 export function ExchangeTable({ items, sort, order, onSort, onSelect, onPin, onCompare }: ExchangeTableProps): JSX.Element {
@@ -126,66 +90,6 @@ export function ExchangeTable({ items, sort, order, onSort, onSelect, onPin, onC
   );
 }
 
-function ExchangeTableRow({ rank, item, sort, showValuationColumn, onSelect, onPin, onCompare }: { rank: number; item: ChartWallItem; sort: string; showValuationColumn: boolean; onSelect(assetId: string): void; onPin(assetId: string): void; onCompare(assetId: string): void }): JSX.Element {
-  return (
-    <tr onDoubleClick={() => onSelect(item.id)}>
-      <td className="exchange-table__rank">{rank}</td>
-      <td className={activeSortCellClassName(sort === "symbol", "exchange-table__asset-cell")}>
-        <button type="button" className="exchange-table__identity" onClick={() => onSelect(item.id)}>
-          <strong>{item.name}</strong>
-          <span>{item.symbol}</span>
-        </button>
-      </td>
-      <td className={activeSortCellClassName(sort === "market")}><SignalBadge label={item.market} tone={marketTone(item.market)} /></td>
-      <td className={activeSortCellClassName(sort === "asset_type")}><SignalBadge label={assetTypeLabel(item.assetType)} tone="blue" /></td>
-      <td className="exchange-table__price">{formatPrice(item.lastPrice, item.currency)}</td>
-      {showValuationColumn && <ValuationCell item={item} active={sort === "market_cap"} />}
-      <MetricCell active={sort === "return"}><PriceChange value={item.returnPct} /></MetricCell>
-      <MetricCell active={sort === "return_1d"}><PriceChange value={item.return1d} /></MetricCell>
-      <MetricCell active={sort === "return_1m"}><PriceChange value={item.return1m} /></MetricCell>
-      <MetricCell active={sort === "return_3m"}><PriceChange value={item.return3m} /></MetricCell>
-      <MetricCell active={sort === "return_6m"}><PriceChange value={item.return6m} /></MetricCell>
-      <MetricCell active={sort === "return_1y"}><PriceChange value={item.return1y} /></MetricCell>
-      <td className={activeSortCellClassName(sort === "volume_ratio")}><SignalBadge label={formatVolumeRatio(item.volumeRatio)} tone={volumeRatioTone(item.volumeRatio)} /></td>
-      <MetricCell active={sort === "drawdown"}><PriceChange value={item.drawdownPct} /></MetricCell>
-      <td className={activeSortCellClassName(sort === "trend_score")}><TrendBadge label={`${item.trendScore}`} score={item.trendScore} /></td>
-      <td><SignalBadge label={macdLabel(item.macdState)} tone={macdTone(item.macdState)} /></td>
-      <td className={activeSortCellClassName(sort === "event_count")}><SignalBadge label={`${item.events.length}`} tone={item.events.length > 0 ? "amber" : "neutral"} /></td>
-      <td className={activeSortCellClassName(sort === "data_point_count")}>
-        <DataQualityIndicator item={item} compact />
-      </td>
-      <td className="exchange-table__actions-cell">
-        <div className="row-actions exchange-table__actions">
-          <button type="button" onClick={() => onSelect(item.id)}>
-            <Eye size={13} aria-hidden="true" />
-            详情
-          </button>
-          <button type="button" onClick={() => onPin(item.id)}>
-            <Star size={13} aria-hidden="true" />
-            {item.isPinned ? "取消" : "自选"}
-          </button>
-          <button type="button" onClick={() => onCompare(item.id)}>
-            <GitCompare size={13} aria-hidden="true" />
-            {item.isCompared ? "取消" : "对比"}
-          </button>
-        </div>
-      </td>
-    </tr>
-  );
-}
-
-function ValuationCell({ item, active }: { item: ChartWallItem; active: boolean }): JSX.Element {
-  const display = getValuationDisplay(item.valuation, item.currency, { assetType: item.assetType });
-
-  return (
-    <td className={`${activeSortCellClassName(active, "exchange-table__valuation")} exchange-table__valuation--${display.status}`} title={display.title}>
-      <strong>{display.label}</strong>
-      <small>{[display.detail, display.rankLabel].filter(Boolean).join(" / ")}</small>
-      {display.hintLabel && <em>{display.hintLabel}</em>}
-    </td>
-  );
-}
-
 function SummaryPill({ label, value, tone }: { label: string; value: number; tone: "positive" | "negative" | "neutral" | "amber" | "blue" }): JSX.Element {
   return (
     <span className={`exchange-table-toolbar__pill exchange-table-toolbar__pill--${tone}`}>
@@ -216,68 +120,4 @@ function buildTableSummary(items: ChartWallItem[], sort: string, order: ChartWal
     eventfulCount: items.filter((item) => item.events.length > 0).length,
     strongTrendCount: items.filter((item) => item.trendScore >= 70).length
   };
-}
-
-function MetricCell({ children, active = false }: { children: JSX.Element; active?: boolean }): JSX.Element {
-  return <td className={activeSortCellClassName(active, "exchange-table__metric")}>{children}</td>;
-}
-
-function activeSortCellClassName(active: boolean, baseClassName?: string): string | undefined {
-  return [baseClassName, active ? "exchange-table__cell--active-sort" : ""].filter(Boolean).join(" ") || undefined;
-}
-
-function assetTypeLabel(assetType: string): string {
-  return assetTypeLabels[assetType] ?? assetType;
-}
-
-function macdLabel(state: string): string {
-  return macdLabels[state] ?? state;
-}
-
-function macdTone(state: string): "positive" | "negative" | "neutral" | "amber" | "blue" {
-  if (state === "bullish-cross" || state === "above-zero") {
-    return "positive";
-  }
-  if (state === "bearish-cross" || state === "below-zero") {
-    return "negative";
-  }
-  return "neutral";
-}
-
-function marketTone(market: string): "positive" | "negative" | "neutral" | "amber" | "blue" {
-  if (market === "加密" || market === "商品") {
-    return "amber";
-  }
-  if (market === "美股" || market === "港股") {
-    return "blue";
-  }
-  if (market === "基金" || market === "A 股") {
-    return "positive";
-  }
-  return "neutral";
-}
-
-function volumeRatioTone(value: number | null): "positive" | "negative" | "neutral" | "amber" | "blue" {
-  if (value === null) {
-    return "neutral";
-  }
-  if (value >= 1.5) {
-    return "amber";
-  }
-  if (value >= 1) {
-    return "positive";
-  }
-  return "neutral";
-}
-
-function formatVolumeRatio(value: number | null): string {
-  return typeof value === "number" ? `${value.toFixed(2)}x` : "暂无";
-}
-
-function toggleSortOrder(value: ChartWallSortOrder): ChartWallSortOrder {
-  return value === "desc" ? "asc" : "desc";
-}
-
-function defaultOrderForSort(sort: string): ChartWallSortOrder {
-  return sort === "symbol" || sort === "market" || sort === "asset_type" ? "asc" : "desc";
 }

@@ -34,14 +34,32 @@ export function useTableScrollShadows(dependencyKey: number): TableScrollShadowS
       return undefined;
     }
 
+    let animationFrame = 0;
+    const scheduleUpdateScrollEdges = (): void => {
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame);
+      }
+
+      animationFrame = requestAnimationFrame(() => {
+        animationFrame = 0;
+        updateScrollEdges();
+      });
+    };
     const resizeObserver = new ResizeObserver(updateScrollEdges);
     resizeObserver.observe(wrapper);
+    wrapper.addEventListener("scroll", scheduleUpdateScrollEdges, { passive: true });
+    wrapper.addEventListener("wheel", scheduleUpdateScrollEdges, { passive: true });
     if (wrapper.firstElementChild) {
       resizeObserver.observe(wrapper.firstElementChild);
     }
 
     return () => {
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame);
+      }
       resizeObserver.disconnect();
+      wrapper.removeEventListener("scroll", scheduleUpdateScrollEdges);
+      wrapper.removeEventListener("wheel", scheduleUpdateScrollEdges);
     };
   }, [dependencyKey, updateScrollEdges]);
 
