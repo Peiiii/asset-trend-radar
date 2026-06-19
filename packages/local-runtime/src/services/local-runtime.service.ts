@@ -74,7 +74,7 @@ export class LocalRuntimeService {
     const eastmoneyAshareCatalogProvider = new EastmoneyAshareCatalogProvider();
     const exchangeRateProvider = new OpenExchangeRateProvider();
     const valuationNormalizationService = new AssetValuationNormalizationService(exchangeRateProvider);
-    const nasdaqAssetValuationService = new NasdaqAssetValuationService(nasdaqUsEquityValuationProvider);
+    const nasdaqAssetValuationService = new NasdaqAssetValuationService(nasdaqUsEquityValuationProvider, providerSnapshotRepository);
     const trendPoolAssetValuationService = new TrendPoolAssetValuationService(nasdaqAssetValuationService, valuationNormalizationService);
     const chartWallValuationService = new ChartWallValuationService(cryptoMarketsProvider, eastmoneyAshareCatalogProvider, nasdaqAssetValuationService, valuationNormalizationService);
     const queryService = new ChartWallQueryService(
