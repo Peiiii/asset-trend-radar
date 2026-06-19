@@ -67,6 +67,7 @@ export function ExchangeTable({ items, sort, order, rankOffset = 0, onSort, onSe
               {showValuationColumn && <SortableHeader label="市值" sortValue="market_cap" currentSort={sort} order={order} onSort={handleSort} />}
               <SortableHeader label="区间" sortValue="return" currentSort={sort} order={order} onSort={handleSort} />
               <SortableHeader label="1D" sortValue="return_1d" currentSort={sort} order={order} onSort={handleSort} />
+              <SortableHeader label="1W" sortValue="return_1w" currentSort={sort} order={order} onSort={handleSort} />
               <SortableHeader label="1M" sortValue="return_1m" currentSort={sort} order={order} onSort={handleSort} />
               <SortableHeader label="3M" sortValue="return_3m" currentSort={sort} order={order} onSort={handleSort} />
               <SortableHeader label="6M" sortValue="return_6m" currentSort={sort} order={order} onSort={handleSort} />
@@ -115,7 +116,7 @@ function SortableHeader({ label, sortValue, currentSort, order, onSort }: { labe
 function buildTableSummary(items: ChartWallItem[], sort: string, order: ChartWallSortOrder): { totalLabel: string; sortLabel: string; positiveCount: number; negativeCount: number; eventfulCount: number; strongTrendCount: number } {
   return {
     totalLabel: `${items.length.toLocaleString("en-US")} 个资产`,
-    sortLabel: `当前按 ${sortLabels[sort] ?? sort} ${order === "desc" ? "降序" : "升序"} 排列`,
+    sortLabel: `当前按 ${sortLabels[sort] ?? sort} ${order === "desc" ? "降序" : "升序"}排列`,
     positiveCount: items.filter((item) => (item.returnPct ?? 0) > 0).length,
     negativeCount: items.filter((item) => (item.returnPct ?? 0) < 0).length,
     eventfulCount: items.filter((item) => item.events.length > 0).length,

@@ -41,6 +41,7 @@ export function ExchangeTableRow({ rank, item, sort, showValuationColumn, onSele
       {showValuationColumn && <ValuationCell item={item} active={sort === "market_cap"} />}
       <MetricCell active={sort === "return"}><PriceChange value={item.returnPct} /></MetricCell>
       <MetricCell active={sort === "return_1d"}><PriceChange value={item.return1d} /></MetricCell>
+      <MetricCell active={sort === "return_1w"}><PriceChange value={item.return1w} /></MetricCell>
       <MetricCell active={sort === "return_1m"}><PriceChange value={item.return1m} /></MetricCell>
       <MetricCell active={sort === "return_3m"}><PriceChange value={item.return3m} /></MetricCell>
       <MetricCell active={sort === "return_6m"}><PriceChange value={item.return6m} /></MetricCell>

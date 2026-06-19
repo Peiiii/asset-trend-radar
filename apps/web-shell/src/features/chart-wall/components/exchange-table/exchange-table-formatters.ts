@@ -23,6 +23,7 @@ export const sortLabels: Record<string, string> = {
   asset_type: "品种",
   return: "区间涨幅",
   return_1d: "1D 涨幅",
+  return_1w: "1W 涨幅",
   return_1m: "1M 涨幅",
   return_3m: "3M 涨幅",
   return_6m: "6M 涨幅",
@@ -32,6 +33,7 @@ export const sortLabels: Record<string, string> = {
   drawdown: "回撤",
   trend_score: "趋势",
   event_count: "事件",
+  macd: "MACD",
   data_point_count: "数据"
 };
 
