@@ -89,6 +89,8 @@ export function FundDirectorySection({
   const fundTypeOptions = useMemo<ControlOption[]>(() => createFundTypeOptions(data, fundType), [data, fundType]);
   const dataStateOptions = useMemo<ControlOption[]>(() => createDataStateOptions(data), [data]);
   const statusOptions = useMemo<ControlOption[]>(() => createStatusOptions(data), [data]);
+  const isInitialLoading = isLoading && !data;
+  const isUpdating = isLoading && Boolean(data);
 
   useEffect(() => {
     setDraftKeyword(keyword);
@@ -157,19 +159,32 @@ export function FundDirectorySection({
 
         {message && <p className="fund-directory-message">{message}</p>}
 
-        {!isLoading && !error && data && (
+        {data && (
           <div className="fund-directory-result-bar">
             <span>当前筛选 {totalCount.toLocaleString("en-US")} 只</span>
             <span>{fromIndex.toLocaleString("en-US")}-{toIndex.toLocaleString("en-US")}</span>
             <span>第 {page.toLocaleString("en-US")} / {totalPages.toLocaleString("en-US")} 页</span>
             <span>排序 {fundCatalogSortLabel(sort)} {order === "desc" ? "降序" : "升序"}</span>
+            {isUpdating && <span>更新中</span>}
           </div>
         )}
       </div>
 
-      {isLoading && <LoadingState />}
-      {!isLoading && error && <ErrorState title="基金目录加载失败" message={error} />}
-      {!isLoading && !error && data && (
+      {isInitialLoading && <LoadingState />}
+      {error && !data && <ErrorState title="基金目录加载失败" message={error} />}
+      {isUpdating && (
+        <div className="query-status query-status--info" role="status">
+          <strong>目录更新中</strong>
+          <span>当前先保留上一页结果</span>
+        </div>
+      )}
+      {error && data && (
+        <div className="query-status query-status--error" role="status">
+          <strong>目录更新失败</strong>
+          <span>{error}</span>
+        </div>
+      )}
+      {data && (
         <>
           <FundDirectoryRankingSummary items={data.items} totalCount={data.totalCount} sort={sort} order={order} />
           {data.items.length === 0 ? (

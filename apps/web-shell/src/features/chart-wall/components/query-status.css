@@ -5,17 +5,33 @@
   min-height: 36px;
   margin-bottom: 12px;
   padding: 0 12px;
-  border: 1px solid #f1c7c7;
   border-radius: 8px;
-  background: #fff5f5;
-  color: #9f2f2f;
   font-size: 12px;
   font-weight: 750;
 }
 
+.query-status--error {
+  border: 1px solid #f1c7c7;
+  background: #fff5f5;
+  color: #9f2f2f;
+}
+
+.query-status--info {
+  border: 1px solid #bdd7f6;
+  background: #f1f7ff;
+  color: #28527f;
+}
+
 .query-status span {
   overflow: hidden;
-  color: #bd4a4a;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.query-status--error span {
+  color: #bd4a4a;
+}
+
+.query-status--info span {
+  color: #476985;
 }
