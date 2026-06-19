@@ -35,6 +35,7 @@ import { IngestionWorkerService } from "./ingestion-worker.service";
 import { LocalApiServerService } from "./local-api-server.service";
 import { RuntimeTaskRecoveryService } from "./runtime-task-recovery.service";
 import { TaskCenterService } from "./task-center.service";
+import { CryptoMarketValuationService } from "./valuation/crypto-market-valuation.service";
 import { NasdaqAssetValuationService } from "./valuation/nasdaq-asset-valuation.service";
 
 export class LocalRuntimeService {
@@ -70,6 +71,7 @@ export class LocalRuntimeService {
 
     const cryptoCatalogProvider = new BinanceCryptoCatalogProvider();
     const cryptoMarketsProvider = new CoinGeckoCryptoMarketsProvider();
+    const cryptoMarketValuationService = new CryptoMarketValuationService(cryptoMarketsProvider, providerSnapshotRepository);
     const cryptoAssetDirectorySnapshotService = new CryptoAssetDirectorySnapshotService(providerSnapshotRepository);
     const nasdaqUsEquityCatalogProvider = new NasdaqUsEquityCatalogProvider();
     const nasdaqUsEquityValuationProvider = new NasdaqUsEquityValuationProvider();
@@ -80,7 +82,7 @@ export class LocalRuntimeService {
     const valuationNormalizationService = new AssetValuationNormalizationService(exchangeRateProvider);
     const nasdaqAssetValuationService = new NasdaqAssetValuationService(nasdaqUsEquityValuationProvider, providerSnapshotRepository);
     const trendPoolAssetValuationService = new TrendPoolAssetValuationService(nasdaqAssetValuationService, valuationNormalizationService);
-    const chartWallValuationService = new ChartWallValuationService(cryptoMarketsProvider, eastmoneyAshareCatalogProvider, nasdaqAssetValuationService, valuationNormalizationService);
+    const chartWallValuationService = new ChartWallValuationService(cryptoMarketValuationService, eastmoneyAshareCatalogProvider, nasdaqAssetValuationService, valuationNormalizationService);
     const queryService = new ChartWallQueryService(
       this.options,
       assetRepository,
@@ -125,7 +127,7 @@ export class LocalRuntimeService {
     );
     const assetDirectoryService = new AssetDirectoryService([
       new FundAssetDirectoryProvider(this.fundDiscoveryService),
-      new CryptoAssetDirectoryProvider(cryptoCatalogProvider, cryptoMarketsProvider, cryptoAssetDirectorySnapshotService, assetRepository, marketDataRepository, cryptoAssetImportService),
+      new CryptoAssetDirectoryProvider(cryptoCatalogProvider, cryptoMarketValuationService, cryptoAssetDirectorySnapshotService, assetRepository, marketDataRepository, cryptoAssetImportService),
       new TrendPoolAssetDirectoryProvider({
         categoryId: "commodities",
         label: "商品目录",

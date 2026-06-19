@@ -1,6 +1,6 @@
 import type { NasdaqUsEquityCatalogItem, NasdaqUsEquityValuationItem } from "@gold-insights/data-adapters";
 import type { SqliteProviderSnapshotRepository } from "@gold-insights/data-storage";
-import { ProviderSnapshotCacheService } from "../shared/provider-snapshot-cache.service";
+import { ProviderSnapshotCacheService } from "../../shared/provider-snapshot-cache.service";
 
 export type NasdaqUsEquityDirectoryLoadResult = {
   catalogItems: NasdaqUsEquityCatalogItem[];

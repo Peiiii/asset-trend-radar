@@ -1,6 +1,6 @@
 import type { BinanceCryptoCatalogItem, CoinGeckoCryptoMarketItem } from "@gold-insights/data-adapters";
 import type { SqliteProviderSnapshotRepository } from "@gold-insights/data-storage";
-import { ProviderSnapshotCacheService } from "../shared/provider-snapshot-cache.service";
+import { ProviderSnapshotCacheService } from "../../shared/provider-snapshot-cache.service";
 
 export type CryptoAssetDirectoryLoadResult = {
   catalogItems: BinanceCryptoCatalogItem[];

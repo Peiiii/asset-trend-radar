@@ -1,6 +1,7 @@
-import type { BinanceCryptoCatalogItem, BinanceCryptoCatalogProvider, CoinGeckoCryptoMarketItem, CoinGeckoCryptoMarketsProvider } from "@gold-insights/data-adapters";
+import type { BinanceCryptoCatalogItem, BinanceCryptoCatalogProvider, CoinGeckoCryptoMarketItem } from "@gold-insights/data-adapters";
 import type { SqliteAssetRepository, SqliteMarketDataRepository } from "@gold-insights/data-storage";
 import type { AssetDirectoryCategory, AssetDirectoryItem, AssetDirectoryPageResponse, AssetDirectoryValuation, AssetSummary } from "@gold-insights/market-domain";
+import type { CryptoMarketValuationService } from "../valuation/crypto-market-valuation.service";
 import type { CryptoAssetImportService } from "./crypto-asset-import.service";
 import { AssetDirectoryItemMetricsService } from "./asset-directory-item-metrics.service";
 import { AssetDirectoryPageBuilderService } from "./asset-directory-page-builder.service";
@@ -17,7 +18,7 @@ export class CryptoAssetDirectoryProvider implements AssetDirectoryProvider {
 
   public constructor(
     private readonly catalogProvider: BinanceCryptoCatalogProvider,
-    private readonly valuationProvider: CoinGeckoCryptoMarketsProvider,
+    private readonly valuationService: CryptoMarketValuationService,
     private readonly snapshotService: CryptoAssetDirectorySnapshotService,
     private readonly assetRepository: SqliteAssetRepository,
     marketDataRepository: SqliteMarketDataRepository,
@@ -53,7 +54,7 @@ export class CryptoAssetDirectoryProvider implements AssetDirectoryProvider {
   private loadFreshCatalog = async (): Promise<CryptoAssetDirectoryLoadResult> => {
     const [catalogResult, valuationResult] = await Promise.allSettled([
       this.catalogProvider.listUsdtSpotCatalog(),
-      this.valuationProvider.listMarketsBySymbol()
+      this.valuationService.listMarketsBySymbol()
     ]);
 
     if (catalogResult.status === "rejected") {

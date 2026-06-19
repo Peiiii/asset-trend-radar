@@ -1,6 +1,7 @@
-import type { CoinGeckoCryptoMarketItem, CoinGeckoCryptoMarketsProvider, EastmoneyAshareCatalogItem, EastmoneyAshareCatalogProvider } from "@gold-insights/data-adapters";
+import type { CoinGeckoCryptoMarketItem, EastmoneyAshareCatalogItem, EastmoneyAshareCatalogProvider } from "@gold-insights/data-adapters";
 import type { AssetSummary, AssetValuation, ChartWallItem } from "@gold-insights/market-domain";
 import type { AssetValuationNormalizationService } from "./asset-valuation-normalization.service";
+import type { CryptoMarketValuationService } from "./valuation/crypto-market-valuation.service";
 import type { NasdaqAssetValuationService } from "./valuation/nasdaq-asset-valuation.service";
 
 type ValuationLookup = {
@@ -11,7 +12,7 @@ type ValuationLookup = {
 
 export class ChartWallValuationService {
   public constructor(
-    private readonly cryptoMarketsProvider: CoinGeckoCryptoMarketsProvider,
+    private readonly cryptoMarketValuationService: CryptoMarketValuationService,
     private readonly aShareCatalogProvider: EastmoneyAshareCatalogProvider,
     private readonly nasdaqAssetValuationService: NasdaqAssetValuationService,
     private readonly normalizationService: AssetValuationNormalizationService
@@ -52,7 +53,7 @@ export class ChartWallValuationService {
     const shouldLoadAshare = items.some(this.isAshareEquity);
     const usSymbols = items.filter(this.nasdaqAssetValuationService.isSupportedAsset).map(this.nasdaqAssetValuationService.getSymbolKey);
     const [cryptoResult, aShareResult, usValuationResult] = await Promise.allSettled([
-      shouldLoadCrypto ? this.cryptoMarketsProvider.listMarketsBySymbol() : Promise.resolve(new Map<string, CoinGeckoCryptoMarketItem>()),
+      shouldLoadCrypto ? this.cryptoMarketValuationService.listMarketsBySymbol() : Promise.resolve(new Map<string, CoinGeckoCryptoMarketItem>()),
       shouldLoadAshare ? this.aShareCatalogProvider.listCatalog() : Promise.resolve([]),
       usSymbols.length > 0 ? this.nasdaqAssetValuationService.listValuationsBySymbol(usSymbols) : Promise.resolve(new Map<string, AssetValuation>())
     ]);
