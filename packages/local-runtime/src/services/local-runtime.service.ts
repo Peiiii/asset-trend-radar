@@ -17,6 +17,7 @@ import { AssetDirectoryService } from "./asset-directory.service";
 import { AssetValuationNormalizationService } from "./asset-valuation-normalization.service";
 import { AssetDirectoryHistoryImportService } from "./asset-directory/asset-directory-history-import.service";
 import { CryptoAssetDirectoryProvider } from "./asset-directory/crypto-asset-directory.provider";
+import { CryptoAssetDirectorySnapshotService } from "./asset-directory/crypto/crypto-asset-directory-snapshot.service";
 import { CryptoAssetImportService } from "./asset-directory/crypto-asset-import.service";
 import { EastmoneyAshareDirectoryProvider } from "./asset-directory/a-share/eastmoney-a-share-directory.provider";
 import { EastmoneyAshareImportService } from "./asset-directory/a-share/eastmoney-a-share-import.service";
@@ -68,6 +69,7 @@ export class LocalRuntimeService {
 
     const cryptoCatalogProvider = new BinanceCryptoCatalogProvider();
     const cryptoMarketsProvider = new CoinGeckoCryptoMarketsProvider();
+    const cryptoAssetDirectorySnapshotService = new CryptoAssetDirectorySnapshotService(providerSnapshotRepository);
     const nasdaqUsEquityCatalogProvider = new NasdaqUsEquityCatalogProvider();
     const nasdaqUsEquityValuationProvider = new NasdaqUsEquityValuationProvider();
     const nasdaqUsEquityDirectorySnapshotService = new NasdaqUsEquityDirectorySnapshotService(providerSnapshotRepository);
@@ -121,7 +123,7 @@ export class LocalRuntimeService {
     );
     const assetDirectoryService = new AssetDirectoryService([
       new FundAssetDirectoryProvider(this.fundDiscoveryService),
-      new CryptoAssetDirectoryProvider(cryptoCatalogProvider, cryptoMarketsProvider, assetRepository, marketDataRepository, cryptoAssetImportService),
+      new CryptoAssetDirectoryProvider(cryptoCatalogProvider, cryptoMarketsProvider, cryptoAssetDirectorySnapshotService, assetRepository, marketDataRepository, cryptoAssetImportService),
       new TrendPoolAssetDirectoryProvider({
         categoryId: "commodities",
         label: "商品目录",

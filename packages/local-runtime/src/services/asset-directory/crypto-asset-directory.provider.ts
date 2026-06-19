@@ -5,15 +5,9 @@ import type { CryptoAssetImportService } from "./crypto-asset-import.service";
 import { AssetDirectoryItemMetricsService } from "./asset-directory-item-metrics.service";
 import { AssetDirectoryPageBuilderService } from "./asset-directory-page-builder.service";
 import type { AssetDirectoryProvider, AssetDirectoryQuery } from "./asset-directory-provider.types";
+import type { CryptoAssetDirectoryLoadResult, CryptoAssetDirectorySnapshotService } from "./crypto/crypto-asset-directory-snapshot.service";
 import { getCryptoAssetLabel } from "./crypto-asset-labels.config";
 import { AssetDirectoryValuationFactory } from "./shared/asset-directory-valuation.factory";
-
-type CryptoCatalogLoadResult = {
-  catalogItems: BinanceCryptoCatalogItem[];
-  valuationsBySymbol: Map<string, CoinGeckoCryptoMarketItem>;
-  isCatalogAvailable: boolean;
-  isValuationAvailable: boolean;
-};
 
 export class CryptoAssetDirectoryProvider implements AssetDirectoryProvider {
   public readonly categoryId = "crypto";
@@ -24,6 +18,7 @@ export class CryptoAssetDirectoryProvider implements AssetDirectoryProvider {
   public constructor(
     private readonly catalogProvider: BinanceCryptoCatalogProvider,
     private readonly valuationProvider: CoinGeckoCryptoMarketsProvider,
+    private readonly snapshotService: CryptoAssetDirectorySnapshotService,
     private readonly assetRepository: SqliteAssetRepository,
     marketDataRepository: SqliteMarketDataRepository,
     private readonly importService: CryptoAssetImportService
@@ -52,7 +47,10 @@ export class CryptoAssetDirectoryProvider implements AssetDirectoryProvider {
   public importItem = async (itemId: string) =>
     this.importService.importItem(itemId);
 
-  private loadCatalog = async (): Promise<CryptoCatalogLoadResult> => {
+  private loadCatalog = async (): Promise<CryptoAssetDirectoryLoadResult> =>
+    this.snapshotService.load(this.loadFreshCatalog);
+
+  private loadFreshCatalog = async (): Promise<CryptoAssetDirectoryLoadResult> => {
     const [catalogResult, valuationResult] = await Promise.allSettled([
       this.catalogProvider.listUsdtSpotCatalog(),
       this.valuationProvider.listMarketsBySymbol()
@@ -74,7 +72,7 @@ export class CryptoAssetDirectoryProvider implements AssetDirectoryProvider {
     };
   };
 
-  private buildCategory = (loadResult: CryptoCatalogLoadResult, items: AssetDirectoryItem[]): AssetDirectoryCategory => ({
+  private buildCategory = (loadResult: CryptoAssetDirectoryLoadResult, items: AssetDirectoryItem[]): AssetDirectoryCategory => ({
     id: this.categoryId,
     label: "加密目录",
     description: loadResult.isCatalogAvailable
@@ -89,7 +87,7 @@ export class CryptoAssetDirectoryProvider implements AssetDirectoryProvider {
     lastSyncedAt: this.getLatestSyncedAt(items)
   });
 
-  private listDirectoryItems = (loadResult: CryptoCatalogLoadResult): AssetDirectoryItem[] => {
+  private listDirectoryItems = (loadResult: CryptoAssetDirectoryLoadResult): AssetDirectoryItem[] => {
     const localAssets = this.listLocalCryptoAssets();
     const localAssetsBySymbol = new Map(localAssets.flatMap((asset) => this.getAssetSymbolKeys(asset).map((key) => [key, asset])));
     const usedLocalAssetIds = new Set<string>();
