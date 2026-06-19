@@ -19,7 +19,10 @@ type NasdaqQuoteSummaryPayload = {
   data?: {
     symbol?: string;
     summaryData?: {
+      AUM?: { value?: string | number | null };
       MarketCap?: { value?: string | number | null };
+      PreviousClose?: { value?: string | number | null };
+      ShareVolume?: { value?: string | number | null };
     };
   };
   status?: {
@@ -161,7 +164,8 @@ export class NasdaqUsEquityValuationProvider {
       return null;
     }
 
-    const marketCap = this.toNullableNumber(payload.data?.summaryData?.MarketCap?.value);
+    const summaryData = payload.data?.summaryData;
+    const marketCap = this.toPositiveNullableNumber(summaryData?.MarketCap?.value) ?? this.toAumNumber(summaryData?.AUM?.value);
 
     if (marketCap === null) {
       return null;
@@ -169,10 +173,10 @@ export class NasdaqUsEquityValuationProvider {
 
     return {
       symbol: payload.data?.symbol ?? symbol,
-      latestPrice: null,
+      latestPrice: this.toNullableNumber(summaryData?.PreviousClose?.value),
       return1d: null,
       marketCap,
-      volume: null,
+      volume: this.toNullableNumber(summaryData?.ShareVolume?.value),
       sector: null,
       industry: null,
       currency: "USD",
@@ -243,6 +247,11 @@ export class NasdaqUsEquityValuationProvider {
   private toPositiveNullableNumber = (value: string | number | null | undefined): number | null => {
     const parsed = this.toNullableNumber(value);
     return parsed !== null && parsed > 0 ? parsed : null;
+  };
+
+  private toAumNumber = (value: string | number | null | undefined): number | null => {
+    const parsed = this.toPositiveNullableNumber(value);
+    return parsed === null ? null : parsed * 1_000;
   };
 
   private toNullableNumber = (value: string | number | null | undefined): number | null => {

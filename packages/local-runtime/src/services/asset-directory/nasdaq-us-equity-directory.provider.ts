@@ -81,7 +81,7 @@ export class NasdaqUsEquityDirectoryProvider implements AssetDirectoryProvider {
     id: this.categoryId,
     label: "美股目录",
     description: loadResult.isCatalogAvailable
-      ? `NASDAQ Trader 官方美股/ETF 符号目录；${loadResult.isValuationAvailable ? "NASDAQ 股票市值快照，ETF/AUM 规模源未完整接入" : "市值源暂不可用"}，加入后拉取完整 Yahoo 走势。`
+      ? `NASDAQ Trader 官方美股/ETF 符号目录；${loadResult.isValuationAvailable ? "NASDAQ 股票市值快照，ETF 缺口用 quote summary / AUM 补充" : "市值源暂不可用"}，加入后拉取完整 Yahoo 走势。`
       : "NASDAQ Trader 候选目录暂不可用，当前回退展示本地走势池里的美股资产。",
     assetTypes: ["index", "fund", "equity"],
     markets: ["美股"],
