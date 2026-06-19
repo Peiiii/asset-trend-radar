@@ -1,5 +1,6 @@
 import type { EastmoneyAshareCatalogItem } from "@gold-insights/data-adapters";
 import type { SqliteProviderSnapshotRepository } from "@gold-insights/data-storage";
+import { ProviderSnapshotCacheService } from "../shared/provider-snapshot-cache.service";
 
 export type EastmoneyAshareDirectoryLoadResult = {
   catalogItems: EastmoneyAshareCatalogItem[];
@@ -11,67 +12,34 @@ type EastmoneyAshareDirectorySnapshotPayload = {
 };
 
 export class EastmoneyAshareDirectorySnapshotService {
-  private readonly snapshotKey = "asset-directory:eastmoney-a-share:v1";
-  private readonly refreshTtlMs = 60 * 1000;
-  private refreshRequest: Promise<void> | null = null;
+  private readonly cache: ProviderSnapshotCacheService<EastmoneyAshareDirectoryLoadResult, EastmoneyAshareDirectorySnapshotPayload>;
 
-  public constructor(private readonly snapshotRepository: SqliteProviderSnapshotRepository) {}
+  public constructor(snapshotRepository: SqliteProviderSnapshotRepository) {
+    this.cache = new ProviderSnapshotCacheService(snapshotRepository, {
+      key: "asset-directory:eastmoney-a-share:v1",
+      refreshTtlMs: 60 * 1000,
+      isPayload: this.isPayload,
+      toValue: this.toValue,
+      toPayload: this.toPayload
+    });
+  }
 
-  public load = async (loadFresh: () => Promise<EastmoneyAshareDirectoryLoadResult>): Promise<EastmoneyAshareDirectoryLoadResult> => {
-    const snapshot = this.getSnapshot();
+  public load = async (loadFresh: () => Promise<EastmoneyAshareDirectoryLoadResult>): Promise<EastmoneyAshareDirectoryLoadResult> =>
+    this.cache.load(loadFresh);
 
-    if (snapshot) {
-      if (Date.now() - snapshot.updatedAt > this.refreshTtlMs) {
-        this.refresh(loadFresh);
-      }
+  private toValue = (payload: EastmoneyAshareDirectorySnapshotPayload): EastmoneyAshareDirectoryLoadResult => ({
+    catalogItems: payload.catalogItems,
+    isCatalogAvailable: true
+  });
 
-      return snapshot.value;
-    }
-
-    const fresh = await loadFresh();
-    this.saveSnapshot(fresh);
-    return fresh;
-  };
-
-  private refresh = (loadFresh: () => Promise<EastmoneyAshareDirectoryLoadResult>): void => {
-    if (this.refreshRequest) {
-      return;
-    }
-
-    this.refreshRequest = loadFresh()
-      .then(this.saveSnapshot)
-      .catch((error) => {
-        console.warn(error);
-      })
-      .finally(() => {
-        this.refreshRequest = null;
-      });
-  };
-
-  private getSnapshot = (): { value: EastmoneyAshareDirectoryLoadResult; updatedAt: number } | null => {
-    const snapshot = this.snapshotRepository.getSnapshot<EastmoneyAshareDirectorySnapshotPayload>(this.snapshotKey);
-
-    if (!snapshot || !this.isPayload(snapshot.payload)) {
+  private toPayload = (result: EastmoneyAshareDirectoryLoadResult): EastmoneyAshareDirectorySnapshotPayload | null => {
+    if (!result.isCatalogAvailable || result.catalogItems.length === 0) {
       return null;
     }
 
     return {
-      updatedAt: snapshot.updatedAt,
-      value: {
-        catalogItems: snapshot.payload.catalogItems,
-        isCatalogAvailable: true
-      }
-    };
-  };
-
-  private saveSnapshot = (result: EastmoneyAshareDirectoryLoadResult): void => {
-    if (!result.isCatalogAvailable || result.catalogItems.length === 0) {
-      return;
-    }
-
-    this.snapshotRepository.upsertSnapshot(this.snapshotKey, {
       catalogItems: result.catalogItems
-    } satisfies EastmoneyAshareDirectorySnapshotPayload);
+    };
   };
 
   private isPayload = (value: unknown): value is EastmoneyAshareDirectorySnapshotPayload => {

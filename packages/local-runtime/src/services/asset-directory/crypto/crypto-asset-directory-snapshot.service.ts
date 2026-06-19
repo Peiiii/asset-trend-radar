@@ -1,5 +1,6 @@
 import type { BinanceCryptoCatalogItem, CoinGeckoCryptoMarketItem } from "@gold-insights/data-adapters";
 import type { SqliteProviderSnapshotRepository } from "@gold-insights/data-storage";
+import { ProviderSnapshotCacheService } from "../shared/provider-snapshot-cache.service";
 
 export type CryptoAssetDirectoryLoadResult = {
   catalogItems: BinanceCryptoCatalogItem[];
@@ -14,70 +15,37 @@ type CryptoAssetDirectorySnapshotPayload = {
 };
 
 export class CryptoAssetDirectorySnapshotService {
-  private readonly snapshotKey = "asset-directory:crypto:v1";
-  private readonly refreshTtlMs = 60 * 1000;
-  private refreshRequest: Promise<void> | null = null;
+  private readonly cache: ProviderSnapshotCacheService<CryptoAssetDirectoryLoadResult, CryptoAssetDirectorySnapshotPayload>;
 
-  public constructor(private readonly snapshotRepository: SqliteProviderSnapshotRepository) {}
+  public constructor(snapshotRepository: SqliteProviderSnapshotRepository) {
+    this.cache = new ProviderSnapshotCacheService(snapshotRepository, {
+      key: "asset-directory:crypto:v1",
+      refreshTtlMs: 60 * 1000,
+      isPayload: this.isPayload,
+      toValue: this.toValue,
+      toPayload: this.toPayload
+    });
+  }
 
-  public load = async (loadFresh: () => Promise<CryptoAssetDirectoryLoadResult>): Promise<CryptoAssetDirectoryLoadResult> => {
-    const snapshot = this.getSnapshot();
+  public load = async (loadFresh: () => Promise<CryptoAssetDirectoryLoadResult>): Promise<CryptoAssetDirectoryLoadResult> =>
+    this.cache.load(loadFresh);
 
-    if (snapshot) {
-      if (Date.now() - snapshot.updatedAt > this.refreshTtlMs) {
-        this.refresh(loadFresh);
-      }
+  private toValue = (payload: CryptoAssetDirectorySnapshotPayload): CryptoAssetDirectoryLoadResult => ({
+    catalogItems: payload.catalogItems,
+    valuationsBySymbol: new Map(payload.valuations.map((item) => [this.normalizeSymbol(item.symbol), item])),
+    isCatalogAvailable: true,
+    isValuationAvailable: true
+  });
 
-      return snapshot.value;
-    }
-
-    const fresh = await loadFresh();
-    this.saveSnapshot(fresh);
-    return fresh;
-  };
-
-  private refresh = (loadFresh: () => Promise<CryptoAssetDirectoryLoadResult>): void => {
-    if (this.refreshRequest) {
-      return;
-    }
-
-    this.refreshRequest = loadFresh()
-      .then(this.saveSnapshot)
-      .catch((error) => {
-        console.warn(error);
-      })
-      .finally(() => {
-        this.refreshRequest = null;
-      });
-  };
-
-  private getSnapshot = (): { value: CryptoAssetDirectoryLoadResult; updatedAt: number } | null => {
-    const snapshot = this.snapshotRepository.getSnapshot<CryptoAssetDirectorySnapshotPayload>(this.snapshotKey);
-
-    if (!snapshot || !this.isPayload(snapshot.payload)) {
+  private toPayload = (result: CryptoAssetDirectoryLoadResult): CryptoAssetDirectorySnapshotPayload | null => {
+    if (!result.isCatalogAvailable || result.catalogItems.length === 0) {
       return null;
     }
 
     return {
-      updatedAt: snapshot.updatedAt,
-      value: {
-        catalogItems: snapshot.payload.catalogItems,
-        valuationsBySymbol: new Map(snapshot.payload.valuations.map((item) => [this.normalizeSymbol(item.symbol), item])),
-        isCatalogAvailable: true,
-        isValuationAvailable: true
-      }
-    };
-  };
-
-  private saveSnapshot = (result: CryptoAssetDirectoryLoadResult): void => {
-    if (!result.isCatalogAvailable || result.catalogItems.length === 0) {
-      return;
-    }
-
-    this.snapshotRepository.upsertSnapshot(this.snapshotKey, {
       catalogItems: result.catalogItems,
       valuations: [...result.valuationsBySymbol.values()]
-    } satisfies CryptoAssetDirectorySnapshotPayload);
+    };
   };
 
   private isPayload = (value: unknown): value is CryptoAssetDirectorySnapshotPayload => {
