@@ -26,7 +26,7 @@ import { formatDateTime } from "@/shared/utils/format-number.utils";
 import { assetTypeFallbackOptions, chartWallPageSizeOptions, dataQualityFallbackOptions, defaultFilters, levelFallbackOptions, marketFallbackOptions, signalFallbackOptions, sortOptions, sortOrderOptions, tagFallbackOptions, valuationStatusFallbackOptions } from "../configs/chart-wall-page.config";
 import { ActiveFilterChips } from "./active-filter-chips/active-filter-chips";
 import { AssetDetailSection } from "./asset-detail-section/asset-detail-section";
-import { AssetDirectorySection } from "./asset-directory-section/asset-directory-section";
+import { AssetDirectoryView } from "./asset-directory-section/asset-directory-view";
 import { ChartGrid } from "./chart-grid/chart-grid";
 import { ComparePanel } from "./compare-panel/compare-panel";
 import { ChartWallControls, type ChartWallViewMode } from "./chart-wall-controls/chart-wall-controls";
@@ -660,60 +660,43 @@ export function ChartWallPage(): JSX.Element {
           )}
 
           {activeView === "asset-directory" && (
-            assetDirectoryQuery.isLoading && !assetDirectoryQuery.data ? (
-              <LoadingState />
-            ) : assetDirectoryQuery.error && !assetDirectoryQuery.data ? (
-              <ErrorState title="资产目录加载失败" message={assetDirectoryQuery.error} />
-            ) : (
-              <>
-                {assetDirectoryQuery.isLoading && assetDirectoryQuery.data && <QueryStatus tone="info" title="目录更新中" message="当前先保留上一页结果" />}
-                {assetDirectoryQuery.error && assetDirectoryQuery.data && <QueryStatus tone="error" title="目录更新失败" message={assetDirectoryQuery.error} />}
-                <AssetDirectorySection
-                  title={assetDirectoryQuery.data?.category.label ?? getAssetDirectoryLabel(directoryCategoryId)}
-                  description={assetDirectoryQuery.data?.category.description ?? "当前展示真实已入库、可打开完整走势和指标的资产。"}
-                  items={assetDirectoryQuery.data?.items ?? []}
-                  totalCount={assetDirectoryQuery.data?.totalCount ?? 0}
-                  categoryItemCount={assetDirectoryQuery.data?.category.itemCount ?? assetDirectoryQuery.data?.totalCount ?? 0}
-                  categoryInPoolCount={assetDirectoryQuery.data?.category.inPoolCount ?? 0}
-                  market={assetDirectoryMarket}
-                  assetType={assetDirectoryAssetType}
-                  dataState={assetDirectoryDataState}
-                  valuationStatus={assetDirectoryValuationStatus}
-                  status={assetDirectoryStatus}
-                  sort={getAssetDirectorySort(effectiveSort)}
-                  order={effectiveOrder}
-                  search={search}
-                  statusLabel={assetDirectoryQuery.data ? coverageLabel(assetDirectoryQuery.data.category.coverage) : "真实已入库 / 走势池"}
-                  marketFacets={assetDirectoryQuery.data?.facets.markets ?? []}
-                  assetTypeFacets={assetDirectoryQuery.data?.facets.assetTypes ?? []}
-                  dataStateFacets={assetDirectoryQuery.data?.facets.dataStates ?? []}
-                  valuationStatusFacets={assetDirectoryQuery.data?.facets.valuationStatuses ?? []}
-                  statusFacets={assetDirectoryQuery.data?.facets.statuses ?? []}
-                  page={assetDirectoryPage}
-                  limit={assetDirectoryLimit}
-                  tableMinWidth={assetDirectoryTableSizing.tableMinWidth}
-                  firstColumnMinWidth={assetDirectoryTableSizing.firstColumnMinWidth}
-                  lastColumnMinWidth={assetDirectoryTableSizing.lastColumnMinWidth}
-                  canImport={Boolean(assetDirectoryQuery.data?.category.capabilities.includes("import_to_pool"))}
-                  importingItemId={importingDirectoryItemId}
-                  message={assetDirectoryMessage}
-                  onMarketChange={(value) => setQueryValue("directoryMarket", value, "all")}
-                  onAssetTypeChange={(value) => setQueryValue("directoryAssetType", value, "all")}
-                  onDataStateChange={(value) => setQueryValue("dataState", value, "all")}
-                  onValuationStatusChange={(value) => setQueryValue("valuationStatus", value, "all")}
-                  onStatusChange={(value) => setQueryValue("status", value, "all")}
-                  onSortChange={setSortQueryValue}
-                  onSearchChange={(value) => setQueryValue("q", value, "")}
-                  onReset={resetFilters}
-                  onPageChange={(value) => setQueryValue("directoryPage", String(value), "1")}
-                  onImport={(item) => {
-                    void handleAssetDirectoryImport(item);
-                  }}
-                  onSelect={selectAsset}
-                  onCompare={compareSelection.toggleCompare}
-                />
-              </>
-            )
+            <AssetDirectoryView
+              data={assetDirectoryQuery.data}
+              error={assetDirectoryQuery.error}
+              isLoading={assetDirectoryQuery.isLoading}
+              fallbackTitle={getAssetDirectoryLabel(directoryCategoryId)}
+              fallbackDescription="当前展示真实已入库、可打开完整走势和指标的资产。"
+              market={assetDirectoryMarket}
+              assetType={assetDirectoryAssetType}
+              dataState={assetDirectoryDataState}
+              valuationStatus={assetDirectoryValuationStatus}
+              status={assetDirectoryStatus}
+              sort={getAssetDirectorySort(effectiveSort)}
+              order={effectiveOrder}
+              search={search}
+              statusLabel={assetDirectoryQuery.data ? coverageLabel(assetDirectoryQuery.data.category.coverage) : "真实已入库 / 走势池"}
+              page={assetDirectoryPage}
+              limit={assetDirectoryLimit}
+              tableMinWidth={assetDirectoryTableSizing.tableMinWidth}
+              firstColumnMinWidth={assetDirectoryTableSizing.firstColumnMinWidth}
+              lastColumnMinWidth={assetDirectoryTableSizing.lastColumnMinWidth}
+              importingItemId={importingDirectoryItemId}
+              message={assetDirectoryMessage}
+              onMarketChange={(value) => setQueryValue("directoryMarket", value, "all")}
+              onAssetTypeChange={(value) => setQueryValue("directoryAssetType", value, "all")}
+              onDataStateChange={(value) => setQueryValue("dataState", value, "all")}
+              onValuationStatusChange={(value) => setQueryValue("valuationStatus", value, "all")}
+              onStatusChange={(value) => setQueryValue("status", value, "all")}
+              onSortChange={setSortQueryValue}
+              onSearchChange={(value) => setQueryValue("q", value, "")}
+              onReset={resetFilters}
+              onPageChange={(value) => setQueryValue("directoryPage", String(value), "1")}
+              onImport={(item) => {
+                void handleAssetDirectoryImport(item);
+              }}
+              onSelect={selectAsset}
+              onCompare={compareSelection.toggleCompare}
+            />
           )}
 
           {activeView === "universe" && data && (

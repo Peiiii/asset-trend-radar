@@ -8,7 +8,7 @@ import { ValuationCoverageSummary } from "../valuation-coverage-summary/valuatio
 import { AssetDirectoryTable } from "./asset-directory-table";
 import "./asset-directory-section.css";
 
-type AssetDirectorySectionProps = {
+export type AssetDirectorySectionProps = {
   title: string;
   description: string;
   items: AssetDirectoryItem[];

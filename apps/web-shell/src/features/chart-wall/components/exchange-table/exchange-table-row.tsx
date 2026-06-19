@@ -4,6 +4,7 @@ import type { ChartWallItem } from "@gold-insights/market-domain";
 import { formatPrice } from "@/shared/utils/format-number.utils";
 import { getValuationDisplay } from "../../utils/valuation-format.utils";
 import { DataQualityIndicator } from "../data-quality/data-quality-indicator";
+import { ValuationStack } from "../valuation-stack/valuation-stack";
 import {
   activeSortCellClassName,
   assetTypeLabel,
@@ -77,9 +78,7 @@ function ValuationCell({ item, active }: { item: ChartWallItem; active: boolean 
 
   return (
     <td className={`${activeSortCellClassName(active, "exchange-table__valuation")} exchange-table__valuation--${display.status}`} title={display.title}>
-      <strong>{display.label}</strong>
-      <small>{[display.detail, display.rankLabel].filter(Boolean).join(" / ")}</small>
-      {display.hintLabel && <em>{display.hintLabel}</em>}
+      <ValuationStack display={display} />
     </td>
   );
 }
