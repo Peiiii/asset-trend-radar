@@ -53,6 +53,13 @@
   min-width: 118px;
 }
 
+.chart-wall-pagination + .chart-wall-grid,
+.chart-wall-pagination + .exchange-table-shell,
+.chart-wall-grid + .chart-wall-pagination,
+.exchange-table-shell + .chart-wall-pagination {
+  margin-top: 12px;
+}
+
 @media (max-width: 760px) {
   .chart-wall-pagination {
     align-items: stretch;

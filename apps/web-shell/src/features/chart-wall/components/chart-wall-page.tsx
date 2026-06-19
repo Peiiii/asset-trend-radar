@@ -16,7 +16,7 @@ import {
   Star,
   X
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { NavLink, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { AppShell, Button, ErrorState, IconButton, LoadingState, RangePicker, TimeframePicker } from "@gold-insights/ui";
 import type { ControlOption } from "@gold-insights/ui";
@@ -76,6 +76,7 @@ const defaultChartWallPageSize = 120;
 export function ChartWallPage(): JSX.Element {
   const location = useLocation();
   const navigate = useNavigate();
+  const chartWallSectionRef = useRef<HTMLElement | null>(null);
   const { assetId: routeAssetId } = useParams<{ assetId?: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeView = getActiveView(location.pathname);
@@ -169,6 +170,22 @@ export function ChartWallPage(): JSX.Element {
 
     setSearchParams(next);
   }, [activeView, order, searchParams, setSearchParams, sort]);
+
+  const scrollChartWallSectionIntoView = useCallback((): void => {
+    window.requestAnimationFrame(() => {
+      chartWallSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, []);
+
+  const setChartWallPage = useCallback((value: number): void => {
+    setQueryValue("page", String(value), "1");
+    scrollChartWallSectionIntoView();
+  }, [scrollChartWallSectionIntoView, setQueryValue]);
+
+  const setChartWallPageSize = useCallback((value: number): void => {
+    setQueryValue("pageSize", String(value), String(defaultChartWallPageSize));
+    scrollChartWallSectionIntoView();
+  }, [scrollChartWallSectionIntoView, setQueryValue]);
 
   useEffect(() => {
     if ((timeframe === "15m" || timeframe === "1h" || timeframe === "4h") && (range === "1y" || range === "3y" || range === "5y")) {
@@ -549,7 +566,7 @@ export function ChartWallPage(): JSX.Element {
           )}
 
           {activeView === "chart-wall" && data && (
-            <section className="chart-wall-section">
+            <section ref={chartWallSectionRef} className="chart-wall-section">
               <SectionHeader
                 title="走势列表"
                 description={`${rangeLabel(data.chartWall.range)} / ${timeframeLabel(data.chartWall.timeframe)} / ${sortDisplayLabel(sort)} ${sortOrderLabel(order)} / 本页 ${filteredItems.length.toLocaleString("en-US")} / 总数 ${chartWallTotalCount.toLocaleString("en-US")}`}
@@ -565,19 +582,30 @@ export function ChartWallPage(): JSX.Element {
                 />
               )}
               <ChartWallPagination
+                id="chart-wall-page-size-top"
                 page={safeChartWallPage}
                 pageSize={chartWallPageSize}
                 totalCount={chartWallTotalCount}
                 currentCount={filteredItems.length}
                 pageSizeOptions={chartWallPageSizeOptions}
-                onPageChange={(value) => setQueryValue("page", String(value), "1")}
-                onPageSizeChange={(value) => setQueryValue("pageSize", String(value), String(defaultChartWallPageSize))}
+                onPageChange={setChartWallPage}
+                onPageSizeChange={setChartWallPageSize}
               />
               {viewMode === "grid" ? (
                 <ChartGrid items={filteredItems} sort={sort} order={order} rankOffset={data.chartWall.offset} onSelect={selectAsset} onPin={handlePin} onCompare={compareSelection.toggleCompare} onResetFilters={resetFilters} />
               ) : (
                 <ExchangeTable items={filteredItems} sort={sort} order={order} rankOffset={data.chartWall.offset} onSort={setSortQueryValue} onSelect={selectAsset} onPin={handlePin} onCompare={compareSelection.toggleCompare} />
               )}
+              <ChartWallPagination
+                id="chart-wall-page-size-bottom"
+                page={safeChartWallPage}
+                pageSize={chartWallPageSize}
+                totalCount={chartWallTotalCount}
+                currentCount={filteredItems.length}
+                pageSizeOptions={chartWallPageSizeOptions}
+                onPageChange={setChartWallPage}
+                onPageSizeChange={setChartWallPageSize}
+              />
             </section>
           )}
 
