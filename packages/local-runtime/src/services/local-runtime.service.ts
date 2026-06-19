@@ -1,5 +1,5 @@
 import { BinanceCryptoCatalogProvider, CoinGeckoCryptoMarketsProvider, EastmoneyAshareCatalogProvider, NasdaqUsEquityCatalogProvider, NasdaqUsEquityValuationProvider, OpenExchangeRateProvider } from "@gold-insights/data-adapters";
-import { LocalRawFileRepository, SqliteAssetRepository, SqliteDatabaseService, SqliteFundCatalogRepository, SqliteIngestionJobRepository, SqliteMarketDataRepository, SqliteScannerEventRepository, SqliteWatchlistRepository } from "@gold-insights/data-storage";
+import { LocalRawFileRepository, SqliteAssetRepository, SqliteDatabaseService, SqliteFundCatalogRepository, SqliteIngestionJobRepository, SqliteMarketDataRepository, SqliteProviderSnapshotRepository, SqliteScannerEventRepository, SqliteWatchlistRepository } from "@gold-insights/data-storage";
 import { AssetDirectoryController } from "../controllers/asset-directory.controller";
 import { AssetsController } from "../controllers/assets.controller";
 import { ChartWallController } from "../controllers/chart-wall.controller";
@@ -22,6 +22,7 @@ import { EastmoneyAshareDirectoryProvider } from "./asset-directory/a-share/east
 import { EastmoneyAshareImportService } from "./asset-directory/a-share/eastmoney-a-share-import.service";
 import { FundAssetDirectoryProvider } from "./asset-directory/fund-asset-directory.provider";
 import { NasdaqUsEquityDirectoryProvider } from "./asset-directory/nasdaq-us-equity-directory.provider";
+import { NasdaqUsEquityDirectorySnapshotService } from "./asset-directory/nasdaq/nasdaq-us-equity-directory-snapshot.service";
 import { NasdaqUsEquityImportService } from "./asset-directory/nasdaq-us-equity-import.service";
 import { TrendPoolAssetDirectoryProvider } from "./asset-directory/trend-pool-asset-directory.provider";
 import { TrendPoolAssetValuationService } from "./asset-directory/valuation/trend-pool-asset-valuation.service";
@@ -50,6 +51,7 @@ export class LocalRuntimeService {
     const ingestionJobRepository = new SqliteIngestionJobRepository(connection);
     const watchlistRepository = new SqliteWatchlistRepository(connection);
     const fundCatalogRepository = new SqliteFundCatalogRepository(connection);
+    const providerSnapshotRepository = new SqliteProviderSnapshotRepository(connection);
     const rawFileRepository = new LocalRawFileRepository(this.options.rawDataPath);
     this.taskRecoveryService = new RuntimeTaskRecoveryService(ingestionJobRepository);
 
@@ -68,6 +70,7 @@ export class LocalRuntimeService {
     const cryptoMarketsProvider = new CoinGeckoCryptoMarketsProvider();
     const nasdaqUsEquityCatalogProvider = new NasdaqUsEquityCatalogProvider();
     const nasdaqUsEquityValuationProvider = new NasdaqUsEquityValuationProvider();
+    const nasdaqUsEquityDirectorySnapshotService = new NasdaqUsEquityDirectorySnapshotService(providerSnapshotRepository);
     const eastmoneyAshareCatalogProvider = new EastmoneyAshareCatalogProvider();
     const exchangeRateProvider = new OpenExchangeRateProvider();
     const valuationNormalizationService = new AssetValuationNormalizationService(exchangeRateProvider);
@@ -127,7 +130,7 @@ export class LocalRuntimeService {
         markets: ["商品"],
         marketFilters: ["商品"]
       }, assetRepository, marketDataRepository, trendPoolAssetValuationService),
-      new NasdaqUsEquityDirectoryProvider(nasdaqUsEquityCatalogProvider, nasdaqUsEquityValuationProvider, assetRepository, marketDataRepository, nasdaqUsEquityImportService),
+      new NasdaqUsEquityDirectoryProvider(nasdaqUsEquityCatalogProvider, nasdaqUsEquityValuationProvider, nasdaqUsEquityDirectorySnapshotService, assetRepository, marketDataRepository, nasdaqUsEquityImportService),
       new EastmoneyAshareDirectoryProvider(eastmoneyAshareCatalogProvider, assetRepository, marketDataRepository, eastmoneyAshareImportService),
       new TrendPoolAssetDirectoryProvider({
         categoryId: "hk-equity",

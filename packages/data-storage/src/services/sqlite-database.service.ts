@@ -122,6 +122,12 @@ export class SqliteDatabaseService {
         updated_at INTEGER NOT NULL
       );
 
+      CREATE TABLE IF NOT EXISTS provider_snapshots (
+        key TEXT PRIMARY KEY,
+        payload_json TEXT NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+
       CREATE TABLE IF NOT EXISTS watchlists (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
@@ -143,6 +149,7 @@ export class SqliteDatabaseService {
       CREATE INDEX IF NOT EXISTS idx_assets_universe ON assets(universe, level, market);
       CREATE INDEX IF NOT EXISTS idx_fund_catalog_name ON fund_catalog(name);
       CREATE INDEX IF NOT EXISTS idx_fund_catalog_type ON fund_catalog(fund_type);
+      CREATE INDEX IF NOT EXISTS idx_provider_snapshots_updated ON provider_snapshots(updated_at);
     `);
     this.addColumnIfMissing("assets", "universe", "TEXT");
     this.addColumnIfMissing("assets", "level", "TEXT");

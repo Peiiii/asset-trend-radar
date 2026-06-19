@@ -5,14 +5,8 @@ import type { NasdaqUsEquityImportService } from "./nasdaq-us-equity-import.serv
 import { AssetDirectoryItemMetricsService } from "./asset-directory-item-metrics.service";
 import { AssetDirectoryPageBuilderService } from "./asset-directory-page-builder.service";
 import type { AssetDirectoryProvider, AssetDirectoryQuery } from "./asset-directory-provider.types";
+import type { NasdaqUsEquityDirectoryLoadResult, NasdaqUsEquityDirectorySnapshotService } from "./nasdaq/nasdaq-us-equity-directory-snapshot.service";
 import { AssetDirectoryValuationFactory } from "./shared/asset-directory-valuation.factory";
-
-type NasdaqCatalogLoadResult = {
-  catalogItems: NasdaqUsEquityCatalogItem[];
-  valuationsBySymbol: Map<string, NasdaqUsEquityValuationItem>;
-  isCatalogAvailable: boolean;
-  isValuationAvailable: boolean;
-};
 
 export class NasdaqUsEquityDirectoryProvider implements AssetDirectoryProvider {
   public readonly categoryId = "us-equity";
@@ -23,6 +17,7 @@ export class NasdaqUsEquityDirectoryProvider implements AssetDirectoryProvider {
   public constructor(
     private readonly catalogProvider: NasdaqUsEquityCatalogProvider,
     private readonly valuationProvider: NasdaqUsEquityValuationProvider,
+    private readonly snapshotService: NasdaqUsEquityDirectorySnapshotService,
     private readonly assetRepository: SqliteAssetRepository,
     marketDataRepository: SqliteMarketDataRepository,
     private readonly importService: NasdaqUsEquityImportService
@@ -53,7 +48,10 @@ export class NasdaqUsEquityDirectoryProvider implements AssetDirectoryProvider {
   public importItem = async (itemId: string) =>
     this.importService.importItem(itemId);
 
-  private loadCatalog = async (localAssets: AssetSummary[]): Promise<NasdaqCatalogLoadResult> => {
+  private loadCatalog = async (localAssets: AssetSummary[]): Promise<NasdaqUsEquityDirectoryLoadResult> =>
+    this.snapshotService.load(() => this.loadFreshCatalog(localAssets));
+
+  private loadFreshCatalog = async (localAssets: AssetSummary[]): Promise<NasdaqUsEquityDirectoryLoadResult> => {
     const [catalogResult, valuationResult] = await Promise.allSettled([
       this.catalogProvider.listCatalog(),
       this.valuationProvider.listStockValuationsBySymbol()
@@ -77,7 +75,7 @@ export class NasdaqUsEquityDirectoryProvider implements AssetDirectoryProvider {
     };
   };
 
-  private buildCategory = (loadResult: NasdaqCatalogLoadResult, items: AssetDirectoryItem[]): AssetDirectoryCategory => ({
+  private buildCategory = (loadResult: NasdaqUsEquityDirectoryLoadResult, items: AssetDirectoryItem[]): AssetDirectoryCategory => ({
     id: this.categoryId,
     label: "美股目录",
     description: loadResult.isCatalogAvailable
@@ -92,7 +90,7 @@ export class NasdaqUsEquityDirectoryProvider implements AssetDirectoryProvider {
     lastSyncedAt: this.getLatestSyncedAt(items)
   });
 
-  private listDirectoryItems = (loadResult: NasdaqCatalogLoadResult, localAssets: AssetSummary[]): AssetDirectoryItem[] => {
+  private listDirectoryItems = (loadResult: NasdaqUsEquityDirectoryLoadResult, localAssets: AssetSummary[]): AssetDirectoryItem[] => {
     const localAssetsBySymbol = new Map(localAssets.flatMap((asset) => this.getAssetSymbolKeys(asset).map((key) => [key, asset])));
     const usedLocalAssetIds = new Set<string>();
     const catalogItems = loadResult.catalogItems.map((catalogItem) => {

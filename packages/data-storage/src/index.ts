@@ -5,6 +5,8 @@ export { SqliteFundCatalogRepository } from "./repositories/sqlite-fund-catalog.
 export type { FundCatalogPageRecord } from "./repositories/fund-catalog/fund-catalog-page.types";
 export { SqliteIngestionJobRepository } from "./repositories/sqlite-ingestion-job.repository";
 export { SqliteMarketDataRepository } from "./repositories/sqlite-market-data.repository";
+export { SqliteProviderSnapshotRepository } from "./repositories/sqlite-provider-snapshot.repository";
+export type { ProviderSnapshot } from "./repositories/sqlite-provider-snapshot.repository";
 export { SqliteScannerEventRepository } from "./repositories/sqlite-scanner-event.repository";
 export { SqliteWatchlistRepository } from "./repositories/sqlite-watchlist.repository";
 export { SqliteDatabaseService } from "./services/sqlite-database.service";
