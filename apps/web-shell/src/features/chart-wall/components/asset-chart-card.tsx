@@ -117,9 +117,11 @@ export function AssetChartCard({ item, sort, rank, onSelect, onPin, onCompare }:
 
       <div className="asset-chart-card__return-grid">
         <ReturnCell label="1D" value={item.return1d} active={primaryMetric.key === "return_1d"} />
+        <ReturnCell label="1W" value={item.return1w} active={primaryMetric.key === "return_1w"} />
         <ReturnCell label="1M" value={item.return1m} active={primaryMetric.key === "return_1m"} />
         <ReturnCell label="3M" value={item.return3m} active={primaryMetric.key === "return_3m"} />
         <ReturnCell label="6M" value={item.return6m} active={primaryMetric.key === "return_6m"} />
+        <ReturnCell label="1Y" value={item.return1y} active={primaryMetric.key === "return_1y"} />
       </div>
 
       <div className="asset-chart-card__signal-row">
