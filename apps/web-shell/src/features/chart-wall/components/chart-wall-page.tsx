@@ -36,6 +36,7 @@ import { getAssetDirectoryTableSizing } from "./directory-table/directory-table-
 import { ExchangeTable } from "./exchange-table/exchange-table";
 import { FundDirectorySection } from "./fund-directory-section";
 import "./market-chart-primitives.css";
+import "./query-status.css";
 import { OverviewSection } from "./overview-section/overview-section";
 import { ScannerSection } from "./scanner-section/scanner-section";
 import { StrategyPresetStrip, type StrategyPresetFilters } from "./strategy-preset-strip/strategy-preset-strip";
@@ -272,6 +273,9 @@ export function ChartWallPage(): JSX.Element {
   }, [chartItems, search]);
   const chartWallTotalCount = data?.chartWall.totalCount ?? filteredItems.length;
   const safeChartWallPage = Math.min(chartWallPage, Math.max(Math.ceil(chartWallTotalCount / chartWallPageSize), 1));
+  const isChartWallInitialLoading = needsChartWallData && isLoading && !data;
+  const chartWallBlockingError = needsChartWallData && error && !data;
+  const isChartWallUpdating = needsChartWallData && isLoading && Boolean(data);
 
   useEffect(() => {
     if (activeView !== "chart-wall" || !data || chartWallPage === safeChartWallPage) {
@@ -560,10 +564,16 @@ export function ChartWallPage(): JSX.Element {
       )}
       {data && activeView === "chart-wall" && assetType === "fund" && <FundScopeStrip data={data} market={market} />}
 
-      {needsChartWallData && isLoading && <LoadingState />}
-      {needsChartWallData && !isLoading && error && <ErrorState title="行情加载失败" message={error} />}
+      {isChartWallInitialLoading && <LoadingState />}
+      {chartWallBlockingError && <ErrorState title="行情加载失败" message={error} />}
+      {needsChartWallData && data && error && (
+        <div className="query-status query-status--error" role="status">
+          <strong>行情更新失败</strong>
+          <span>{error}</span>
+        </div>
+      )}
 
-      {(!needsChartWallData || (!isLoading && !error && data)) && (
+      {(!needsChartWallData || data) && (
         <>
           {activeView === "overview" && data && (
             <OverviewSection
@@ -582,7 +592,7 @@ export function ChartWallPage(): JSX.Element {
             <section ref={chartWallSectionRef} className="chart-wall-section">
               <SectionHeader
                 title="走势列表"
-                description={`${rangeLabel(data.chartWall.range)} / ${timeframeLabel(data.chartWall.timeframe)} / ${sortDisplayLabel(sort)} ${sortOrderLabel(order)} / 本页 ${filteredItems.length.toLocaleString("en-US")} / 总数 ${chartWallTotalCount.toLocaleString("en-US")}`}
+                description={`${rangeLabel(data.chartWall.range)} / ${timeframeLabel(data.chartWall.timeframe)} / ${sortDisplayLabel(sort)} ${sortOrderLabel(order)} / 本页 ${filteredItems.length.toLocaleString("en-US")} / 总数 ${chartWallTotalCount.toLocaleString("en-US")}${isChartWallUpdating ? " / 更新中" : ""}`}
                 generatedAt={data.chartWall.generatedAt}
               />
               <ComparePanel compareData={compareSelection.compareData} compareAssetIds={compareSelection.compareAssetIds} allItems={chartItems} onRemove={compareSelection.toggleCompare} onClear={compareSelection.clearCompare} />
