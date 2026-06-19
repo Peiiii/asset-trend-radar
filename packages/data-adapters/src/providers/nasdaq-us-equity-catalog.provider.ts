@@ -37,6 +37,7 @@ type NasdaqUsEquityCatalogCache = {
 export class NasdaqUsEquityCatalogProvider {
   private readonly cacheTtlMs = 30 * 60 * 1000;
   private cache: NasdaqUsEquityCatalogCache | null = null;
+  private catalogRequest: Promise<NasdaqUsEquityCatalogItem[]> | null = null;
 
   public listCatalog = async (): Promise<NasdaqUsEquityCatalogItem[]> => {
     const now = Date.now();
@@ -45,6 +46,18 @@ export class NasdaqUsEquityCatalogProvider {
       return this.cache.items;
     }
 
+    if (this.catalogRequest) {
+      return this.catalogRequest;
+    }
+
+    this.catalogRequest = this.loadCatalog(now).finally(() => {
+      this.catalogRequest = null;
+    });
+
+    return this.catalogRequest;
+  };
+
+  private loadCatalog = async (loadedAt: number): Promise<NasdaqUsEquityCatalogItem[]> => {
     const [nasdaqText, otherText] = await Promise.all([
       this.fetchText("https://www.nasdaqtrader.com/dynamic/SymDir/nasdaqlisted.txt"),
       this.fetchText("https://www.nasdaqtrader.com/dynamic/SymDir/otherlisted.txt")
@@ -57,7 +70,7 @@ export class NasdaqUsEquityCatalogProvider {
       .sort((left, right) => left.label.localeCompare(right.label, "en-US"));
 
     this.cache = {
-      loadedAt: now,
+      loadedAt,
       items
     };
 

@@ -55,7 +55,9 @@ export class NasdaqUsEquityValuationProvider {
   private readonly quoteSummaryLimit = 80;
   private readonly quoteSummaryConcurrency = 4;
   private stockCache: NasdaqValuationCache | null = null;
+  private stockRequest: Promise<Map<string, NasdaqUsEquityValuationItem>> | null = null;
   private readonly quoteSummaryCache = new Map<string, { loadedAt: number; item: NasdaqUsEquityValuationItem | null }>();
+  private readonly quoteSummaryRequests = new Map<string, Promise<NasdaqUsEquityValuationItem | null>>();
 
   public listStockValuationsBySymbol = async (): Promise<Map<string, NasdaqUsEquityValuationItem>> => {
     const now = Date.now();
@@ -64,6 +66,18 @@ export class NasdaqUsEquityValuationProvider {
       return this.stockCache.itemsBySymbol;
     }
 
+    if (this.stockRequest) {
+      return this.stockRequest;
+    }
+
+    this.stockRequest = this.loadStockValuations(now).finally(() => {
+      this.stockRequest = null;
+    });
+
+    return this.stockRequest;
+  };
+
+  private loadStockValuations = async (loadedAtMs: number): Promise<Map<string, NasdaqUsEquityValuationItem>> => {
     const url = new URL("/api/screener/stocks", this.baseUrl);
     url.searchParams.set("tableonly", "true");
     url.searchParams.set("limit", "10000");
@@ -92,7 +106,7 @@ export class NasdaqUsEquityValuationProvider {
     );
 
     this.stockCache = {
-      loadedAt: now,
+      loadedAt: loadedAtMs,
       itemsBySymbol
     };
 
@@ -145,13 +159,28 @@ export class NasdaqUsEquityValuationProvider {
       return cached.item;
     }
 
+    const pendingRequest = this.quoteSummaryRequests.get(symbol);
+
+    if (pendingRequest) {
+      return pendingRequest;
+    }
+
+    const request = this.loadQuoteSummaryValuation(symbol, now, cached?.item ?? null).finally(() => {
+      this.quoteSummaryRequests.delete(symbol);
+    });
+    this.quoteSummaryRequests.set(symbol, request);
+
+    return request;
+  };
+
+  private loadQuoteSummaryValuation = async (symbol: string, loadedAt: number, fallbackItem: NasdaqUsEquityValuationItem | null): Promise<NasdaqUsEquityValuationItem | null> => {
     try {
       const item = await this.tryFetchQuoteSummary(symbol, "stocks") ?? await this.tryFetchQuoteSummary(symbol, "etf");
-      this.quoteSummaryCache.set(symbol, { loadedAt: now, item });
+      this.quoteSummaryCache.set(symbol, { loadedAt, item });
       return item;
     } catch (error) {
       console.warn(error);
-      return cached?.item ?? null;
+      return fallbackItem;
     }
   };
 
