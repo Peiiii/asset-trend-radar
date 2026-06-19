@@ -13,13 +13,14 @@ type ExchangeTableProps = {
   items: ChartWallItem[];
   sort: string;
   order: ChartWallSortOrder;
+  rankOffset?: number;
   onSort(value: string, order?: ChartWallSortOrder): void;
   onSelect(assetId: string): void;
   onPin(assetId: string): void;
   onCompare(assetId: string): void;
 };
 
-export function ExchangeTable({ items, sort, order, onSort, onSelect, onPin, onCompare }: ExchangeTableProps): JSX.Element {
+export function ExchangeTable({ items, sort, order, rankOffset = 0, onSort, onSelect, onPin, onCompare }: ExchangeTableProps): JSX.Element {
   const tableScroll = useTableScrollShadows(items.length);
   const showValuationColumn = sort === "market_cap" || items.some((item) => item.valuation.source !== null);
 
@@ -81,7 +82,7 @@ export function ExchangeTable({ items, sort, order, onSort, onSelect, onPin, onC
           </thead>
           <tbody>
             {items.map((item, index) => (
-              <ExchangeTableRow key={item.id} rank={index + 1} item={item} sort={sort} showValuationColumn={showValuationColumn} onSelect={onSelect} onPin={onPin} onCompare={onCompare} />
+              <ExchangeTableRow key={item.id} rank={rankOffset + index + 1} item={item} sort={sort} showValuationColumn={showValuationColumn} onSelect={onSelect} onPin={onPin} onCompare={onCompare} />
             ))}
           </tbody>
         </table>

@@ -117,6 +117,7 @@ export class ChartWallApiService {
     const query = new URLSearchParams({
       range: filters.range,
       timeframe: filters.timeframe,
+      q: filters.keyword,
       universe: filters.universe,
       level: filters.level,
       market: filters.market,
@@ -126,7 +127,9 @@ export class ChartWallApiService {
       signal: filters.signal,
       tag: filters.tag,
       dataQuality: filters.dataQuality,
-      valuationStatus: filters.valuationStatus
+      valuationStatus: filters.valuationStatus,
+      limit: String(filters.limit),
+      offset: String(filters.offset)
     });
 
     if (filters.includeValuations) {

@@ -76,18 +76,23 @@ export class ChartWallQueryService {
     const valuationEnrichedItems = await this.valuationService.enrichForSort(dataQualityFilteredItems, query.sort, query.includeValuations || query.valuationStatus !== "all");
     const valuationFilteredItems = this.itemFilter.filterByValuationStatus(valuationEnrichedItems, query.valuationStatus);
     const items = this.itemSorter.sort(valuationFilteredItems, query.sort, query.order);
+    const pagedItems = items.slice(query.offset, query.offset + query.limit);
 
     return {
       universe: query.universe,
       level: query.level,
       timeframe: query.timeframe,
       range: query.range,
+      keyword: query.keyword,
       sort: query.sort,
       order: query.order,
       signal: query.signal,
       tag: query.tag,
       dataQuality: query.dataQuality,
       valuationStatus: query.valuationStatus,
+      limit: query.limit,
+      offset: query.offset,
+      totalCount: items.length,
       generatedAt: new Date().toISOString(),
       sources: [...new Set(items.map((item) => item.source))],
       summary: this.getChartWallSummary(items, marketDataAssets.length),
@@ -97,7 +102,7 @@ export class ChartWallQueryService {
         dataQualityFilteredItems: valuationEnrichedItems
       }),
       fundScope: this.getFundScope(query, items, marketDataAssets),
-      items
+      items: pagedItems
     };
   };
 
@@ -133,6 +138,7 @@ export class ChartWallQueryService {
     const detailQuery = {
       range: query.range,
       timeframe: query.timeframe,
+      keyword: "",
       universe: "global",
       level: "all",
       market: "all",
@@ -143,7 +149,9 @@ export class ChartWallQueryService {
       tag: "all",
       dataQuality: "all" as const,
       valuationStatus: "all" as const,
-      includeValuations: true
+      includeValuations: true,
+      limit: 10000,
+      offset: 0
     };
     const item = this.getChartWallItem(asset, detailQuery, pinnedIds, new Set());
     const [valuationEnrichedItem] = await this.valuationService.enrichForSort([item], "trend_score", true);
@@ -535,7 +543,17 @@ export class ChartWallQueryService {
       return false;
     }
 
-    return true;
+    return this.matchesKeyword(asset, query.keyword);
+  };
+
+  private matchesKeyword = (asset: AssetSummary, keyword: string): boolean => {
+    const normalizedKeyword = keyword.trim().toLowerCase();
+
+    if (normalizedKeyword.length === 0) {
+      return true;
+    }
+
+    return `${asset.symbol} ${asset.name} ${asset.market} ${asset.exchange} ${asset.assetType} ${(asset.tags ?? []).join(" ")}`.toLowerCase().includes(normalizedKeyword);
   };
 
   private toUniverseTreeNode = (asset: AssetSummary, allAssets: AssetSummary[]): UniverseTreeNode => {

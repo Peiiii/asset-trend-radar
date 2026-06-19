@@ -3,6 +3,7 @@ import type { ChartWallDataQualityFilter, ChartWallSortOrder, ChartWallValuation
 export type ChartWallQuery = {
   range: string;
   timeframe: Timeframe;
+  keyword: string;
   universe: string;
   level: string;
   market: string;
@@ -14,6 +15,8 @@ export type ChartWallQuery = {
   dataQuality: ChartWallDataQualityFilter;
   valuationStatus: ChartWallValuationStatusFilter;
   includeValuations: boolean;
+  limit: number;
+  offset: number;
 };
 
 export type AssetBarsQuery = {

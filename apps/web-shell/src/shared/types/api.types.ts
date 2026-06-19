@@ -13,6 +13,7 @@ export type ChartWallPageData = {
 export type ChartWallFilters = {
   range: string;
   timeframe: string;
+  keyword: string;
   universe: string;
   level: string;
   market: string;
@@ -24,6 +25,8 @@ export type ChartWallFilters = {
   dataQuality: ChartWallDataQualityFilter;
   valuationStatus: ChartWallValuationStatusFilter;
   includeValuations?: boolean;
+  limit: number;
+  offset: number;
 };
 
 export type CompareData = CompareResponse;

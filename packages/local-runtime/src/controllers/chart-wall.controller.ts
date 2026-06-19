@@ -1,7 +1,7 @@
 import type { ServerResponse } from "node:http";
 import type { ChartWallDataQualityFilter, ChartWallValuationStatusFilter } from "@gold-insights/market-domain";
 import { JsonResponseProvider } from "../providers/json-response.provider";
-import { getBooleanQueryParam, getRangeQueryParam, getSortOrderQueryParam, getStringQueryParam, getTimeframeQueryParam } from "../utils/query-param.utils";
+import { getBooleanQueryParam, getIntegerQueryParam, getRangeQueryParam, getSortOrderQueryParam, getStringQueryParam, getTimeframeQueryParam } from "../utils/query-param.utils";
 import type { ChartWallQueryService } from "../services/chart-wall-query.service";
 
 export class ChartWallController {
@@ -16,6 +16,7 @@ export class ChartWallController {
       await this.queryService.getChartWall({
         range: getRangeQueryParam(url),
         timeframe: getTimeframeQueryParam(url),
+        keyword: getStringQueryParam(url, "q", ""),
         universe: getStringQueryParam(url, "universe", "global"),
         level: getStringQueryParam(url, "level", "all"),
         market: getStringQueryParam(url, "market", "all"),
@@ -26,7 +27,9 @@ export class ChartWallController {
         tag: getStringQueryParam(url, "tag", "all"),
         dataQuality: this.getDataQuality(getStringQueryParam(url, "dataQuality", "all")),
         valuationStatus: this.getValuationStatus(getStringQueryParam(url, "valuationStatus", "all")),
-        includeValuations: getBooleanQueryParam(url, "includeValuations")
+        includeValuations: getBooleanQueryParam(url, "includeValuations"),
+        limit: getIntegerQueryParam(url, "limit", 10000, 1, 10000),
+        offset: getIntegerQueryParam(url, "offset", 0, 0, 100000)
       })
     );
   };

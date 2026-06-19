@@ -91,12 +91,16 @@ export type ChartWallResponse = {
   level: string;
   timeframe: string;
   range: string;
+  keyword: string;
   sort: string;
   order: ChartWallSortOrder;
   signal: string;
   tag: string;
   dataQuality: ChartWallDataQualityFilter;
   valuationStatus: ChartWallValuationStatusFilter;
+  limit: number;
+  offset: number;
+  totalCount: number;
   generatedAt: string;
   sources: string[];
   summary: ChartWallSummary;

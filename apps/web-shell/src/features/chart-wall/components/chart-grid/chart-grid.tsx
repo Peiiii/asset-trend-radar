@@ -8,13 +8,14 @@ type ChartGridProps = {
   items: ChartWallItem[];
   sort?: string;
   order?: ChartWallSortOrder;
+  rankOffset?: number;
   onSelect(assetId: string): void;
   onPin(assetId: string): void;
   onCompare(assetId: string): void;
   onResetFilters(): void;
 };
 
-export function ChartGrid({ items, sort, order, onSelect, onPin, onCompare, onResetFilters }: ChartGridProps): JSX.Element {
+export function ChartGrid({ items, sort, order, rankOffset = 0, onSelect, onPin, onCompare, onResetFilters }: ChartGridProps): JSX.Element {
   if (items.length === 0) {
     return (
       <div className="chart-grid-empty">
@@ -31,7 +32,7 @@ export function ChartGrid({ items, sort, order, onSelect, onPin, onCompare, onRe
       <RankingQualitySummary items={items} sort={sort} order={order} />
       <div className="chart-wall-grid">
         {items.map((item, index) => (
-          <AssetChartCard key={item.id} item={item} sort={sort} rank={index + 1} onSelect={onSelect} onPin={onPin} onCompare={onCompare} />
+          <AssetChartCard key={item.id} item={item} sort={sort} rank={rankOffset + index + 1} onSelect={onSelect} onPin={onPin} onCompare={onCompare} />
         ))}
       </div>
     </>

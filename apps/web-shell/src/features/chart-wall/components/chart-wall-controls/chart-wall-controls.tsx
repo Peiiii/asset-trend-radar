@@ -92,7 +92,7 @@ export function ChartWallControls({ values, defaults, facets, options, summary, 
           当前 <strong>{summary.visibleCount.toLocaleString("en-US")}</strong>
         </span>
         <span>
-          接口 <strong>{summary.apiCount.toLocaleString("en-US")}</strong>
+          本页 <strong>{summary.apiCount.toLocaleString("en-US")}</strong>
         </span>
         <span>
           排序 <strong>{summary.sortLabel} {summary.orderLabel}</strong>

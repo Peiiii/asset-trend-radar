@@ -1,0 +1,65 @@
+.chart-wall-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid #d7dde7;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.chart-wall-pagination__range,
+.chart-wall-pagination__buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.chart-wall-pagination__range {
+  flex: 0 0 auto;
+  color: #687386;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.chart-wall-pagination__range strong {
+  color: #172033;
+  font-weight: 950;
+}
+
+.chart-wall-pagination__buttons {
+  justify-content: flex-end;
+}
+
+.chart-wall-pagination__buttons span {
+  min-height: 28px;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: #eef3f8;
+  color: #516077;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.chart-wall-pagination .gi-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chart-wall-pagination .gi-select {
+  min-width: 118px;
+}
+
+@media (max-width: 760px) {
+  .chart-wall-pagination {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .chart-wall-pagination__buttons {
+    justify-content: space-between;
+  }
+}

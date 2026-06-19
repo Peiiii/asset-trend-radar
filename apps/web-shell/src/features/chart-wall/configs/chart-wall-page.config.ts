@@ -84,6 +84,12 @@ export const sortOrderOptions: ControlOption[] = [
   { value: "asc", label: "升序", description: "数值低的靠前" }
 ];
 
+export const chartWallPageSizeOptions: ControlOption[] = [
+  { value: "60", label: "60" },
+  { value: "120", label: "120" },
+  { value: "240", label: "240" }
+];
+
 export const signalFallbackOptions: ControlOption[] = [
   { value: "strong", label: "强趋势" },
   { value: "weak", label: "偏弱" },

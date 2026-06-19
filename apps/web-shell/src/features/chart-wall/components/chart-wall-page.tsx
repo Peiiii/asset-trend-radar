@@ -23,13 +23,14 @@ import type { ControlOption } from "@gold-insights/ui";
 import type { AssetDirectoryAssetTypeFilter, AssetDirectoryCategoryId, AssetDirectoryCoverage, AssetDirectoryDataStateFilter, AssetDirectoryItem, AssetDirectorySortKey, AssetDirectoryStatusFilter, AssetDirectoryValuationStatusFilter, ChartWallDataQualityFilter, ChartWallSortOrder, ChartWallValuationStatusFilter } from "@gold-insights/market-domain";
 import type { ChartWallFilters, ChartWallPageData } from "@/shared/types/api.types";
 import { formatDateTime } from "@/shared/utils/format-number.utils";
-import { assetTypeFallbackOptions, dataQualityFallbackOptions, defaultFilters, levelFallbackOptions, marketFallbackOptions, signalFallbackOptions, sortOptions, sortOrderOptions, tagFallbackOptions, valuationStatusFallbackOptions } from "../configs/chart-wall-page.config";
+import { assetTypeFallbackOptions, chartWallPageSizeOptions, dataQualityFallbackOptions, defaultFilters, levelFallbackOptions, marketFallbackOptions, signalFallbackOptions, sortOptions, sortOrderOptions, tagFallbackOptions, valuationStatusFallbackOptions } from "../configs/chart-wall-page.config";
 import { ActiveFilterChips } from "./active-filter-chips/active-filter-chips";
 import { AssetDetailSection } from "./asset-detail-section/asset-detail-section";
 import { AssetDirectorySection } from "./asset-directory-section/asset-directory-section";
 import { ChartGrid } from "./chart-grid/chart-grid";
 import { ComparePanel } from "./compare-panel/compare-panel";
 import { ChartWallControls, type ChartWallViewMode } from "./chart-wall-controls/chart-wall-controls";
+import { ChartWallPagination } from "./chart-wall-pagination/chart-wall-pagination";
 import { DataHealthSection } from "./data-health-section/data-health-section";
 import { getAssetDirectoryTableSizing } from "./directory-table/directory-table-sizing.config";
 import { ExchangeTable } from "./exchange-table/exchange-table";
@@ -70,6 +71,7 @@ const viewTitles: Record<ActiveView, string> = {
 };
 
 const assetDirectoryLimit = 50;
+const defaultChartWallPageSize = 120;
 
 export function ChartWallPage(): JSX.Element {
   const location = useLocation();
@@ -91,6 +93,8 @@ export function ChartWallPage(): JSX.Element {
   const valuationStatus = getChartWallValuationStatus(getSearchValue(searchParams, "valuationStatus", defaultFilters.valuationStatus));
   const viewMode = getViewMode(getSearchValue(searchParams, "view", "grid"));
   const search = getSearchValue(searchParams, "q", "");
+  const chartWallPage = getPositiveIntegerSearchValue(searchParams, "page", 1);
+  const chartWallPageSize = getChartWallPageSize(getPositiveIntegerSearchValue(searchParams, "pageSize", defaultChartWallPageSize));
   const scannerEventType = getSearchValue(searchParams, "eventType", "all");
   const scannerMinSeverity = getSearchValue(searchParams, "severity", "0");
   const scannerMarket = getSearchValue(searchParams, "scannerMarket", "all");
@@ -128,6 +132,14 @@ export function ChartWallPage(): JSX.Element {
       next.delete("directoryPage");
     }
 
+    if (activeView === "chart-wall" && name !== "page" && name !== "pageSize") {
+      next.delete("page");
+    }
+
+    if (activeView === "chart-wall" && name === "pageSize") {
+      next.delete("page");
+    }
+
     setSearchParams(next);
   }, [activeView, searchParams, setSearchParams]);
 
@@ -151,6 +163,10 @@ export function ChartWallPage(): JSX.Element {
       next.delete("directoryPage");
     }
 
+    if (activeView === "chart-wall") {
+      next.delete("page");
+    }
+
     setSearchParams(next);
   }, [activeView, order, searchParams, setSearchParams, sort]);
 
@@ -164,6 +180,7 @@ export function ChartWallPage(): JSX.Element {
     () => ({
       range,
       timeframe,
+      keyword: search,
       universe: "global",
       level,
       market: effectiveMarket,
@@ -174,9 +191,11 @@ export function ChartWallPage(): JSX.Element {
       signal,
       dataQuality,
       valuationStatus,
-      includeValuations: shouldIncludeValuations(activeView, effectiveMarket, effectiveAssetType, effectiveSort, valuationStatus)
+      includeValuations: shouldIncludeValuations(activeView, effectiveMarket, effectiveAssetType, effectiveSort, valuationStatus),
+      limit: activeView === "chart-wall" ? chartWallPageSize : 10000,
+      offset: activeView === "chart-wall" ? (chartWallPage - 1) * chartWallPageSize : 0
     }),
-    [activeView, dataQuality, effectiveAssetType, effectiveMarket, effectiveOrder, effectiveSort, level, range, signal, tag, timeframe, valuationStatus]
+    [activeView, chartWallPage, chartWallPageSize, dataQuality, effectiveAssetType, effectiveMarket, effectiveOrder, effectiveSort, level, range, search, signal, tag, timeframe, valuationStatus]
   );
   const { data, error, isLoading, reload } = useChartWallQuery(filters, needsChartWallData);
   const fundDirectoryQuery = useFundDirectoryQuery(fundDirectory.filters, activeView === "fund-directory");
@@ -221,6 +240,16 @@ export function ChartWallPage(): JSX.Element {
       return text.includes(keyword);
     });
   }, [chartItems, search]);
+  const chartWallTotalCount = data?.chartWall.totalCount ?? filteredItems.length;
+  const safeChartWallPage = Math.min(chartWallPage, Math.max(Math.ceil(chartWallTotalCount / chartWallPageSize), 1));
+
+  useEffect(() => {
+    if (activeView !== "chart-wall" || !data || chartWallPage === safeChartWallPage) {
+      return;
+    }
+
+    setQueryValue("page", String(safeChartWallPage), "1");
+  }, [activeView, chartWallPage, data, safeChartWallPage, setQueryValue]);
 
   const selectedListItem = useMemo(() => chartItems.find((item) => item.id === routeAssetId) ?? filteredItems[0] ?? chartItems[0] ?? null, [chartItems, filteredItems, routeAssetId]);
   const selectedItem = useMemo(() => {
@@ -295,6 +324,7 @@ export function ChartWallPage(): JSX.Element {
     next.delete("tag");
     next.delete("dataQuality");
     next.delete("valuationStatus");
+    next.delete("page");
 
     for (const [key, value] of Object.entries(preset)) {
       const fallback = defaultFilters[key as keyof typeof defaultFilters] ?? "";
@@ -316,6 +346,8 @@ export function ChartWallPage(): JSX.Element {
     if (key === "sort") {
       next.delete("order");
     }
+
+    next.delete("page");
 
     setSearchParams(next);
   };
@@ -469,7 +501,7 @@ export function ChartWallPage(): JSX.Element {
             defaults={defaultFilters}
             facets={data?.chartWall.facets}
             options={{ markets: marketFallbackOptions, assetTypes: assetTypeFallbackOptions, levels: levelFallbackOptions, tags: tagFallbackOptions, signals: signalFallbackOptions, dataQualities: dataQualityFallbackOptions, valuationStatuses: valuationStatusFallbackOptions, sorts: sortOptions, orders: sortOrderOptions }}
-            summary={{ visibleCount: filteredItems.length, apiCount: chartItems.length, sortLabel: sortDisplayLabel(sort), orderLabel: sortOrderLabel(order) }}
+            summary={{ visibleCount: chartWallTotalCount, apiCount: filteredItems.length, sortLabel: sortDisplayLabel(sort), orderLabel: sortOrderLabel(order) }}
             isRefreshing={isGlobalSyncing}
             showViewMode={activeView === "chart-wall"}
             activeFilterSlot={(
@@ -520,7 +552,7 @@ export function ChartWallPage(): JSX.Element {
             <section className="chart-wall-section">
               <SectionHeader
                 title="走势列表"
-                description={`${rangeLabel(data.chartWall.range)} / ${timeframeLabel(data.chartWall.timeframe)} / ${sortDisplayLabel(sort)} ${sortOrderLabel(order)} / ${filteredItems.length} 个资产`}
+                description={`${rangeLabel(data.chartWall.range)} / ${timeframeLabel(data.chartWall.timeframe)} / ${sortDisplayLabel(sort)} ${sortOrderLabel(order)} / 本页 ${filteredItems.length.toLocaleString("en-US")} / 总数 ${chartWallTotalCount.toLocaleString("en-US")}`}
                 generatedAt={data.chartWall.generatedAt}
               />
               <ComparePanel compareData={compareSelection.compareData} compareAssetIds={compareSelection.compareAssetIds} allItems={chartItems} onRemove={compareSelection.toggleCompare} onClear={compareSelection.clearCompare} />
@@ -532,10 +564,19 @@ export function ChartWallPage(): JSX.Element {
                   variant="compact"
                 />
               )}
+              <ChartWallPagination
+                page={safeChartWallPage}
+                pageSize={chartWallPageSize}
+                totalCount={chartWallTotalCount}
+                currentCount={filteredItems.length}
+                pageSizeOptions={chartWallPageSizeOptions}
+                onPageChange={(value) => setQueryValue("page", String(value), "1")}
+                onPageSizeChange={(value) => setQueryValue("pageSize", String(value), String(defaultChartWallPageSize))}
+              />
               {viewMode === "grid" ? (
-                <ChartGrid items={filteredItems} sort={sort} order={order} onSelect={selectAsset} onPin={handlePin} onCompare={compareSelection.toggleCompare} onResetFilters={resetFilters} />
+                <ChartGrid items={filteredItems} sort={sort} order={order} rankOffset={data.chartWall.offset} onSelect={selectAsset} onPin={handlePin} onCompare={compareSelection.toggleCompare} onResetFilters={resetFilters} />
               ) : (
-                <ExchangeTable items={filteredItems} sort={sort} order={order} onSort={setSortQueryValue} onSelect={selectAsset} onPin={handlePin} onCompare={compareSelection.toggleCompare} />
+                <ExchangeTable items={filteredItems} sort={sort} order={order} rankOffset={data.chartWall.offset} onSort={setSortQueryValue} onSelect={selectAsset} onPin={handlePin} onCompare={compareSelection.toggleCompare} />
               )}
             </section>
           )}
@@ -910,7 +951,7 @@ function getReturnSourcePath(pathname: string, searchParams: URLSearchParams): s
 function getChartContextSearch(searchParams: URLSearchParams, activeView: ActiveView): string {
   const names = activeView === "asset-directory" || activeView === "fund-directory"
     ? ["range", "timeframe", "q"]
-    : ["range", "timeframe", "market", "assetType", "level", "tag", "sort", "order", "signal", "dataQuality", "valuationStatus", "view", "q"];
+    : ["range", "timeframe", "market", "assetType", "level", "tag", "sort", "order", "signal", "dataQuality", "valuationStatus", "view", "q", "page", "pageSize"];
 
   return getSearchWithOnly(searchParams, names);
 }
@@ -1038,6 +1079,11 @@ function getSearchValue(searchParams: URLSearchParams, name: string, fallback: s
 function getPositiveIntegerSearchValue(searchParams: URLSearchParams, name: string, fallback: number): number {
   const value = Number(searchParams.get(name));
   return Number.isInteger(value) && value > 0 ? value : fallback;
+}
+
+function getChartWallPageSize(value: number): number {
+  const supported = chartWallPageSizeOptions.map((option) => Number(option.value));
+  return supported.includes(value) ? value : defaultChartWallPageSize;
 }
 
 function getViewMode(value: string): ChartWallViewMode {
