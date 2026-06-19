@@ -27,7 +27,7 @@ export function taskFailureTone(data: TaskCenterResponse): TaskFailureTone {
     return "negative";
   }
 
-  return hasHistoricalTaskFailure(data) ? "amber" : "neutral";
+  return "neutral";
 }
 
 export function buildTaskActivitySummary(data: TaskCenterResponse): TaskActivitySummary {
@@ -72,12 +72,12 @@ export function buildTaskActivitySummary(data: TaskCenterResponse): TaskActivity
     const failureCount = data.failedCount.toLocaleString("en-US");
 
     return {
-      tone: "amber",
-      title: "后台空闲，有历史失败",
-      description: `当前没有运行中、卡住或最新失败任务；${failureCount} 个历史失败已保留错误信息，不代表正在同步失败。`,
+      tone: "positive",
+      title: "后台空闲，任务正常",
+      description: `当前没有运行中、卡住或最新失败任务；${failureCount} 个历史失败已保留在任务中心。`,
       latestTaskLabel,
       pipelineLabel,
-      activeLabel: `历史失败 ${failureCount}`
+      activeLabel: "无运行任务"
     };
   }
 

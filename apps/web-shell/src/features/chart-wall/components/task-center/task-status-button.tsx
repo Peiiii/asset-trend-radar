@@ -104,11 +104,11 @@ function getTaskStatusState(data: TaskCenterResponse | null, isLoading: boolean,
     const failureCount = data.failedCount.toLocaleString("en-US");
 
     return {
-      tone: "amber",
-      label: `历史失败 ${failureCount}`,
-      secondary: data.latestTask ? `最近 ${data.latestTask.label}` : "可追溯",
-      title: `当前没有运行中、卡住或最新失败任务；${failureCount} 个历史失败可在任务中心查看，${pollingLabel}`,
-      icon: <AlertTriangle size={16} aria-hidden="true" />,
+      tone: "positive",
+      label: "任务正常",
+      secondary: data.latestTask ? `最近 ${data.latestTask.label}` : "后台空闲",
+      title: `当前没有运行中、卡住或最新失败任务；${failureCount} 个历史失败已留档，${pollingLabel}`,
+      icon: <CheckCircle2 size={16} aria-hidden="true" />,
       metrics
     };
   }
@@ -144,6 +144,6 @@ function buildTaskStatusMetrics(data: TaskCenterResponse | null, isLoading: bool
   return [
     { label: "运行", value: data.runningCount, tone: data.runningCount > 0 ? "blue" : "neutral" },
     { label: "卡住", value: data.staleRunningCount, tone: data.staleRunningCount > 0 ? "amber" : "neutral" },
-    { label: hasCurrentFailure ? "失败" : "历史失败", value: data.failedCount, tone: taskFailureTone(data) }
+    { label: hasCurrentFailure ? "失败" : "留档", value: data.failedCount, tone: taskFailureTone(data) }
   ];
 }
