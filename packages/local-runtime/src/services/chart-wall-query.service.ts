@@ -27,6 +27,7 @@ import { getBreakoutState, getMacdState, getReturnPct, getTrendScore } from "@go
 import type { AssetBarsQuery, ChartWallQuery, CompareQuery, ScannerEventsQuery } from "../types/chart-wall-query.types";
 import type { LocalRuntimeOptions } from "../types/local-runtime-options.types";
 import { ChartWallFacetBuilderService } from "./chart-wall-facet-builder.service";
+import { ChartWallItemCacheService } from "./chart-wall/chart-wall-item-cache.service";
 import { ChartWallItemFilterService } from "./chart-wall/chart-wall-item-filter.service";
 import { ChartWallItemSorter } from "./chart-wall-item-sorter.service";
 import type { ChartWallValuationService } from "./chart-wall-valuation.service";
@@ -41,6 +42,7 @@ export class ChartWallQueryService {
   private readonly itemSorter = new ChartWallItemSorter();
   private readonly facetBuilder = new ChartWallFacetBuilderService();
   private readonly itemFilter = new ChartWallItemFilterService();
+  private readonly itemCache = new ChartWallItemCacheService();
 
   public constructor(
     private readonly options: LocalRuntimeOptions,
@@ -56,28 +58,26 @@ export class ChartWallQueryService {
     const marketDataAssets = this.assetRepository.listAssets().filter((asset) => this.isMarketDataAsset(asset));
     const watchlistAssetIds = new Set(this.watchlistRepository.listWatchlists().flatMap((watchlist) => watchlist.assets.map((asset) => asset.id)));
     const comparedAssetIds = new Set<string>();
-    const itemByAssetId = new Map<string, ChartWallItem>();
-    const toChartWallItem = (asset: AssetSummary): ChartWallItem => {
-      const cachedItem = itemByAssetId.get(asset.id);
-
-      if (cachedItem) {
-        return cachedItem;
-      }
-
-      const item = this.getChartWallItem(asset, query, watchlistAssetIds, comparedAssetIds);
-      itemByAssetId.set(asset.id, item);
-      return item;
-    };
+    const emptyAssetIds = new Set<string>();
+    const baseItemsByAssetId = this.itemCache.getItemsByAssetId({
+      assets: marketDataAssets,
+      dataVersion: this.getChartWallDataVersion(),
+      range: query.range,
+      timeframe: query.timeframe,
+      buildItem: (asset) => this.getChartWallItem(asset, query, emptyAssetIds, emptyAssetIds)
+    });
+    const toChartWallItem = (asset: AssetSummary): ChartWallItem => this.withInteractionState(baseItemsByAssetId.get(asset.id), watchlistAssetIds, comparedAssetIds);
     const toPricedItems = (assets: AssetSummary[]): ChartWallItem[] => assets.map(toChartWallItem).filter((item) => item.lastPrice !== null);
     const matchedAssets = marketDataAssets.filter((asset) => this.matchesChartWallQuery(asset, query));
     const matchedItems = toPricedItems(matchedAssets);
     const signalFilteredItems = this.facetBuilder.applySignalFilter(matchedItems, query.signal);
     const dataQualityFilteredItems = this.itemFilter.filterByDataQuality(signalFilteredItems, query.dataQuality);
-    const needsFullValuationPass = this.needsFullValuationPass(query);
+    const needsFullValuationPass = query.sort === "market_cap" || query.valuationStatus !== "all";
     const valuationScopeItems = needsFullValuationPass ? await this.valuationService.enrichForSort(dataQualityFilteredItems, query.sort, true) : dataQualityFilteredItems;
     const valuationFilteredItems = this.itemFilter.filterByValuationStatus(valuationScopeItems, query.valuationStatus);
     const items = this.itemSorter.sort(valuationFilteredItems, query.sort, query.order);
-    const pagedItems = await this.enrichReturnedPage(items.slice(query.offset, query.offset + query.limit), query, needsFullValuationPass);
+    const pageItems = items.slice(query.offset, query.offset + query.limit);
+    const pagedItems = query.includeValuations && !needsFullValuationPass ? await this.valuationService.enrichForSort(pageItems, query.sort, true) : pageItems;
 
     return {
       universe: query.universe,
@@ -266,15 +266,32 @@ export class ChartWallQueryService {
     return this.getWatchlists();
   };
 
-  private needsFullValuationPass = (query: ChartWallQuery): boolean =>
-    query.sort === "market_cap" || query.valuationStatus !== "all";
+  private getChartWallDataVersion = (): string => {
+    const latestFinishedJob = this.ingestionJobRepository.getLatestFinishedJobForDataset("multi-source", "global-bars-1d");
+    return [
+      this.marketDataRepository.latestBarTimestamp() ?? 0,
+      this.marketDataRepository.countBars(),
+      latestFinishedJob?.finishedAt ?? 0
+    ].join(":");
+  };
 
-  private enrichReturnedPage = async (items: ChartWallItem[], query: ChartWallQuery, alreadyEnriched: boolean): Promise<ChartWallItem[]> => {
-    if (alreadyEnriched || !query.includeValuations) {
-      return items;
+  private withInteractionState = (item: ChartWallItem | undefined, pinnedIds: Set<string>, comparedIds: Set<string>): ChartWallItem => {
+    if (!item) {
+      throw new Error("Chart wall item cache missed an asset that was included in the cache request");
     }
 
-    return this.valuationService.enrichForSort(items, query.sort, true);
+    const isPinned = pinnedIds.has(item.id);
+    const isCompared = comparedIds.has(item.id);
+
+    if (item.isPinned === isPinned && item.isCompared === isCompared) {
+      return item;
+    }
+
+    return {
+      ...item,
+      isPinned,
+      isCompared
+    };
   };
 
   private getChartWallItem = (asset: AssetSummary, query: ChartWallQuery, pinnedIds: Set<string>, comparedIds: Set<string>): ChartWallItem => {
