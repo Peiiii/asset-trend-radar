@@ -597,7 +597,7 @@ export function ChartWallPage(): JSX.Element {
                 generatedAt={data.chartWall.generatedAt}
               />
               <ComparePanel compareData={compareSelection.compareData} compareAssetIds={compareSelection.compareAssetIds} allItems={chartItems} onRemove={compareSelection.toggleCompare} onClear={compareSelection.clearCompare} />
-              {shouldShowChartWallValuationSummary(sort, valuationStatus) && (
+              {shouldShowChartWallValuationSummary(shouldHydrateChartWallValuations, sort, valuationStatus) && (
                 <ValuationCoverageSummary
                   items={filteredItems}
                   title="市值/规模覆盖"
@@ -1151,8 +1151,8 @@ function defaultOrderForSort(sort: string): ChartWallSortOrder {
   return sort === "symbol" || sort === "market" || sort === "asset_type" ? "asc" : "desc";
 }
 
-function shouldShowChartWallValuationSummary(sort: string, valuationStatus: ChartWallValuationStatusFilter): boolean {
-  return sort === "market_cap" || valuationStatus !== "all";
+function shouldShowChartWallValuationSummary(isValuationHydrated: boolean, sort: string, valuationStatus: ChartWallValuationStatusFilter): boolean {
+  return isValuationHydrated || sort === "market_cap" || valuationStatus !== "all";
 }
 
 function getAssetDirectorySort(sort: string): AssetDirectorySortKey {

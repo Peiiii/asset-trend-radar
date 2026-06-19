@@ -135,7 +135,11 @@ export function shouldIncludeChartWallValuations({ assetType, market, sort, valu
     return true;
   }
 
-  if (view !== "chart-wall" && view !== "watchlist") {
+  if (view === "data-health" || view === "watchlist") {
+    return true;
+  }
+
+  if (view !== "chart-wall") {
     return false;
   }
 
