@@ -5,12 +5,8 @@ import { AssetDirectoryItemMetricsService } from "../asset-directory-item-metric
 import { AssetDirectoryPageBuilderService } from "../asset-directory-page-builder.service";
 import type { AssetDirectoryProvider, AssetDirectoryQuery } from "../asset-directory-provider.types";
 import { AssetDirectoryValuationFactory } from "../shared/asset-directory-valuation.factory";
+import type { EastmoneyAshareDirectoryLoadResult, EastmoneyAshareDirectorySnapshotService } from "./eastmoney-a-share-directory-snapshot.service";
 import type { EastmoneyAshareImportService } from "./eastmoney-a-share-import.service";
-
-type EastmoneyAshareCatalogLoadResult = {
-  catalogItems: EastmoneyAshareCatalogItem[];
-  isCatalogAvailable: boolean;
-};
 
 export class EastmoneyAshareDirectoryProvider implements AssetDirectoryProvider {
   public readonly categoryId = "a-share";
@@ -20,6 +16,7 @@ export class EastmoneyAshareDirectoryProvider implements AssetDirectoryProvider 
 
   public constructor(
     private readonly catalogProvider: EastmoneyAshareCatalogProvider,
+    private readonly snapshotService: EastmoneyAshareDirectorySnapshotService,
     private readonly assetRepository: SqliteAssetRepository,
     marketDataRepository: SqliteMarketDataRepository,
     private readonly importService: EastmoneyAshareImportService
@@ -48,7 +45,10 @@ export class EastmoneyAshareDirectoryProvider implements AssetDirectoryProvider 
   public importItem = async (itemId: string) =>
     this.importService.importItem(itemId);
 
-  private loadCatalog = async (): Promise<EastmoneyAshareCatalogLoadResult> => {
+  private loadCatalog = async (): Promise<EastmoneyAshareDirectoryLoadResult> =>
+    this.snapshotService.load(this.loadFreshCatalog);
+
+  private loadFreshCatalog = async (): Promise<EastmoneyAshareDirectoryLoadResult> => {
     try {
       return {
         catalogItems: await this.catalogProvider.listCatalog(),
@@ -63,7 +63,7 @@ export class EastmoneyAshareDirectoryProvider implements AssetDirectoryProvider 
     }
   };
 
-  private buildCategory = (loadResult: EastmoneyAshareCatalogLoadResult, items: AssetDirectoryItem[]): AssetDirectoryCategory => ({
+  private buildCategory = (loadResult: EastmoneyAshareDirectoryLoadResult, items: AssetDirectoryItem[]): AssetDirectoryCategory => ({
     id: this.categoryId,
     label: "A 股目录",
     description: loadResult.isCatalogAvailable
@@ -78,7 +78,7 @@ export class EastmoneyAshareDirectoryProvider implements AssetDirectoryProvider 
     lastSyncedAt: this.getLatestSyncedAt(items)
   });
 
-  private listDirectoryItems = (loadResult: EastmoneyAshareCatalogLoadResult): AssetDirectoryItem[] => {
+  private listDirectoryItems = (loadResult: EastmoneyAshareDirectoryLoadResult): AssetDirectoryItem[] => {
     const localAssets = this.listLocalAshareAssets();
     const localAssetsBySymbol = new Map(localAssets.flatMap((asset) => this.getAssetSymbolKeys(asset).map((key) => [key, asset])));
     const usedLocalAssetIds = new Set<string>();

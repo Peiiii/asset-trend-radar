@@ -20,6 +20,7 @@ import { CryptoAssetDirectoryProvider } from "./asset-directory/crypto-asset-dir
 import { CryptoAssetDirectorySnapshotService } from "./asset-directory/crypto/crypto-asset-directory-snapshot.service";
 import { CryptoAssetImportService } from "./asset-directory/crypto-asset-import.service";
 import { EastmoneyAshareDirectoryProvider } from "./asset-directory/a-share/eastmoney-a-share-directory.provider";
+import { EastmoneyAshareDirectorySnapshotService } from "./asset-directory/a-share/eastmoney-a-share-directory-snapshot.service";
 import { EastmoneyAshareImportService } from "./asset-directory/a-share/eastmoney-a-share-import.service";
 import { FundAssetDirectoryProvider } from "./asset-directory/fund-asset-directory.provider";
 import { NasdaqUsEquityDirectoryProvider } from "./asset-directory/nasdaq-us-equity-directory.provider";
@@ -74,6 +75,7 @@ export class LocalRuntimeService {
     const nasdaqUsEquityValuationProvider = new NasdaqUsEquityValuationProvider();
     const nasdaqUsEquityDirectorySnapshotService = new NasdaqUsEquityDirectorySnapshotService(providerSnapshotRepository);
     const eastmoneyAshareCatalogProvider = new EastmoneyAshareCatalogProvider();
+    const eastmoneyAshareDirectorySnapshotService = new EastmoneyAshareDirectorySnapshotService(providerSnapshotRepository);
     const exchangeRateProvider = new OpenExchangeRateProvider();
     const valuationNormalizationService = new AssetValuationNormalizationService(exchangeRateProvider);
     const nasdaqAssetValuationService = new NasdaqAssetValuationService(nasdaqUsEquityValuationProvider, providerSnapshotRepository);
@@ -133,7 +135,7 @@ export class LocalRuntimeService {
         marketFilters: ["商品"]
       }, assetRepository, marketDataRepository, trendPoolAssetValuationService),
       new NasdaqUsEquityDirectoryProvider(nasdaqUsEquityCatalogProvider, nasdaqUsEquityValuationProvider, nasdaqUsEquityDirectorySnapshotService, assetRepository, marketDataRepository, nasdaqUsEquityImportService),
-      new EastmoneyAshareDirectoryProvider(eastmoneyAshareCatalogProvider, assetRepository, marketDataRepository, eastmoneyAshareImportService),
+      new EastmoneyAshareDirectoryProvider(eastmoneyAshareCatalogProvider, eastmoneyAshareDirectorySnapshotService, assetRepository, marketDataRepository, eastmoneyAshareImportService),
       new TrendPoolAssetDirectoryProvider({
         categoryId: "hk-equity",
         label: "港股目录",
