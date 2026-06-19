@@ -193,6 +193,7 @@ export function ChartWallPage(): JSX.Element {
     }
   }, [range, setQueryValue, timeframe]);
 
+  const shouldHydrateChartWallValuations = shouldIncludeValuations(effectiveSort, valuationStatus);
   const filters = useMemo<ChartWallFilters>(
     () => ({
       range,
@@ -208,13 +209,25 @@ export function ChartWallPage(): JSX.Element {
       signal,
       dataQuality,
       valuationStatus,
-      includeValuations: shouldIncludeValuations(activeView, effectiveMarket, effectiveAssetType, effectiveSort, valuationStatus),
+      includeValuations: shouldHydrateChartWallValuations,
       limit: activeView === "chart-wall" ? chartWallPageSize : 10000,
       offset: activeView === "chart-wall" ? (chartWallPage - 1) * chartWallPageSize : 0
     }),
-    [activeView, chartWallPage, chartWallPageSize, dataQuality, effectiveAssetType, effectiveMarket, effectiveOrder, effectiveSort, level, range, search, signal, tag, timeframe, valuationStatus]
+    [activeView, chartWallPage, chartWallPageSize, dataQuality, effectiveAssetType, effectiveMarket, effectiveOrder, effectiveSort, level, range, search, shouldHydrateChartWallValuations, signal, tag, timeframe, valuationStatus]
   );
   const { data, error, isLoading, reload } = useChartWallQuery(filters, needsChartWallData);
+  const chartWallFacets = useMemo(() => {
+    const facets = data?.chartWall.facets;
+
+    if (!facets || shouldHydrateChartWallValuations) {
+      return facets;
+    }
+
+    return {
+      ...facets,
+      valuationStatuses: undefined
+    };
+  }, [data?.chartWall.facets, shouldHydrateChartWallValuations]);
   const fundDirectoryQuery = useFundDirectoryQuery(fundDirectory.filters, activeView === "fund-directory");
   const assetDirectoryFilters = useMemo(
     () => ({
@@ -516,7 +529,7 @@ export function ChartWallPage(): JSX.Element {
           <ChartWallControls
             values={{ market, assetType, level, tag, signal, dataQuality, valuationStatus, sort, order, range, timeframe, viewMode }}
             defaults={defaultFilters}
-            facets={data?.chartWall.facets}
+            facets={chartWallFacets}
             options={{ markets: marketFallbackOptions, assetTypes: assetTypeFallbackOptions, levels: levelFallbackOptions, tags: tagFallbackOptions, signals: signalFallbackOptions, dataQualities: dataQualityFallbackOptions, valuationStatuses: valuationStatusFallbackOptions, sorts: sortOptions, orders: sortOrderOptions }}
             summary={{ visibleCount: chartWallTotalCount, apiCount: filteredItems.length, sortLabel: sortDisplayLabel(sort), orderLabel: sortOrderLabel(order) }}
             isRefreshing={isGlobalSyncing}
@@ -577,7 +590,7 @@ export function ChartWallPage(): JSX.Element {
                 <ValuationCoverageSummary
                   items={filteredItems}
                   title="市值/规模覆盖"
-                  description="按当前图表墙筛选口径统计；美股股票优先使用 NASDAQ 市值快照，ETF/AUM 源未完整接入，指数/商品/宏观不适用，空态不是后台加载中。"
+                  description="按当前图表墙筛选口径统计；美股股票使用 NASDAQ 市值快照，重点 ETF/基金代理标的使用 quote summary/AUM 补充，指数/商品/宏观不适用，空态不是后台加载中。"
                   variant="compact"
                 />
               )}
@@ -1140,28 +1153,12 @@ function defaultOrderForSort(sort: string): ChartWallSortOrder {
   return sort === "symbol" || sort === "market" || sort === "asset_type" ? "asc" : "desc";
 }
 
-function shouldIncludeValuations(activeView: ActiveView, market: string, assetType: string, sort: string, valuationStatus: ChartWallValuationStatusFilter): boolean {
-  if (activeView === "data-health" || sort === "market_cap" || valuationStatus !== "all") {
-    return true;
-  }
-
-  if (!["overview", "chart-wall", "watchlist"].includes(activeView)) {
-    return false;
-  }
-
-  return isValuationCandidateMarket(market) || isValuationCandidateAssetType(assetType);
+function shouldIncludeValuations(sort: string, valuationStatus: ChartWallValuationStatusFilter): boolean {
+  return sort === "market_cap" || valuationStatus !== "all";
 }
 
 function shouldShowChartWallValuationSummary(sort: string, valuationStatus: ChartWallValuationStatusFilter): boolean {
   return sort === "market_cap" || valuationStatus !== "all";
-}
-
-function isValuationCandidateMarket(market: string): boolean {
-  return ["all", "美股", "A 股", "加密", "商品", "基金"].includes(market);
-}
-
-function isValuationCandidateAssetType(assetType: string): boolean {
-  return ["all", "equity", "fund", "crypto"].includes(assetType);
 }
 
 function getAssetDirectorySort(sort: string): AssetDirectorySortKey {

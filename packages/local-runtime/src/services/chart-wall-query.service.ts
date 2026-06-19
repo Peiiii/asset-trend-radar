@@ -73,10 +73,11 @@ export class ChartWallQueryService {
     const matchedItems = toPricedItems(matchedAssets);
     const signalFilteredItems = this.facetBuilder.applySignalFilter(matchedItems, query.signal);
     const dataQualityFilteredItems = this.itemFilter.filterByDataQuality(signalFilteredItems, query.dataQuality);
-    const valuationEnrichedItems = await this.valuationService.enrichForSort(dataQualityFilteredItems, query.sort, query.includeValuations || query.valuationStatus !== "all");
-    const valuationFilteredItems = this.itemFilter.filterByValuationStatus(valuationEnrichedItems, query.valuationStatus);
+    const needsFullValuationPass = this.needsFullValuationPass(query);
+    const valuationScopeItems = needsFullValuationPass ? await this.valuationService.enrichForSort(dataQualityFilteredItems, query.sort, true) : dataQualityFilteredItems;
+    const valuationFilteredItems = this.itemFilter.filterByValuationStatus(valuationScopeItems, query.valuationStatus);
     const items = this.itemSorter.sort(valuationFilteredItems, query.sort, query.order);
-    const pagedItems = items.slice(query.offset, query.offset + query.limit);
+    const pagedItems = await this.enrichReturnedPage(items.slice(query.offset, query.offset + query.limit), query, needsFullValuationPass);
 
     return {
       universe: query.universe,
@@ -99,7 +100,7 @@ export class ChartWallQueryService {
       facets: this.getContextualFacets(marketDataAssets, query, toPricedItems, {
         matchedItems,
         signalFilteredItems,
-        dataQualityFilteredItems: valuationEnrichedItems
+        dataQualityFilteredItems: valuationScopeItems
       }),
       fundScope: this.getFundScope(query, items, marketDataAssets),
       items: pagedItems
@@ -263,6 +264,17 @@ export class ChartWallQueryService {
   public removeWatchlistAsset = (watchlistId: string, assetId: string): WatchlistsResponse => {
     this.watchlistRepository.removeAsset(watchlistId, assetId);
     return this.getWatchlists();
+  };
+
+  private needsFullValuationPass = (query: ChartWallQuery): boolean =>
+    query.sort === "market_cap" || query.valuationStatus !== "all";
+
+  private enrichReturnedPage = async (items: ChartWallItem[], query: ChartWallQuery, alreadyEnriched: boolean): Promise<ChartWallItem[]> => {
+    if (alreadyEnriched || !query.includeValuations) {
+      return items;
+    }
+
+    return this.valuationService.enrichForSort(items, query.sort, true);
   };
 
   private getChartWallItem = (asset: AssetSummary, query: ChartWallQuery, pinnedIds: Set<string>, comparedIds: Set<string>): ChartWallItem => {
