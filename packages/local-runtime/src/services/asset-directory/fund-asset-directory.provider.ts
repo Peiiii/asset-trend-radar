@@ -154,6 +154,7 @@ export class FundAssetDirectoryProvider implements AssetDirectoryProvider {
     latestValueAt: item.latestNavDate,
     returns: {
       return1d: item.return1d,
+      return1w: item.return1w,
       return1m: item.return1m,
       return3m: item.return3m,
       return6m: item.return6m,
@@ -210,6 +211,7 @@ export class FundAssetDirectoryProvider implements AssetDirectoryProvider {
       latest_value: "latest_nav",
       market_cap: "relevance",
       return_1d: "return_1d",
+      return_1w: "return_1w",
       return_1m: "return_1m",
       return_3m: "return_3m",
       return_6m: "return_6m",

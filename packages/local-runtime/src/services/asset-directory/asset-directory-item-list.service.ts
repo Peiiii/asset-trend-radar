@@ -27,6 +27,8 @@ export class AssetDirectoryItemListService {
         return this.getComparableMarketCap(item, canUseRawMarketCap);
       case "return_1d":
         return item.returns.return1d;
+      case "return_1w":
+        return item.returns.return1w;
       case "return_1m":
         return item.returns.return1m;
       case "return_3m":

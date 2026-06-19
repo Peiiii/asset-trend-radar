@@ -27,6 +27,7 @@ const directorySortMetrics: Partial<Record<AssetDirectorySortKey, DirectorySortM
   latest_value: { label: "最新价", unit: "price", getValue: (item) => item.latestValue },
   market_cap: { label: "市值", unit: "money", getValue: (item) => getValuationSortableValue(item.valuation) },
   return_1d: { label: "1D 涨幅", unit: "percent", getValue: (item) => item.returns.return1d },
+  return_1w: { label: "1W 涨幅", unit: "percent", getValue: (item) => item.returns.return1w },
   return_1m: { label: "1M 涨幅", unit: "percent", getValue: (item) => item.returns.return1m },
   return_3m: { label: "3M 涨幅", unit: "percent", getValue: (item) => item.returns.return3m },
   return_6m: { label: "6M 涨幅", unit: "percent", getValue: (item) => item.returns.return6m },

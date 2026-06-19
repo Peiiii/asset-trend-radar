@@ -9,7 +9,7 @@ export type AssetDirectoryStatusFilter = "all" | "in_pool" | "not_in_pool";
 export type AssetDirectoryAssetTypeFilter = AssetType | "all";
 export type AssetDirectoryDataStateFilter = AssetDirectoryDataState | "all";
 export type AssetDirectoryValuationStatusFilter = AssetValuationStatus | "all";
-export type AssetDirectorySortKey = "relevance" | "label" | "latest_value" | "market_cap" | "return_1d" | "return_1m" | "return_3m" | "return_6m" | "return_1y" | "data_point_count";
+export type AssetDirectorySortKey = "relevance" | "label" | "latest_value" | "market_cap" | "return_1d" | "return_1w" | "return_1m" | "return_3m" | "return_6m" | "return_1y" | "data_point_count";
 export type AssetDirectorySortOrder = "asc" | "desc";
 
 export type AssetDirectoryCategory = {
@@ -27,6 +27,7 @@ export type AssetDirectoryCategory = {
 
 export type AssetDirectoryReturns = {
   return1d: number | null;
+  return1w: number | null;
   return1m: number | null;
   return3m: number | null;
   return6m: number | null;

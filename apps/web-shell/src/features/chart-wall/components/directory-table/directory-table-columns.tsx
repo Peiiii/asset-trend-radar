@@ -5,7 +5,7 @@ type DirectoryTableColumnsProps = {
   returnColumnCount?: number;
 };
 
-export function DirectoryTableColumns({ includeValuationColumn = false, returnColumnCount = 5 }: DirectoryTableColumnsProps): JSX.Element {
+export function DirectoryTableColumns({ includeValuationColumn = false, returnColumnCount = 6 }: DirectoryTableColumnsProps): JSX.Element {
   return (
     <colgroup>
       <col className="directory-table-column directory-table-column--identity" />

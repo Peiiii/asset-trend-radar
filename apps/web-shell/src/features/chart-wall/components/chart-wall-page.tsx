@@ -1156,7 +1156,7 @@ function shouldShowChartWallValuationSummary(isValuationHydrated: boolean, sort:
 }
 
 function getAssetDirectorySort(sort: string): AssetDirectorySortKey {
-  const supported: AssetDirectorySortKey[] = ["relevance", "label", "latest_value", "market_cap", "return_1d", "return_1m", "return_3m", "return_6m", "return_1y", "data_point_count"];
+  const supported: AssetDirectorySortKey[] = ["relevance", "label", "latest_value", "market_cap", "return_1d", "return_1w", "return_1m", "return_3m", "return_6m", "return_1y", "data_point_count"];
   return supported.includes(sort as AssetDirectorySortKey) ? (sort as AssetDirectorySortKey) : "relevance";
 }
 

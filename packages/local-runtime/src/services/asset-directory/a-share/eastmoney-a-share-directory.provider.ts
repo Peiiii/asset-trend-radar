@@ -120,6 +120,7 @@ export class EastmoneyAshareDirectoryProvider implements AssetDirectoryProvider 
     latestValueAt: item.latestAt,
     returns: {
       return1d: item.return1d,
+      return1w: null,
       return1m: null,
       return3m: null,
       return6m: null,

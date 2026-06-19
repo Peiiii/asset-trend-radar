@@ -28,6 +28,7 @@ export class AssetDirectoryItemMetricsService {
       latestValueAt: toIsoDateTime(latestBar?.ts ?? null),
       returns: {
         return1d: getReturnPct(bars, 1),
+        return1w: this.getCalendarReturn(bars, "1w"),
         return1m: this.getCalendarReturn(bars, "1m"),
         return3m: this.getCalendarReturn(bars, "3m"),
         return6m: this.getCalendarReturn(bars, "6m"),

@@ -35,6 +35,7 @@ export function AssetDirectoryTable({ items, sort, order, tableMinWidth, firstCo
           <DirectorySortableHeader label="最新价" sortValue="latest_value" currentSort={sort} order={order} onSort={onHeaderSort} />
           <DirectorySortableHeader label="市值/规模" sortValue="market_cap" currentSort={sort} order={order} onSort={onHeaderSort} />
           <DirectorySortableHeader label="1D" sortValue="return_1d" currentSort={sort} order={order} onSort={onHeaderSort} />
+          <DirectorySortableHeader label="1W" sortValue="return_1w" currentSort={sort} order={order} onSort={onHeaderSort} />
           <DirectorySortableHeader label="1M" sortValue="return_1m" currentSort={sort} order={order} onSort={onHeaderSort} />
           <DirectorySortableHeader label="3M" sortValue="return_3m" currentSort={sort} order={order} onSort={onHeaderSort} />
           <DirectorySortableHeader label="6M" sortValue="return_6m" currentSort={sort} order={order} onSort={onHeaderSort} />
@@ -62,6 +63,7 @@ export function AssetDirectoryTable({ items, sort, order, tableMinWidth, firstCo
             <td className={getDirectoryActiveSortCellClassName(sort === "latest_value")}>{formatPrice(item.latestValue, item.currency)}</td>
             <DirectoryValuationCell item={item} active={sort === "market_cap"} />
             <DirectoryReturnCell value={item.returns.return1d} active={sort === "return_1d"} />
+            <DirectoryReturnCell value={item.returns.return1w} active={sort === "return_1w"} />
             <DirectoryReturnCell value={item.returns.return1m} active={sort === "return_1m"} />
             <DirectoryReturnCell value={item.returns.return3m} active={sort === "return_3m"} />
             <DirectoryReturnCell value={item.returns.return6m} active={sort === "return_6m"} />

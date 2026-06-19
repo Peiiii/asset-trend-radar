@@ -59,6 +59,7 @@ const directoryStatusOptions: ControlOption[] = [
 
 const directorySortOptions: ControlOption[] = [
   { value: "return_1d", label: "1D 涨幅" },
+  { value: "return_1w", label: "1W 涨幅" },
   { value: "return_1m", label: "1M 涨幅" },
   { value: "return_3m", label: "3M 涨幅" },
   { value: "return_6m", label: "6M 涨幅" },
@@ -280,7 +281,7 @@ function getDirectoryValuationCounts(valuationStatusFacets: AssetDirectoryPageRe
 }
 
 function getDirectorySort(value: string): AssetDirectorySortKey {
-  const supported: AssetDirectorySortKey[] = ["label", "latest_value", "market_cap", "return_1d", "return_1m", "return_3m", "return_6m", "return_1y", "data_point_count"];
+  const supported: AssetDirectorySortKey[] = ["label", "latest_value", "market_cap", "return_1d", "return_1w", "return_1m", "return_3m", "return_6m", "return_1y", "data_point_count"];
   return supported.includes(value as AssetDirectorySortKey) ? (value as AssetDirectorySortKey) : "return_1m";
 }
 

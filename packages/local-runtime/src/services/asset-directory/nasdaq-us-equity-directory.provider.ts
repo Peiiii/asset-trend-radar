@@ -133,6 +133,7 @@ export class NasdaqUsEquityDirectoryProvider implements AssetDirectoryProvider {
     latestValueAt: valuationItem?.latestAt ?? null,
     returns: {
       return1d: valuationItem?.return1d ?? null,
+      return1w: null,
       return1m: null,
       return3m: null,
       return6m: null,
