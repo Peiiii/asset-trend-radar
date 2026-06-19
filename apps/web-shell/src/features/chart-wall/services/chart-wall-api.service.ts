@@ -1,16 +1,24 @@
 import type { AssetDetailResponse, AssetDirectoryImportResponse, AssetDirectoryPageResponse, ChartWallResponse, CompareResponse, DataHealthResponse, FundCatalogPageResponse, FundCatalogSummaryResponse, FundCatalogSyncResponse, FundImportResponse, FundSearchResponse, RuntimeTaskStartResponse, ScannerEventsResponse, TaskCenterResponse, UniverseTreeResponse, WatchlistsResponse } from "@gold-insights/market-domain";
 import type { AssetDirectoryPageFilters, ChartWallFilters, ChartWallPageData, FundCatalogPageFilters } from "@/shared/types/api.types";
 
+type CachedJsonEntry<TData> = {
+  expiresAt: number;
+  promise: Promise<TData>;
+};
+
 export class ChartWallApiService {
+  private readonly pageDataTtlMs = 15_000;
+  private readonly pageDataCache = new Map<string, CachedJsonEntry<unknown>>();
+
   public fetchPageData = async (filters: ChartWallFilters, signal?: AbortSignal): Promise<ChartWallPageData> => {
     const query = this.toChartWallQuery(filters);
     const [chartWall, dataHealth, universeTree, scannerEvents, watchlists, fundCatalog] = await Promise.all([
       this.fetchJson<ChartWallResponse>(`/api/chart-wall?${query}`, signal),
-      this.fetchJson<DataHealthResponse>("/api/data-health", signal),
-      this.fetchJson<UniverseTreeResponse>("/api/universe/tree", signal),
-      this.fetchJson<ScannerEventsResponse>("/api/scanner/events?universe=global&eventType=all", signal),
-      this.fetchJson<WatchlistsResponse>("/api/watchlists", signal),
-      this.fetchJson<FundCatalogSummaryResponse>("/api/funds/eastmoney/catalog/summary", signal)
+      this.fetchCachedPageData<DataHealthResponse>("data-health", "/api/data-health"),
+      this.fetchCachedPageData<UniverseTreeResponse>("universe-tree", "/api/universe/tree"),
+      this.fetchCachedPageData<ScannerEventsResponse>("scanner-events", "/api/scanner/events?universe=global&eventType=all"),
+      this.fetchCachedPageData<WatchlistsResponse>("watchlists", "/api/watchlists"),
+      this.fetchCachedPageData<FundCatalogSummaryResponse>("fund-catalog-summary", "/api/funds/eastmoney/catalog/summary")
     ]);
 
     return {
@@ -64,29 +72,36 @@ export class ChartWallApiService {
     return this.fetchJson<AssetDirectoryPageResponse>(`/api/directories/${encodeURIComponent(filters.categoryId)}/items?${query}`, signal);
   };
 
-  public importAssetDirectoryItem = async (categoryId: string, itemId: string): Promise<AssetDirectoryImportResponse> =>
-    this.fetchJson<AssetDirectoryImportResponse>(`/api/directories/${encodeURIComponent(categoryId)}/items/${encodeURIComponent(itemId)}/import`, {
+  public importAssetDirectoryItem = async (categoryId: string, itemId: string): Promise<AssetDirectoryImportResponse> => {
+    this.clearCachedPageData();
+    return this.fetchJson<AssetDirectoryImportResponse>(`/api/directories/${encodeURIComponent(categoryId)}/items/${encodeURIComponent(itemId)}/import`, {
       method: "POST"
     });
+  };
 
   public searchEastmoneyFunds = async (keyword: string): Promise<FundSearchResponse> =>
     this.fetchJson<FundSearchResponse>(`/api/funds/eastmoney/search?keyword=${encodeURIComponent(keyword)}&limit=24`);
 
-  public syncEastmoneyFundCatalog = async (): Promise<FundCatalogSyncResponse> =>
-    this.fetchJson<FundCatalogSyncResponse>("/api/funds/eastmoney/catalog/sync", {
+  public syncEastmoneyFundCatalog = async (): Promise<FundCatalogSyncResponse> => {
+    this.clearCachedPageData();
+    return this.fetchJson<FundCatalogSyncResponse>("/api/funds/eastmoney/catalog/sync", {
       method: "POST"
     });
+  };
 
-  public importEastmoneyFund = async (code: string): Promise<FundImportResponse> =>
-    this.fetchJson<FundImportResponse>("/api/funds/eastmoney/import", {
+  public importEastmoneyFund = async (code: string): Promise<FundImportResponse> => {
+    this.clearCachedPageData();
+    return this.fetchJson<FundImportResponse>("/api/funds/eastmoney/import", {
       method: "POST",
       headers: {
         "content-type": "application/json"
       },
       body: JSON.stringify({ code })
     });
+  };
 
   public refresh = async (): Promise<void> => {
+    this.clearCachedPageData();
     const response = await fetch("/api/refresh", { method: "POST" });
 
     if (!response.ok) {
@@ -94,24 +109,30 @@ export class ChartWallApiService {
     }
   };
 
-  public startRefresh = async (): Promise<RuntimeTaskStartResponse> =>
-    this.fetchJson<RuntimeTaskStartResponse>("/api/refresh/start", {
+  public startRefresh = async (): Promise<RuntimeTaskStartResponse> => {
+    this.clearCachedPageData();
+    return this.fetchJson<RuntimeTaskStartResponse>("/api/refresh/start", {
       method: "POST"
     });
+  };
 
-  public addWatchlistAsset = async (assetId: string): Promise<WatchlistsResponse> =>
-    this.fetchJson<WatchlistsResponse>("/api/watchlists/default/assets", {
+  public addWatchlistAsset = async (assetId: string): Promise<WatchlistsResponse> => {
+    this.clearCachedPageData("watchlists");
+    return this.fetchJson<WatchlistsResponse>("/api/watchlists/default/assets", {
       method: "POST",
       headers: {
         "content-type": "application/json"
       },
       body: JSON.stringify({ assetId })
     });
+  };
 
-  public removeWatchlistAsset = async (assetId: string): Promise<WatchlistsResponse> =>
-    this.fetchJson<WatchlistsResponse>(`/api/watchlists/default/assets/${encodeURIComponent(assetId)}`, {
+  public removeWatchlistAsset = async (assetId: string): Promise<WatchlistsResponse> => {
+    this.clearCachedPageData("watchlists");
+    return this.fetchJson<WatchlistsResponse>(`/api/watchlists/default/assets/${encodeURIComponent(assetId)}`, {
       method: "DELETE"
     });
+  };
 
   private toChartWallQuery = (filters: ChartWallFilters): string => {
     const query = new URLSearchParams({
@@ -148,6 +169,36 @@ export class ChartWallApiService {
     }
 
     return (await response.json()) as TData;
+  };
+
+  private fetchCachedPageData = async <TData,>(key: string, url: string): Promise<TData> => {
+    const now = Date.now();
+    const cached = this.pageDataCache.get(key) as CachedJsonEntry<TData> | undefined;
+
+    if (cached && cached.expiresAt > now) {
+      return cached.promise;
+    }
+
+    const entry: CachedJsonEntry<TData> = {
+      expiresAt: now + this.pageDataTtlMs,
+      promise: this.fetchJson<TData>(url).catch((error: unknown) => {
+        this.pageDataCache.delete(key);
+        throw error;
+      })
+    };
+    this.pageDataCache.set(key, entry);
+    return entry.promise;
+  };
+
+  private clearCachedPageData = (...keys: string[]): void => {
+    if (keys.length === 0) {
+      this.pageDataCache.clear();
+      return;
+    }
+
+    for (const key of keys) {
+      this.pageDataCache.delete(key);
+    }
   };
 
   private getErrorMessage = async (response: Response): Promise<string> => {
