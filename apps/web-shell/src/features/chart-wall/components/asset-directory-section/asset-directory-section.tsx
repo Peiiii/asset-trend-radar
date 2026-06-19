@@ -105,8 +105,10 @@ export function AssetDirectorySection({ title, description, items, totalCount, c
         <div className="asset-directory-hero__metrics">
           <span>目录 {categoryItemCount.toLocaleString("en-US")}</span>
           <span>有规模 {valuationCounts.available.toLocaleString("en-US")}</span>
+          <span>仅成交额 {valuationCounts.turnoverOnly.toLocaleString("en-US")}</span>
           <span>源缺值 {valuationCounts.sourceMissingValue.toLocaleString("en-US")}</span>
           <span>未覆盖 {valuationCounts.sourceUnavailable.toLocaleString("en-US")}</span>
+          <span>不适用 {valuationCounts.notApplicable.toLocaleString("en-US")}</span>
           <span>本页上涨 {positiveCount.toLocaleString("en-US")}</span>
           <span>走势池 {categoryInPoolCount.toLocaleString("en-US")}</span>
           <span>本页来源 {sourceCount.toLocaleString("en-US")}</span>
@@ -265,13 +267,15 @@ function getDirectoryStatusOptions(statusFacets: AssetDirectoryPageResponse["fac
   }));
 }
 
-function getDirectoryValuationCounts(valuationStatusFacets: AssetDirectoryPageResponse["facets"]["valuationStatuses"]): { available: number; sourceMissingValue: number; sourceUnavailable: number } {
+function getDirectoryValuationCounts(valuationStatusFacets: AssetDirectoryPageResponse["facets"]["valuationStatuses"]): { available: number; turnoverOnly: number; sourceMissingValue: number; sourceUnavailable: number; notApplicable: number } {
   const counts = new Map(valuationStatusFacets.map((facet) => [facet.value, facet.count]));
 
   return {
     available: counts.get("available") ?? 0,
+    turnoverOnly: counts.get("turnover_only") ?? 0,
     sourceMissingValue: counts.get("source_missing_value") ?? 0,
-    sourceUnavailable: counts.get("source_unavailable") ?? 0
+    sourceUnavailable: counts.get("source_unavailable") ?? 0,
+    notApplicable: counts.get("not_applicable") ?? 0
   };
 }
 

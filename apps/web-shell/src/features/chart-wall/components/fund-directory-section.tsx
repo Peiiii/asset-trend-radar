@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, RefreshCcw, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, RefreshCcw, Search, X } from "lucide-react";
 import { Button, DataTableFrame, EmptyState, ErrorState, LoadingState, Select } from "@gold-insights/ui";
 import type { ControlOption } from "@gold-insights/ui";
 import type { FundCatalogDataStateFilter, FundCatalogImportStatus, FundCatalogPageResponse, FundCatalogSortKey, SortOrder } from "@gold-insights/market-domain";
@@ -7,6 +7,7 @@ import { formatDateTime } from "@/shared/utils/format-number.utils";
 import { DirectoryTableColumns } from "./directory-table/directory-table-columns";
 import { fundDirectoryTableSizing } from "./directory-table/directory-table-sizing.config";
 import { DirectorySortableHeader } from "./directory-table/directory-sortable-header";
+import { FundDirectoryRankingSummary } from "./directory-ranking-summary/fund-directory-ranking-summary";
 import { FundDirectoryRow } from "./fund-directory-row";
 import "./fund-directory-section.css";
 
@@ -29,12 +30,31 @@ type FundDirectorySectionProps = {
   onFundTypeChange(value: string): void;
   onDataStateChange(value: FundCatalogDataStateFilter): void;
   onStatusChange(value: FundCatalogImportStatus): void;
-  onSortChange(value: FundCatalogSortKey): void;
+  onSortChange(value: FundCatalogSortKey, order?: SortOrder): void;
   onPageChange(value: number): void;
   onImport(code: string): void;
   onSyncCatalog(): void;
   onSelectAsset(assetId: string): void;
 };
+
+const fundDirectorySortOptions: ControlOption[] = [
+  { value: "relevance", label: "相关度" },
+  { value: "return_1d", label: "1D 涨幅" },
+  { value: "return_1w", label: "1W 涨幅" },
+  { value: "return_1m", label: "1M 涨幅" },
+  { value: "return_3m", label: "3M 涨幅" },
+  { value: "return_6m", label: "6M 涨幅" },
+  { value: "return_1y", label: "1Y 涨幅" },
+  { value: "latest_nav", label: "最新净值" },
+  { value: "data_point_count", label: "数据点" },
+  { value: "name", label: "名称" },
+  { value: "code", label: "代码" }
+];
+
+const fundDirectoryOrderOptions: ControlOption[] = [
+  { value: "desc", label: "降序" },
+  { value: "asc", label: "升序" }
+];
 
 export function FundDirectorySection({
   data,
@@ -100,6 +120,11 @@ export function FundDirectorySection({
           <label className="search-control" htmlFor="fund-directory-search">
             <Search size={17} aria-hidden="true" />
             <input id="fund-directory-search" value={draftKeyword} onChange={(event) => setDraftKeyword(event.target.value)} placeholder="搜索基金代码、名称、拼音、类型" />
+            {draftKeyword.length > 0 && (
+              <button type="button" onClick={() => setDraftKeyword("")} aria-label="清空输入">
+                <X size={15} aria-hidden="true" />
+              </button>
+            )}
           </label>
           <Button type="submit" variant="secondary">
             <Search size={15} aria-hidden="true" />
@@ -113,6 +138,17 @@ export function FundDirectorySection({
           <Select id="fund-directory-type" label="类型" value={fundType} options={fundTypeOptions} onChange={onFundTypeChange} />
           <Select id="fund-directory-data-state" label="数据" value={dataState} options={dataStateOptions} onChange={(value) => onDataStateChange(getFundCatalogDataState(value))} />
           <Select id="fund-directory-status" label="状态" value={status} options={statusOptions} onChange={(value) => onStatusChange(getImportStatus(value))} />
+          <Select
+            id="fund-directory-sort"
+            label="排序"
+            value={sort}
+            options={fundDirectorySortOptions}
+            onChange={(value) => {
+              const nextSort = getFundCatalogSort(value);
+              onSortChange(nextSort, nextSort === sort ? order : getDefaultFundCatalogOrder(nextSort));
+            }}
+          />
+          <Select id="fund-directory-order" label="方向" value={order} options={fundDirectoryOrderOptions} onChange={(value) => onSortChange(sort, getFundCatalogOrder(value))} />
           <Button type="button" variant="ghost" disabled={isCatalogSyncing} onClick={onSyncCatalog}>
             <RefreshCcw size={15} aria-hidden="true" />
             {isCatalogSyncing ? "同步中" : "同步目录"}
@@ -135,6 +171,7 @@ export function FundDirectorySection({
       {!isLoading && error && <ErrorState title="基金目录加载失败" message={error} />}
       {!isLoading && !error && data && (
         <>
+          <FundDirectoryRankingSummary items={data.items} totalCount={data.totalCount} sort={sort} order={order} />
           {data.items.length === 0 ? (
             <EmptyState title="没有匹配基金" description="换一个关键词、类型或入库状态试试。" />
           ) : (
@@ -145,7 +182,7 @@ export function FundDirectorySection({
               firstColumnMinWidth={fundDirectoryTableSizing.firstColumnMinWidth}
               lastColumnMinWidth={fundDirectoryTableSizing.lastColumnMinWidth}
             >
-              <DirectoryTableColumns />
+              <DirectoryTableColumns returnColumnCount={6} />
               <thead>
                 <tr>
                   <DirectorySortableHeader label="基金" sortValue="name" currentSort={sort} order={order} onSort={onSortChange} />
@@ -153,6 +190,7 @@ export function FundDirectorySection({
                   <th>状态</th>
                   <DirectorySortableHeader label="最新净值" sortValue="latest_nav" currentSort={sort} order={order} onSort={onSortChange} />
                   <DirectorySortableHeader label="1D" sortValue="return_1d" currentSort={sort} order={order} onSort={onSortChange} />
+                  <DirectorySortableHeader label="1W" sortValue="return_1w" currentSort={sort} order={order} onSort={onSortChange} />
                   <DirectorySortableHeader label="1M" sortValue="return_1m" currentSort={sort} order={order} onSort={onSortChange} />
                   <DirectorySortableHeader label="3M" sortValue="return_3m" currentSort={sort} order={order} onSort={onSortChange} />
                   <DirectorySortableHeader label="6M" sortValue="return_6m" currentSort={sort} order={order} onSort={onSortChange} />
@@ -246,6 +284,19 @@ function getImportStatus(value: string): FundCatalogImportStatus {
 function getFundCatalogDataState(value: string): FundCatalogDataStateFilter {
   const supported: FundCatalogDataStateFilter[] = ["all", "full_history", "snapshot", "missing", "stale"];
   return supported.includes(value as FundCatalogDataStateFilter) ? (value as FundCatalogDataStateFilter) : "all";
+}
+
+function getFundCatalogSort(value: string): FundCatalogSortKey {
+  const supported: FundCatalogSortKey[] = ["relevance", "code", "name", "latest_nav", "return_1d", "return_1w", "return_1m", "return_3m", "return_6m", "return_1y", "data_point_count"];
+  return supported.includes(value as FundCatalogSortKey) ? (value as FundCatalogSortKey) : "relevance";
+}
+
+function getFundCatalogOrder(value: string): SortOrder {
+  return value === "asc" ? "asc" : "desc";
+}
+
+function getDefaultFundCatalogOrder(sort: FundCatalogSortKey): SortOrder {
+  return sort === "code" || sort === "name" ? "asc" : "desc";
 }
 
 function fundCatalogSortLabel(sort: FundCatalogSortKey): string {

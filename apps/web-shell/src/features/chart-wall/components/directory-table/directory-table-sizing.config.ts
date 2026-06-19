@@ -7,7 +7,7 @@ export type DirectoryTableSizing = {
 };
 
 export const fundDirectoryTableSizing: DirectoryTableSizing = {
-  tableMinWidth: 1480,
+  tableMinWidth: 1584,
   firstColumnMinWidth: 274,
   lastColumnMinWidth: 206
 };

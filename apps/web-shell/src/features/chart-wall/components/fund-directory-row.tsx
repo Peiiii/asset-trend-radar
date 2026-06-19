@@ -38,6 +38,7 @@ export function FundDirectoryRow({ item, importingCode, sort, onImport, onSelect
         )}
       </td>
       <DirectoryReturnCell value={item.return1d} active={sort === "return_1d"} />
+      <DirectoryReturnCell value={item.return1w} active={sort === "return_1w"} />
       <DirectoryReturnCell value={item.return1m} active={sort === "return_1m"} />
       <DirectoryReturnCell value={item.return3m} active={sort === "return_3m"} />
       <DirectoryReturnCell value={item.return6m} active={sort === "return_6m"} />

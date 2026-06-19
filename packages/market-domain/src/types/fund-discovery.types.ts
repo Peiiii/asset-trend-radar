@@ -51,6 +51,7 @@ export type FundCatalogPageItem = FundCatalogEntry & {
   latestNavDate: string | null;
   latestBarAt: string | null;
   return1d: number | null;
+  return1w: number | null;
   return1m: number | null;
   return3m: number | null;
   return6m: number | null;

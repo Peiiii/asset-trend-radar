@@ -16,7 +16,7 @@ export type FundDirectoryUrlState = {
   limit: number;
   filters: FundCatalogPageFilters;
   setQueryValue(name: string, value: string, fallback: string): void;
-  setSortValue(value: FundCatalogSortKey): void;
+  setSortValue(value: FundCatalogSortKey, order?: SortOrder): void;
 };
 
 export function useFundDirectoryUrlState(searchParams: URLSearchParams, setSearchParams: (next: URLSearchParams) => void): FundDirectoryUrlState {
@@ -58,8 +58,8 @@ export function useFundDirectoryUrlState(searchParams: URLSearchParams, setSearc
     setSearchParams(next);
   }, [searchParams, setSearchParams]);
 
-  const setSortValue = useCallback((nextSort: FundCatalogSortKey): void => {
-    const nextOrder: SortOrder = nextSort === sort ? toggleFundCatalogOrder(order) : defaultFundCatalogOrder(nextSort);
+  const setSortValue = useCallback((nextSort: FundCatalogSortKey, explicitOrder?: SortOrder): void => {
+    const nextOrder = explicitOrder ?? (nextSort === sort ? toggleFundCatalogOrder(order) : defaultFundCatalogOrder(nextSort));
     const next = new URLSearchParams(searchParams);
 
     if (nextSort === "relevance") {

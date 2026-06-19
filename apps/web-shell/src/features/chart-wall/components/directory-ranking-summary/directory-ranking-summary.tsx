@@ -1,7 +1,7 @@
 import { BarChart3 } from "lucide-react";
 import type { AssetDirectoryItem, AssetDirectorySortKey, AssetDirectorySortOrder } from "@gold-insights/market-domain";
 import { SignalBadge } from "@gold-insights/ui";
-import { DirectoryRankingSummaryBuilder, type DirectoryRankingSummaryMetric } from "./directory-ranking-summary.builder";
+import { DirectoryRankingSummaryBuilder, type DirectoryRankingSummaryMetric, type DirectoryRankingSummaryModel } from "./directory-ranking-summary.builder";
 import "./directory-ranking-summary.css";
 
 type DirectoryRankingSummaryProps = {
@@ -16,8 +16,12 @@ const summaryBuilder = new DirectoryRankingSummaryBuilder();
 export function DirectoryRankingSummary({ items, totalCount, sort, order }: DirectoryRankingSummaryProps): JSX.Element {
   const summary = summaryBuilder.build(items, totalCount, sort, order);
 
+  return <DirectoryRankingSummaryCard summary={summary} ariaLabel="目录排序质量" />;
+}
+
+export function DirectoryRankingSummaryCard({ summary, ariaLabel }: { summary: DirectoryRankingSummaryModel; ariaLabel: string }): JSX.Element {
   return (
-    <section className="directory-ranking-summary" aria-label="目录排序质量">
+    <section className="directory-ranking-summary" aria-label={ariaLabel}>
       <div className="directory-ranking-summary__heading">
         <BarChart3 size={16} aria-hidden="true" />
         <div>

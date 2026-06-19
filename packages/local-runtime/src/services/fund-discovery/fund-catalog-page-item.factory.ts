@@ -28,6 +28,7 @@ export class FundCatalogPageItemFactory {
         latestNavDate: latestBar ? new Date(latestBar.ts).toISOString().slice(0, 10) : null,
         latestBarAt: toIsoDateTime(latestBar?.ts ?? null),
         return1d: this.getPreviousBarReturn(bars),
+        return1w: this.getCalendarReturn(bars, 7),
         return1m: this.getCalendarReturn(bars, 30),
         return3m: this.getCalendarReturn(bars, 90),
         return6m: this.getCalendarReturn(bars, 180),
@@ -41,16 +42,17 @@ export class FundCatalogPageItemFactory {
   private toCatalogPageItem = (entry: FundCatalogPageRecord, metrics?: ImportedFundCatalogMetrics): FundCatalogPageItem => ({
     ...entry,
     isImported: Boolean(entry.assetId),
-    metricSource: metrics ? "local_bars" : entry.metricUpdatedAt ? "catalog_snapshot" : null,
+    metricSource: entry.metricUpdatedAt ? "catalog_snapshot" : metrics ? "local_bars" : null,
     dataPointCount: metrics?.dataPointCount ?? 0,
-    latestNav: metrics?.latestNav ?? entry.latestNav ?? null,
-    latestNavDate: metrics?.latestNavDate ?? entry.latestNavDate ?? null,
+    latestNav: entry.latestNav ?? metrics?.latestNav ?? null,
+    latestNavDate: entry.latestNavDate ?? metrics?.latestNavDate ?? null,
     latestBarAt: metrics?.latestBarAt ?? null,
-    return1d: metrics?.return1d ?? entry.return1d ?? null,
-    return1m: metrics?.return1m ?? entry.return1m ?? null,
-    return3m: metrics?.return3m ?? entry.return3m ?? null,
-    return6m: metrics?.return6m ?? entry.return6m ?? null,
-    return1y: metrics?.return1y ?? entry.return1y ?? null
+    return1d: entry.return1d ?? metrics?.return1d ?? null,
+    return1w: entry.return1w ?? metrics?.return1w ?? null,
+    return1m: entry.return1m ?? metrics?.return1m ?? null,
+    return3m: entry.return3m ?? metrics?.return3m ?? null,
+    return6m: entry.return6m ?? metrics?.return6m ?? null,
+    return1y: entry.return1y ?? metrics?.return1y ?? null
   });
 
   private getPreviousBarReturn = (bars: OhlcvBar[]): number | null => {
