@@ -23,7 +23,7 @@ import type { ControlOption } from "@gold-insights/ui";
 import type { AssetDirectoryAssetTypeFilter, AssetDirectoryCategoryId, AssetDirectoryCoverage, AssetDirectoryDataStateFilter, AssetDirectoryItem, AssetDirectorySortKey, AssetDirectoryStatusFilter, AssetDirectoryValuationStatusFilter, ChartWallDataQualityFilter, ChartWallSortOrder, ChartWallValuationStatusFilter } from "@gold-insights/market-domain";
 import type { ChartWallFilters, ChartWallPageData } from "@/shared/types/api.types";
 import { formatDateTime } from "@/shared/utils/format-number.utils";
-import { assetTypeFallbackOptions, chartWallPageSizeOptions, dataQualityFallbackOptions, defaultFilters, levelFallbackOptions, marketFallbackOptions, signalFallbackOptions, sortOptions, sortOrderOptions, tagFallbackOptions, valuationStatusFallbackOptions } from "../configs/chart-wall-page.config";
+import { assetTypeFallbackOptions, chartWallPageSizeOptions, dataQualityFallbackOptions, defaultFilters, levelFallbackOptions, marketFallbackOptions, shouldIncludeChartWallValuations, signalFallbackOptions, sortOptions, sortOrderOptions, tagFallbackOptions, valuationStatusFallbackOptions } from "../configs/chart-wall-page.config";
 import { ActiveFilterChips } from "./active-filter-chips/active-filter-chips";
 import { AssetDetailSection } from "./asset-detail-section/asset-detail-section";
 import { AssetDirectoryView } from "./asset-directory-section/asset-directory-view";
@@ -194,7 +194,13 @@ export function ChartWallPage(): JSX.Element {
     }
   }, [range, setQueryValue, timeframe]);
 
-  const shouldHydrateChartWallValuations = shouldIncludeValuations(effectiveSort, valuationStatus);
+  const shouldHydrateChartWallValuations = shouldIncludeChartWallValuations({
+    assetType: effectiveAssetType,
+    market: effectiveMarket,
+    sort: effectiveSort,
+    valuationStatus,
+    view: activeView
+  });
   const filters = useMemo<ChartWallFilters>(
     () => ({
       range,
@@ -1143,10 +1149,6 @@ function toggleSortOrder(value: ChartWallSortOrder): ChartWallSortOrder {
 
 function defaultOrderForSort(sort: string): ChartWallSortOrder {
   return sort === "symbol" || sort === "market" || sort === "asset_type" ? "asc" : "desc";
-}
-
-function shouldIncludeValuations(sort: string, valuationStatus: ChartWallValuationStatusFilter): boolean {
-  return sort === "market_cap" || valuationStatus !== "all";
 }
 
 function shouldShowChartWallValuationSummary(sort: string, valuationStatus: ChartWallValuationStatusFilter): boolean {

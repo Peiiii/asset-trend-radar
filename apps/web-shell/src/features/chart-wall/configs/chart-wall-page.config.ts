@@ -1,5 +1,13 @@
-import type { ChartWallSortOrder } from "@gold-insights/market-domain";
+import type { ChartWallSortOrder, ChartWallValuationStatusFilter } from "@gold-insights/market-domain";
 import type { ControlOption } from "@gold-insights/ui";
+
+type ChartWallValuationHydrationInput = {
+  assetType: string;
+  market: string;
+  sort: string;
+  valuationStatus: ChartWallValuationStatusFilter;
+  view: string;
+};
 
 export const defaultFilters = {
   range: "6m",
@@ -121,3 +129,23 @@ export const valuationStatusFallbackOptions: ControlOption[] = [
   { value: "source_unavailable", label: "未接入源" },
   { value: "not_applicable", label: "不适用" }
 ];
+
+export function shouldIncludeChartWallValuations({ assetType, market, sort, valuationStatus, view }: ChartWallValuationHydrationInput): boolean {
+  if (sort === "market_cap" || valuationStatus !== "all") {
+    return true;
+  }
+
+  if (view !== "chart-wall" && view !== "watchlist") {
+    return false;
+  }
+
+  return isValuationFocusedMarket(market) || isValuationFocusedAssetType(assetType);
+}
+
+function isValuationFocusedMarket(market: string): boolean {
+  return market === "美股" || market === "A 股" || market === "加密" || market === "商品";
+}
+
+function isValuationFocusedAssetType(assetType: string): boolean {
+  return assetType === "equity" || assetType === "crypto" || assetType === "fund";
+}
