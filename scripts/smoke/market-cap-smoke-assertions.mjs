@@ -4,9 +4,6 @@ const getRawMarketCap = (item) =>
 const hasNasdaqMarketCap = (item) =>
   item.valuation?.source === "nasdaq" && getRawMarketCap(item) > 0;
 
-const hasExplicitValuationGap = (item) =>
-  item.valuation?.source === null && getRawMarketCap(item) === null;
-
 const isUsdLikeCurrency = (currency) => {
   const normalizedCurrency = typeof currency === "string" ? currency.trim().toUpperCase() : "";
   return normalizedCurrency === "USD" || normalizedCurrency === "USDT" || normalizedCurrency === "USDC";
@@ -24,9 +21,12 @@ export const getComparableMarketCap = (item) => {
 
 const hasComparableMarketCap = (item) => getComparableMarketCap(item) !== null;
 
-const assertOptionalNasdaqMarketCaps = (assert, items, message) => {
-  assert(items.every((item) => hasNasdaqMarketCap(item) || hasExplicitValuationGap(item)), message);
-  assert(items.some(hasNasdaqMarketCap) || items.some(hasExplicitValuationGap), message);
+const assertNasdaqMarketCaps = (assert, items, message) => {
+  assert(items.length > 0 && items.every(hasNasdaqMarketCap), message);
+};
+
+const assertNasdaqMarketCapSymbol = (assert, items, symbol, message) => {
+  assert(items.some((item) => item.symbol === symbol && hasNasdaqMarketCap(item)), message);
 };
 
 const assertSortedWhenComparable = (assert, isSortedDesc, items, message) => {
@@ -57,19 +57,19 @@ export const assertMarketCapSmoke = ({ assert, isSortedDesc, globalMarketCapWall
   assert(usMarketCapWall.items.every((item) => item.valuation.normalized?.currency === "USD" && item.valuation.normalized.marketCap > 0), "expected US equity chart wall normalized market caps");
   assert(isSortedDesc(usMarketCapWall.items, getComparableMarketCap), "expected US equity chart wall market-cap sorting");
   assert(usFundMarketCapWall.items.length >= 5 && usFundMarketCapWall.items.every((item) => item.market === "美股" && item.assetType === "fund"), "expected US ETF market-cap chart wall");
-  assertOptionalNasdaqMarketCaps(assert, usFundMarketCapWall.items, "expected US ETF chart wall to expose Nasdaq market caps or explicit valuation gaps");
+  assertNasdaqMarketCaps(assert, usFundMarketCapWall.items, "expected US ETF chart wall to expose Nasdaq market caps");
   assertSortedWhenComparable(assert, isSortedDesc, usFundMarketCapWall.items, "expected US ETF chart wall market-cap sorting when comparable values are available");
   assert(usEquityDirectoryMarketCapPage.items.length >= 20, "expected US equity directory market-cap page");
   assert(usEquityDirectoryMarketCapPage.items.every((item) => item.valuation.source === "nasdaq" && item.valuation.marketCap > 0), "expected US equity directory Nasdaq market-cap valuations");
   assert(isSortedDesc(usEquityDirectoryMarketCapPage.items, (item) => item.valuation.marketCap), "expected US equity directory market-cap sorting");
   assert(
-    usEquityDirectoryLocalEtfPage.items.some((item) => item.symbol === "QQQ" && item.poolState === "in_pool" && (hasNasdaqMarketCap(item) || hasExplicitValuationGap(item))),
-    "expected in-pool US ETF directory rows to keep Nasdaq market-cap valuations or explicit valuation gaps outside market-cap sorting"
+    usEquityDirectoryLocalEtfPage.items.some((item) => item.symbol === "QQQ" && item.poolState === "in_pool" && hasNasdaqMarketCap(item)),
+    "expected in-pool US ETF directory rows to keep Nasdaq market-cap valuations outside market-cap sorting"
   );
-  assert(commodityFundMarketCapWall.items.some((item) => item.symbol === "GLD" && (hasNasdaqMarketCap(item) || hasExplicitValuationGap(item))), "expected commodity ETF chart wall Nasdaq market-cap valuation or explicit valuation gap");
+  assertNasdaqMarketCapSymbol(assert, commodityFundMarketCapWall.items, "GLD", "expected commodity ETF chart wall Nasdaq market-cap valuation");
   assertSortedWhenComparable(assert, isSortedDesc, commodityFundMarketCapWall.items, "expected commodity ETF chart wall market-cap sorting when comparable values are available");
-  assert(commodityDirectoryMarketCapPage.items.some((item) => item.symbol === "GLD" && (hasNasdaqMarketCap(item) || hasExplicitValuationGap(item))), "expected commodity directory Nasdaq market-cap valuation or explicit valuation gap");
+  assertNasdaqMarketCapSymbol(assert, commodityDirectoryMarketCapPage.items, "GLD", "expected commodity directory Nasdaq market-cap valuation");
   assertSortedWhenComparable(assert, isSortedDesc, commodityDirectoryMarketCapPage.items, "expected commodity directory market-cap sorting when comparable values are available");
-  assert(macroDirectoryMarketCapPage.items.some((item) => item.symbol === "TLT" && (hasNasdaqMarketCap(item) || hasExplicitValuationGap(item))), "expected bond ETF directory Nasdaq market-cap valuation or explicit valuation gap");
+  assertNasdaqMarketCapSymbol(assert, macroDirectoryMarketCapPage.items, "TLT", "expected bond ETF directory Nasdaq market-cap valuation");
   assertSortedWhenComparable(assert, isSortedDesc, macroDirectoryMarketCapPage.items, "expected macro directory market-cap sorting when comparable values are available");
 };

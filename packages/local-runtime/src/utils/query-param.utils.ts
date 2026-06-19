@@ -24,7 +24,13 @@ export const getBooleanQueryParam = (url: URL, name: string, fallback = false): 
 };
 
 export const getIntegerQueryParam = (url: URL, name: string, fallback: number, min: number, max: number): number => {
-  const value = Number(url.searchParams.get(name));
+  const rawValue = url.searchParams.get(name);
+
+  if (rawValue === null || rawValue.trim().length === 0) {
+    return fallback;
+  }
+
+  const value = Number(rawValue);
   return Number.isInteger(value) ? Math.min(Math.max(value, min), max) : fallback;
 };
 
