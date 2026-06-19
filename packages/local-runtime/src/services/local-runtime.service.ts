@@ -36,6 +36,7 @@ import { LocalApiServerService } from "./local-api-server.service";
 import { RuntimeTaskRecoveryService } from "./runtime-task-recovery.service";
 import { TaskCenterService } from "./task-center.service";
 import { CryptoMarketValuationService } from "./valuation/crypto-market-valuation.service";
+import { EastmoneyAshareValuationService } from "./valuation/eastmoney-a-share-valuation.service";
 import { NasdaqAssetValuationService } from "./valuation/nasdaq-asset-valuation.service";
 
 export class LocalRuntimeService {
@@ -77,12 +78,13 @@ export class LocalRuntimeService {
     const nasdaqUsEquityValuationProvider = new NasdaqUsEquityValuationProvider();
     const nasdaqUsEquityDirectorySnapshotService = new NasdaqUsEquityDirectorySnapshotService(providerSnapshotRepository);
     const eastmoneyAshareCatalogProvider = new EastmoneyAshareCatalogProvider();
+    const eastmoneyAshareValuationService = new EastmoneyAshareValuationService(eastmoneyAshareCatalogProvider, providerSnapshotRepository);
     const eastmoneyAshareDirectorySnapshotService = new EastmoneyAshareDirectorySnapshotService(providerSnapshotRepository);
     const exchangeRateProvider = new OpenExchangeRateProvider();
     const valuationNormalizationService = new AssetValuationNormalizationService(exchangeRateProvider);
     const nasdaqAssetValuationService = new NasdaqAssetValuationService(nasdaqUsEquityValuationProvider, providerSnapshotRepository);
     const trendPoolAssetValuationService = new TrendPoolAssetValuationService(nasdaqAssetValuationService, valuationNormalizationService);
-    const chartWallValuationService = new ChartWallValuationService(cryptoMarketValuationService, eastmoneyAshareCatalogProvider, nasdaqAssetValuationService, valuationNormalizationService);
+    const chartWallValuationService = new ChartWallValuationService(cryptoMarketValuationService, eastmoneyAshareValuationService, nasdaqAssetValuationService, valuationNormalizationService);
     const queryService = new ChartWallQueryService(
       this.options,
       assetRepository,

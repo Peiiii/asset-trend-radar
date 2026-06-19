@@ -1,7 +1,8 @@
-import type { CoinGeckoCryptoMarketItem, EastmoneyAshareCatalogItem, EastmoneyAshareCatalogProvider } from "@gold-insights/data-adapters";
+import type { CoinGeckoCryptoMarketItem, EastmoneyAshareCatalogItem } from "@gold-insights/data-adapters";
 import type { AssetSummary, AssetValuation, ChartWallItem } from "@gold-insights/market-domain";
 import type { AssetValuationNormalizationService } from "./asset-valuation-normalization.service";
 import type { CryptoMarketValuationService } from "./valuation/crypto-market-valuation.service";
+import type { EastmoneyAshareValuationService } from "./valuation/eastmoney-a-share-valuation.service";
 import type { NasdaqAssetValuationService } from "./valuation/nasdaq-asset-valuation.service";
 
 type ValuationLookup = {
@@ -13,7 +14,7 @@ type ValuationLookup = {
 export class ChartWallValuationService {
   public constructor(
     private readonly cryptoMarketValuationService: CryptoMarketValuationService,
-    private readonly aShareCatalogProvider: EastmoneyAshareCatalogProvider,
+    private readonly aShareValuationService: EastmoneyAshareValuationService,
     private readonly nasdaqAssetValuationService: NasdaqAssetValuationService,
     private readonly normalizationService: AssetValuationNormalizationService
   ) {}
@@ -54,7 +55,7 @@ export class ChartWallValuationService {
     const usSymbols = items.filter(this.nasdaqAssetValuationService.isSupportedAsset).map(this.nasdaqAssetValuationService.getSymbolKey);
     const [cryptoResult, aShareResult, usValuationResult] = await Promise.allSettled([
       shouldLoadCrypto ? this.cryptoMarketValuationService.listMarketsBySymbol() : Promise.resolve(new Map<string, CoinGeckoCryptoMarketItem>()),
-      shouldLoadAshare ? this.aShareCatalogProvider.listCatalog() : Promise.resolve([]),
+      shouldLoadAshare ? this.aShareValuationService.listItemsBySymbol() : Promise.resolve(new Map<string, EastmoneyAshareCatalogItem>()),
       usSymbols.length > 0 ? this.nasdaqAssetValuationService.listValuationsBySymbol(usSymbols) : Promise.resolve(new Map<string, AssetValuation>())
     ]);
 
@@ -72,7 +73,7 @@ export class ChartWallValuationService {
 
     return {
       cryptoMarketsBySymbol: cryptoResult.status === "fulfilled" ? cryptoResult.value : new Map(),
-      aShareItemsBySymbol: aShareResult.status === "fulfilled" ? this.toAshareItemsBySymbol(aShareResult.value) : new Map(),
+      aShareItemsBySymbol: aShareResult.status === "fulfilled" ? aShareResult.value : new Map(),
       usValuationsBySymbol: usValuationResult.status === "fulfilled" ? usValuationResult.value : new Map()
     };
   };
@@ -118,9 +119,6 @@ export class ChartWallValuationService {
     updatedAt: item.latestAt,
     normalized: null
   });
-
-  private toAshareItemsBySymbol = (items: EastmoneyAshareCatalogItem[]): Map<string, EastmoneyAshareCatalogItem> =>
-    new Map(items.map((item) => [this.normalizeSymbol(item.yahooSymbol), item]));
 
   private isAshareEquity = (asset: AssetSummary): boolean =>
     asset.market === "A 股" && asset.assetType === "equity";
