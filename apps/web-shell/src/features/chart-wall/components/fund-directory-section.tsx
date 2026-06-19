@@ -9,6 +9,7 @@ import { fundDirectoryTableSizing } from "./directory-table/directory-table-sizi
 import { DirectorySortableHeader } from "./directory-table/directory-sortable-header";
 import { FundDirectoryRankingSummary } from "./directory-ranking-summary/fund-directory-ranking-summary";
 import { FundDirectoryRow } from "./fund-directory-row";
+import { QueryStatus } from "./query-status/query-status";
 import "./fund-directory-section.css";
 
 type FundDirectorySectionProps = {
@@ -172,18 +173,8 @@ export function FundDirectorySection({
 
       {isInitialLoading && <LoadingState />}
       {error && !data && <ErrorState title="基金目录加载失败" message={error} />}
-      {isUpdating && (
-        <div className="query-status query-status--info" role="status">
-          <strong>目录更新中</strong>
-          <span>当前先保留上一页结果</span>
-        </div>
-      )}
-      {error && data && (
-        <div className="query-status query-status--error" role="status">
-          <strong>目录更新失败</strong>
-          <span>{error}</span>
-        </div>
-      )}
+      {isUpdating && <QueryStatus tone="info" title="目录更新中" message="当前先保留上一页结果" />}
+      {error && data && <QueryStatus tone="error" title="目录更新失败" message={error} />}
       {data && (
         <>
           <FundDirectoryRankingSummary items={data.items} totalCount={data.totalCount} sort={sort} order={order} />

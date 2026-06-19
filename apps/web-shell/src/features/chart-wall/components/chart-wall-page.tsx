@@ -36,8 +36,8 @@ import { getAssetDirectoryTableSizing } from "./directory-table/directory-table-
 import { ExchangeTable } from "./exchange-table/exchange-table";
 import { FundDirectorySection } from "./fund-directory-section";
 import "./market-chart-primitives.css";
-import "./query-status.css";
 import { OverviewSection } from "./overview-section/overview-section";
+import { QueryStatus } from "./query-status/query-status";
 import { ScannerSection } from "./scanner-section/scanner-section";
 import { StrategyPresetStrip, type StrategyPresetFilters } from "./strategy-preset-strip/strategy-preset-strip";
 import { TaskActivityNotice } from "./task-center/task-activity-notice";
@@ -566,12 +566,7 @@ export function ChartWallPage(): JSX.Element {
 
       {isChartWallInitialLoading && <LoadingState />}
       {chartWallBlockingError && <ErrorState title="行情加载失败" message={error} />}
-      {needsChartWallData && data && error && (
-        <div className="query-status query-status--error" role="status">
-          <strong>行情更新失败</strong>
-          <span>{error}</span>
-        </div>
-      )}
+      {needsChartWallData && data && error && <QueryStatus tone="error" title="行情更新失败" message={error} />}
 
       {(!needsChartWallData || data) && (
         <>
@@ -671,18 +666,8 @@ export function ChartWallPage(): JSX.Element {
               <ErrorState title="资产目录加载失败" message={assetDirectoryQuery.error} />
             ) : (
               <>
-                {assetDirectoryQuery.isLoading && assetDirectoryQuery.data && (
-                  <div className="query-status query-status--info" role="status">
-                    <strong>目录更新中</strong>
-                    <span>当前先保留上一页结果</span>
-                  </div>
-                )}
-                {assetDirectoryQuery.error && assetDirectoryQuery.data && (
-                  <div className="query-status query-status--error" role="status">
-                    <strong>目录更新失败</strong>
-                    <span>{assetDirectoryQuery.error}</span>
-                  </div>
-                )}
+                {assetDirectoryQuery.isLoading && assetDirectoryQuery.data && <QueryStatus tone="info" title="目录更新中" message="当前先保留上一页结果" />}
+                {assetDirectoryQuery.error && assetDirectoryQuery.data && <QueryStatus tone="error" title="目录更新失败" message={assetDirectoryQuery.error} />}
                 <AssetDirectorySection
                   title={assetDirectoryQuery.data?.category.label ?? getAssetDirectoryLabel(directoryCategoryId)}
                   description={assetDirectoryQuery.data?.category.description ?? "当前展示真实已入库、可打开完整走势和指标的资产。"}
